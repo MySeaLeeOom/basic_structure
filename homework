@@ -1,6 +1,7 @@
 ## what are the tasks that these individual services have to do to be able to wotrk with the rest?
 -- explain what this service needs to do, and how, in HUMAN LANGUAGE (not code!!!)
 -- describe the dockerfile, the required files, etc
+-- list files, list purpose of each file, explain prupose
 
 1. auth // caro
 2. frontend // masha
