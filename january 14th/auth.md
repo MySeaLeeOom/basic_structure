@@ -65,3 +65,6 @@ the database also needs a **volume** so that data persists (see inception).
 [overview of auth in microservices architecture](https://microservices.io/post/architecture/2025/04/25/microservices-authn-authz-part-1-introduction.html) (this one looks great) + [how to implement it](https://microservices.io/post/architecture/2025/05/28/microservices-authn-authz-part-2-authentication.html)
 
 https://frontegg.com/blog/authentication-in-microservices
+
+[Wikipedia: JWT](https://en.wikipedia.org/wiki/JSON_Web_Token#Use) -- good and clear info on how to use this
+[Wikipedia: http-only cookie](https://en.wikipedia.org/wiki/HTTP_cookie#Secure_and_HttpOnly)
