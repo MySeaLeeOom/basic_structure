@@ -59,3 +59,9 @@ the database also needs a **volume** so that data persists (see inception).
   - if it is django (for example!!!) the dockerfile would have to install python, install django, etc,
   - then copy all the files (the django project) into the container (like in inception)
   - and then run it
+
+
+## resources to look into
+https://microservices.io/post/architecture/2025/04/25/microservices-authn-authz-part-1-introduction.html (this one looks great)
+
+https://frontegg.com/blog/authentication-in-microservices
