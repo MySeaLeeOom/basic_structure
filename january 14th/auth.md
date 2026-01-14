@@ -38,7 +38,7 @@ what about anonymous sessions? this would be very nice to have, but... **later**
 is "asking" the auth every time effcient? i think it's not a problem, but we can look into **cacheing**.
 how is NOTES talking to AUTH? **http**.
   - in auth there is an **ENDPOINT** (GET or POST? idk yet)
-  - when notes asks, auth sends back some info about the user. possibly a jason (JWT token: jason web token). in this json we might have username, name, some settings (for instance user's preference for dark or light theme), whatever we need.
+  - when notes asks, auth sends back some info about the user. possibly a jason (JWT token: jason web token, there are other options too). in this json we might have username, name, some settings (for instance user's preference for dark or light theme), whatever we need.
 
 ## CONCRETE THINGS
 
@@ -62,6 +62,6 @@ the database also needs a **volume** so that data persists (see inception).
 
 
 ## resources to look into
-https://microservices.io/post/architecture/2025/04/25/microservices-authn-authz-part-1-introduction.html (this one looks great)
+[overview of auth in microservices architecture](https://microservices.io/post/architecture/2025/04/25/microservices-authn-authz-part-1-introduction.html) (this one looks great) + [how to implement it](https://microservices.io/post/architecture/2025/05/28/microservices-authn-authz-part-2-authentication.html)
 
 https://frontegg.com/blog/authentication-in-microservices
