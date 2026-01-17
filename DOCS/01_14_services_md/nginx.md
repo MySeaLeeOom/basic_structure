@@ -178,4 +178,22 @@ User visits `localhost/api/notes` → Nginx says *"notes? that's room 3000"* →
 
 ---
 
-## 
+PostgreSQL stays **outside** the reverse proxy.
+
+**Why?**
+
+Nginx proxies HTTP/HTTPS traffic (web requests). PostgreSQL uses its own protocol on port 5432, not HTTP. Browsers and users never talk to the database directly.
+
+**The pattern:**
+
+```
+Internet/User
+      ↓
+   [ nginx :80 ]  ← HTTP only
+    /    |    \
+frontend notes  auth
+           \    /
+            ↓  ↓
+        [ postgres :5432 ]  ← internal only, no external access
+```
+
