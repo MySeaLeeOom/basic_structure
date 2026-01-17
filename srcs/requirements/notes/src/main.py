@@ -4,12 +4,13 @@ from pydantic import BaseModel
 app = FastAPI()
 
 class Note(BaseModel):
-	id: str = None 
+	id: int = None 
 	title: str
 	content: str
 
 # here just an array - ahmet will do magic great fantastic db
 db = []
+id_counter = 0
 
 @app.get("/notes")
 async def get_notes():
