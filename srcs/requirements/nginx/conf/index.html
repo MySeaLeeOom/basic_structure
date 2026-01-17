@@ -30,7 +30,7 @@
         async function saveNote() {
             const content = document.getElementById('noteContent').value;
             try {
-                const response = await fetch('/api/app/notes', {
+                const response = await fetch('/api/notes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: "Test Note", content: content })
@@ -47,8 +47,10 @@
         async function fetchNotes() {
             const output = document.getElementById('output');
             try {
-                const response = await fetch('/api/app/notes');
+                const response = await fetch('/api/notes');
                 const data = await response.json();
+				console.log(response);
+				console.log(data);
                 output.textContent = JSON.stringify(data, null, 2);
             } catch (err) {
                 output.textContent = "Error fetching: " + err;
