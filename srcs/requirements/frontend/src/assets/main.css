@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+
+
+/*
+COMPONENTS:
+	LANDING PAGE: 
+		feature tiles
+		feature list DONE
+		CTA button DONE
+		Text Link
+		Section Headers
+	APP: 
+		navrail
+		Tree/Nested Items
+		Toolbar
+		Tab
+		Split Pane
+
+
+*/
+
+@theme {
+  --color-win-silver: #c0c0c0;
+  --color-win-white: #ffffff;
+  --color-win-grey: #808080;
+  --color-win-black: #000000;
+  --color-win-blue: #000080;
+  
+  --shadow-win-outset: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080, 1px 1px 0px #000000;
+  --shadow-win-inset: inset 1px 1px 0px #808080, 1px 1px 0px #ffffff;
+  --shadow-win-active: inset 1px 1px 0px #000000, 1px 1px 0px #ffffff;
+
+  --icon-plus: url("../resources/material-symbols-light--align-flex-center.svg")
+}
+
+@layer components {
+	/*THE LANDING PAGE*/
+	.cta-btn {
+		@apply bg-win-silver px-4 py-1 text-win-black font-bold cursor-pointer;
+		box-shadow: var(--shadow-win-outset);
+	}
+	.cta-btn:active {
+		box-shadow: var(--shadow-win-active);
+		padding-left: calc(1rem + 1px);
+		padding-top: calc(0.25rem + 1px);
+	}
+	.cta-btn:focus {
+		outline: 1px dotted var(--color-win-black);
+		outline-offset: -4px;
+	}
+	.cta-btn:hover {
+		color:aqua;
+		outline: 1px dotted var(--color-win-black);
+		outline-offset: -1px;
+	}
+
+	.ftile{}
+
+	.flist{
+		@apply bg-win-silver px-4 py-1 text-win-black font-bold cursor-pointer;
+		box-shadow: var(--shadow-win-outset);
+	}
+	.flist-head{
+		@apply text-lg mb-2
+	}
+	.flist-row-con{
+		@apply flex-col
+	}
+	.flist-row{
+		@apply ps-6 flex items-start gap-3 /*using ps and pe to enable rtl and ltr*/
+	}
+	.flist-feat-icon-box{
+		width: 24px;
+		height: 24px;
+		flex-shrink: 0;
+		background-color: currentColor;
+		mask-image: var(--icon-plus);
+		mask-repeat: no-repeat;
+		mask-size: contain;
+	}
+	.flist-feat-text-box{
+		@apply flex flex-col
+	}
+	.flist-feat-head{
+		@apply bg-win-silver py-1 text-win-black font-bold cursor-pointer leading-tight;
+	}
+	.flist-feat-details{
+		@apply  font-normal text-sm
+	}
+	.text-link{
+		@apply ps-2 ;
+	}
+	.text-title{
+		@apply font-bold;
+	}
+	.sec-header{}
+
+
+
+	/*THE APP*/
+	.navrail{}
+	.tree{}
+	.toolbar{}
+	.tab{}
+	.split-pane{}
+
+	.textarea {
+		background-color:rgb(198, 248, 255);
+		border-width: 1px;
+	}
+}
