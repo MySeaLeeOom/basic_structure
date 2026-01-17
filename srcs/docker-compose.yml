@@ -1,0 +1,25 @@
+services:
+  notes:
+    build:
+      context: ./requirements/notes
+      dockerfile: Dockerfile
+    image: notes
+    container_name: notes
+    restart: always
+    networks:
+      - transcendence
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    image: nginx
+    container_name: nginx
+    restart: always
+    networks:
+      - transcendence
+    ports:
+    - 8080:80
+
+networks:
+  transcendence:
+    driver: bridge
