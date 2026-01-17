@@ -10,7 +10,6 @@
 - `nuxt.config.ts`: defines how vue/nuxt communicate with auth and notes
 - `.dockerignore`: files that should not be included in the image
 - `app.vue`: template for every page
-
 - src/
 	- pages/
 		- index.vue
@@ -18,3 +17,19 @@
 		- Header.vue
 	- layouts/
 		- default.vue
+
+- `i18n`: Internationalization protocol
+	- the core is a json struct with the language codes 
+		and the localized strings
+	- there is a createI18n - this is a function of the vue-i18n library that we use in this specific build (in next.js it would be a differnet thing)
+	ideally if the localized strings get too many, we would split into different jsons and grab them lazily (we are never going too many string)
+	- in main.ts import i18n  from './i18n.ts'
+	- in main.ts when creating the app either use a builder pattern .use(i18n) or assign the createApp return to a variable and then call the method app.use(i18n)
+		- createApp(App).use(i18n).mount('#app')
+		OR
+		- ` const app = createApp(App)
+			app.use(i18n)
+			app.mount('#app')`
+
+
+- `accessibility`: 
