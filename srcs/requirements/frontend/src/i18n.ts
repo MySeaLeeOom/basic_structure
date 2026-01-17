@@ -1,3 +1,4 @@
+//TODO: import from nuxtjs-i18n instead of this
 import { createI18n } from "vue-i18n";
 
 
