@@ -19,7 +19,7 @@ services:
     networks:
       - transcendence
     ports:
-      - 8080:80
+      - "0.0.0.0:8080:80"
 
   postgres:
     build: ./requirements/postgres
