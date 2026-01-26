@@ -32,6 +32,16 @@ services:
     networks:
       - transcendence
 
+  auth:
+    build:
+      context: ./requirements/auth
+      dockerfile: Dockerfile
+    image: auth
+    container_name: auth
+    restart: always
+    networks:
+      - transcendence
+
   nginx:
     build:
       context: ./requirements/nginx
