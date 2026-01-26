@@ -1,30 +1,20 @@
-# Step 1: The Build Environment
-# We use 'alpine' to keep the image size small—the "minimum viable environment."
-FROM node:20-alpine AS builder
+FROM node:20-slim
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-# Step 2: The Execution Environment
-# We start a fresh stage to discard the heavy 'node_modules' used during building.
-FROM node:20-alpine AS runner
-
+RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# Set the environment to production
-ENV NODE_ENV=production
-ENV NUXT_HOST=0.0.0.0
-ENV NUXT_PORT=3000
+# copy these 2 files first so there is no new npm install if the file has not changed
+# if a change in a file occurs, docker discards every subsequent cached command from scratch
+COPY package.json pnpm-lock.yaml ./
 
-# Copy only the necessary outputs from the builder stage
-# For Nuxt 3, the output is in the .output directory
-COPY --from=builder /app/.output ./.output
+# --frozen-lockfile means the build will be consistent with what we developed 
+# no new patched versions of dependencies
+RUN pnpm install --frozen-lockfile
 
-# Expose the port the app runs on
-EXPOSE 3000
+## Copy source code and build the application
+## PRODUCTION ONLY
+# COPY . .
+# RUN pnpm run build
 
-# The command to start the server
-CMD ["node", ".output/server/index.mjs"]
+
+
