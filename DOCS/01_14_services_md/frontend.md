@@ -1,5 +1,21 @@
 # Frontend
 
+## Hot reloading solution for Frontend
+### For working with microvervices directly
+### Add to docker-compose.yml
+
+services:
+  frontend:
+    # ... build instructions ...
+    volumes:
+      - ./srcs/requirements/frontend:/app
+      - /app/node_modules # Anonymous volume to protect container-side dependencies
+
+What this means: bind mount this `./srcs/requirements/frontend:/app`
+
+But let this folder be an "anonymous volume" ` - /app/node_modules` managed by Docker, and this it will be ignored in our local folder.
+Translation: if I am working on a mac, I don't want mac files to go inside that folder, i need Docker to manage that volume by itself. It is like an exclusion. 
+
 ## Files
 
 - `Dockerfile`: Instructions for a two stage build 
@@ -35,7 +51,7 @@
 - `accessibility`: 
 
 
-temp notes
+TEMPORARY NOTES 
 ## ARCHITECTURE COMPLEXITY TO RESEARCH
 
 ## State Management with Pinia
