@@ -6,6 +6,13 @@ services:
     image: notes
     container_name: notes
     restart: always
+    environment:
+      DB_HOST: postgres
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - postgres
     networks:
       - transcendence
 
@@ -21,16 +28,16 @@ services:
     ports:
       - "0.0.0.0:8080:80"
 
-  # postgres:
-  #   build: ./requirements/postgres
-  #   environment:
-  #     POSTGRES_USER: ${DB_USER}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #     POSTGRES_DB: ${DB_NAME}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - transcendence
+  postgres:
+    build: ./requirements/postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - transcendence
 
 networks:
   transcendence:
