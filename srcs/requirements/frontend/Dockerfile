@@ -13,8 +13,30 @@ RUN pnpm install --frozen-lockfile
 
 ## Copy source code and build the application
 ## PRODUCTION ONLY
-# COPY . .
-# RUN pnpm run build
+COPY . .
+RUN pnpm run build
+
+# ==========================================
+# STAGE 2: The Production Stage
+# ==========================================
+FROM node:20-slim AS runner
+
+WORKDIR /app
+
+# 5. Define Environment to ensure proper behavior
+ENV NODE_ENV=production
+
+# 6. Copy only what is necessary to RUN the app.
+# We skip the source code and build tools to keep the image 'slim'.
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+
+# 7. Expose the port for your SSR server
+EXPOSE 3000
+
+# 8. Start the manual SSR server
+CMD ["node", "dist/server/entry.js"]
 
 
 
