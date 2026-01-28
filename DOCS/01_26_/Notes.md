@@ -1,0 +1,2 @@
+- Made sure we can launch the containers
+- 

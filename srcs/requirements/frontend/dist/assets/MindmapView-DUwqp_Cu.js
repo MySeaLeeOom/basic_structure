@@ -1,0 +1,1 @@
+import{d as a,o as n,c as o,a as s}from"./index-aoHF7gbJ.js";const t={class:"mindmap"},r=a({__name:"MindmapView",setup(i){return(m,e)=>(n(),o("div",t,[...e[0]||(e[0]=[s("h1",null,"Mindmap View",-1)])]))}});export{r as default};
