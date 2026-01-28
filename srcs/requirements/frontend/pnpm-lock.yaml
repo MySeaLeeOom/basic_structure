@@ -42,6 +42,9 @@ importers:
       '@vue/tsconfig':
         specifier: ^0.8.1
         version: 0.8.1(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
+      '@vue/typescript-plugin':
+        specifier: ^3.2.4
+        version: 3.2.4(typescript@5.9.3)
       autoprefixer:
         specifier: ^10.4.23
         version: 10.4.23(postcss@8.5.6)
@@ -592,6 +595,9 @@ packages:
       vue:
         optional: true
 
+  '@vue/typescript-plugin@3.2.4':
+    resolution: {integrity: sha512-K/rKnIQre0X6YyKSbDW+DEYpVkOBrB0ScXus0nvtjI7zwo+0FE+wxUXAXeKtaQwJzQ0d8Pw2FPa0mcZhYpMQug==}
+
   abstract-logging@2.0.1:
     resolution: {integrity: sha512-2BjRTZxTPvheOvGbBslFSYOUkr+SjPtOnrLP33f+VIWLzezQpZcqVg7ja3L4dBXmzzgwT+a029jRx5PCi3JuiA==}
 
@@ -1088,6 +1094,14 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
+  vue-component-meta@3.2.4:
+    resolution: {integrity: sha512-FHUxalhR36Kfmrd5B4yfw7kmnCsZL3SGc2vTgzeEGAcLyuhhB0d1j2VmfXvx5pnHLI+kvCb+bxGsRcNgrUJ0Ww==}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vue-router@4.6.4:
     resolution: {integrity: sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==}
     peerDependencies:
@@ -1537,6 +1551,16 @@ snapshots:
       typescript: 5.9.3
       vue: 3.5.27(typescript@5.9.3)
 
+  '@vue/typescript-plugin@3.2.4(typescript@5.9.3)':
+    dependencies:
+      '@volar/typescript': 2.4.27
+      '@vue/language-core': 3.2.4
+      '@vue/shared': 3.5.27
+      path-browserify: 1.0.1
+      vue-component-meta: 3.2.4(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+
   abstract-logging@2.0.1: {}
 
   ajv-formats@3.0.1(ajv@8.17.1):
@@ -1982,6 +2006,14 @@ snapshots:
       lightningcss: 1.30.2
 
   vscode-uri@3.1.0: {}
+
+  vue-component-meta@3.2.4(typescript@5.9.3):
+    dependencies:
+      '@volar/typescript': 2.4.27
+      '@vue/language-core': 3.2.4
+      path-browserify: 1.0.1
+    optionalDependencies:
+      typescript: 5.9.3
 
   vue-router@4.6.4(vue@3.5.27(typescript@5.9.3)):
     dependencies:
