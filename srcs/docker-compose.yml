@@ -1,5 +1,20 @@
 services:
-  
+  frontend:
+    build:
+      context: ./requirements/frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend_dev
+    volumes:
+      - ./requirements/frontend:/app        # Mount code for live updates
+      - /app/node_modules                   # Protect container-specific libs
+    networks:
+      - transcendence                        # Connect to 'notes' and 'postgres' [cite: 21]
+    # ports:
+    #   - "3000:3000"
+    environment:
+      - NOTES_API_URL=http://notes:8000     # Internal SSR communication 
+      - NODE_ENV=development
+
   notes:
     build:
       context: ./requirements/notes
@@ -40,18 +55,4 @@ networks:
 volumes:
   postgres_data:
 
-  # frontend:
-  #   build:
-  #     context: ./requirements/frontend
-  #     dockerfile: Dockerfile.dev
-  #   container_name: frontend_dev
-  #   volumes:
-  #     - ./requirements/frontend:/app        # Mount code for live updates
-  #     - /app/node_modules                   # Protect container-specific libs
-  #   networks:
-  #     - transcendence                        # Connect to 'notes' and 'postgres' [cite: 21]
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - NOTES_API_URL=http://notes:8000     # Internal SSR communication 
-  #     - NODE_ENV=development
+
