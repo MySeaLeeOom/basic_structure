@@ -30,6 +30,8 @@ services:
 
   postgres:
     build: ./requirements/postgres
+    container_name: postgres
+    restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
