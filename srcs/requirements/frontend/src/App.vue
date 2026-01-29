@@ -4,5 +4,5 @@ import Header from "./components/Header.vue"
 
 <template>
 <Header/>
-<h1> Hello Myceleum Team!</h1>
+<RouterView />
 </template>
