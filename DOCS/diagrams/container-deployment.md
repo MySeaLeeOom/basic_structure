@@ -47,14 +47,18 @@ sequenceDiagram
   participant No as notes
   participant DB as postgres
 
-  Note over N, F: SSR flow (initial page load)
+  note over N: SSR flow (initial page load)
+  note over F: SSR flow (initial page load)
   B->>N: HTTP GET /
   N->>F: GET / (SSR)
   F->>F: render HTML (server-side)
   F-->>N: HTML
   N-->>B: HTTP 200 (SSR HTML)
 
-  Note over B, N, No, DB: Client-side API flow (after JS boot)
+  note over B: Client-side API flow (after JS boot)
+  note over N: Client-side API flow (after JS boot)
+  note over No: Client-side API flow (after JS boot)
+  note over DB: Client-side API flow (after JS boot)
   B->>N: GET /api/notes
   N->>No: proxy /api/notes
   No->>DB: SELECT notes
