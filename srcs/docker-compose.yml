@@ -22,6 +22,13 @@ services:
     image: notes
     container_name: notes
     restart: always
+    environment:
+      DB_HOST: postgres
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - postgres
     networks:
       - transcendence
 
@@ -35,10 +42,12 @@ services:
     networks:
       - transcendence
     ports:
-      - 8080:80
+      - "0.0.0.0:8080:80"
 
   postgres:
     build: ./requirements/postgres
+    container_name: postgres
+    restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
