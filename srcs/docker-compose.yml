@@ -12,15 +12,32 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - NOTES_API_URL=http://notes:8000     # Internal SSR communication 
+      - NOTES_API_URL=http://notes:3000     # Internal SSR communication 
       - NODE_ENV=development
 
+  # notes:
+  #   build:
+  #     context: ./requirements/notes
+  #     dockerfile: Dockerfile
+  #   image: notes
+  #   container_name: notes
+  #   restart: always
+  #   environment:
+  #     DB_HOST: postgres
+  #     DB_USER: ${DB_USER}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #     DB_NAME: ${DB_NAME}
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - transcendence
+  
   notes:
     build:
-      context: ./requirements/notes
+      context: ./requirements/notes-rs
       dockerfile: Dockerfile
-    image: notes
-    container_name: notes
+    image: notes-rs
+    container_name: notes-rs
     restart: always
     environment:
       DB_HOST: postgres
