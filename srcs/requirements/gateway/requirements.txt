@@ -1,6 +1,5 @@
 fastapi
 uvicorn[standard]
 pydantic
-pwdlib[argon2]
 pyjwt
 python-multipart
