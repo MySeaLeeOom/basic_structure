@@ -7,6 +7,7 @@ SERVICES = {
 	"notes": "http://notes:8000"
 }
 
+# index.html  had to be moved from nginx to here
 @app.get("/")
 async def index():
 	return FileResponse("src/index.html")
