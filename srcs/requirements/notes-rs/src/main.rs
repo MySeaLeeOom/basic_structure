@@ -2,10 +2,8 @@ mod models;
 mod handlers;
 
 use axum::{
-    extract::State,
-    http::StatusCode,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 use sqlx::PgPool;
 use std::net::SocketAddr;
