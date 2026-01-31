@@ -34,10 +34,10 @@ services:
 
   auth:
     build:
-      context: ./requirements/auth
+      context: ./requirements/gateway
       dockerfile: Dockerfile
-    image: auth
-    container_name: auth
+    image: gateway
+    container_name: gateway
     restart: always
     networks:
       - transcendence
