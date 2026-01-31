@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// Logic here
 </script>
 
 <template>
@@ -7,3 +6,4 @@
 		<h1>Notes View</h1>
 	</div>
 </template>
+
