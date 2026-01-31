@@ -1,0 +1,24 @@
+# Use the 'slim' base for better compatibility with native modules
+FROM node:20-slim
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Layer Caching: Only install dependencies if they change
+# This keeps the 'make re' cycle fast.
+COPY package.json pnpm-lock.yaml ./
+
+# We install ALL dependencies (including devDependencies like Vite/Vue-server-renderer)
+# Note: We do NOT use --frozen-lockfile here so you can add packages as you develop.
+RUN pnpm install
+
+# Port for the SSR server
+EXPOSE 3000
+
+# 4. The 'Shell' Strategy
+# We don't COPY the source code here because we will mount it via Volumes.
+# This command runs a script defined in your package.json that starts 
+# the Vue/Nuxt dev server with HMR (Hot Module Replacement).
+CMD ["pnpm", "run", "dev"]
