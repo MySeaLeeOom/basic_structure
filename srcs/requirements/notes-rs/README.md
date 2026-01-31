@@ -35,3 +35,4 @@ The service connects to a PostgreSQL database. The following environment variabl
 	*	get_note(id)
 	*	delete_post(id)
 	*	..
+*	`Logging`: add better logging with tracing.
