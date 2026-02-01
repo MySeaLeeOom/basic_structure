@@ -2,15 +2,9 @@
 @import "tailwindcss";
 @import "tailwindcss-primeui";
 
-@theme {
-  --font-handwritten: 'Caveat', cursive;
-}
 
 /* Volt component overrides */
 @layer components {
-  .listbox-borderless {
-    @apply border-0 shadow-none bg-transparent;
-  }
 
   .card-document {
     @apply w-full max-w-3xl min-h-[800px];
