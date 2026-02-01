@@ -1,1 +1,0 @@
-import{d as o,o as s,c as t,a}from"./index-aoHF7gbJ.js";const n={class:"home"},_=o({__name:"HomeView",setup(r){return(m,e)=>(s(),t("div",n,[...e[0]||(e[0]=[a("h1",null,"Home View",-1)])]))}});export{_ as default};
