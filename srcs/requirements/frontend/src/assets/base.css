@@ -6,6 +6,31 @@
   --font-handwritten: 'Caveat', cursive;
 }
 
+/* Volt component overrides */
+@layer components {
+  .listbox-borderless {
+    @apply border-0 shadow-none bg-transparent;
+  }
+
+  .card-document {
+    @apply w-full max-w-3xl min-h-[800px];
+  }
+
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-wider
+           text-surface-500 dark:text-surface-400 mb-3;
+  }
+
+  .document-container {
+    @apply flex justify-center py-8 px-4;
+  }
+
+  .document-body {
+    @apply whitespace-pre-wrap font-sans leading-relaxed
+           text-surface-700 dark:text-surface-300;
+  }
+}
+
 :root {
   /* Primary (emerald) */
   --p-primary-50: #ecfdf5;
