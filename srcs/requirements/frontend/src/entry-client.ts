@@ -1,3 +1,4 @@
+import "./assets/base.css"; // CSS imported here (client-only)
 import { createApp } from "./main";
 
 const { app, router } = createApp("client");

@@ -1,1 +1,0 @@
-import{d as o,o as s,c as t,a as n}from"./index-aoHF7gbJ.js";const a={class:"notes"},i=o({__name:"NotesView",setup(r){return(c,e)=>(s(),t("div",a,[...e[0]||(e[0]=[n("h1",null,"Notes View",-1)])]))}});export{i as default};
