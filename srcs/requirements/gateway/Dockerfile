@@ -1,5 +1,8 @@
 FROM python:3.13-slim
 
+# TODO useful for debugging, might want to remove this later...
+RUN apt update && apt install -y curl net-tools
+
 WORKDIR /src
 
 COPY requirements.txt .
