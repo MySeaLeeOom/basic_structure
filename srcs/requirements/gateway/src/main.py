@@ -1,5 +1,4 @@
-from fastapi import Request, Depends, FastAPI, HTTPException, status, Response
-from starlette.responses import FileResponse
+from fastapi import Request, FastAPI, Response
 import httpx
 
 app = FastAPI()
@@ -7,19 +6,19 @@ app = FastAPI()
 http_client = httpx.AsyncClient()
 
 SERVICES = {
+	"/": "http://frontend:3000",
 	"/api/notes": "http://notes:8000/api/notes"
 }
 
-# index.html  had to be moved from nginx to here
-@app.get("/")
-async def index():
-	return FileResponse("src/index.html")
-
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"])
-async def forward(request: Request):
+async def forward(request: Request, path: str):
 	service = request.url.path
-	upstream = SERVICES.get(service, None)
+	if service.startswith("/api"):
+		upstream = SERVICES.get(service, None)
+	else:
+		upstream = SERVICES.get("/", None)
 	print(f"the service is: {service}")
+	#
 	if upstream is None:
 		return Response(status_code=404)
 	body = await request.body()
@@ -32,10 +31,11 @@ async def forward(request: Request):
 	print(f"  method: {method}")
 	print(f"  query_params: {query_params}")
 	print(f"  upstream: {upstream}")
+	print(f"  path: {path}")
 	#
 	response = await http_client.request(
 		method,
-		str(upstream),
+		f"{upstream}/{path}",
 		content=body,
 		params=query_params,
 		headers=headers
