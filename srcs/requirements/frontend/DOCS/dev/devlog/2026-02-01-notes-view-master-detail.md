@@ -5,132 +5,177 @@
 
 ## Overview
 
-Implemented a master-detail layout for the Notes view using Volt UI components. The layout features a fixed-width sidebar for note navigation and a flexible main area displaying the selected note.
+Master-detail layout for Notes view using Volt UI components. Fixed-width sidebar with `Listbox` for note navigation, flexible main area with `Card` displaying selected note content.
 
-## Files Changed
-
-| File | Change |
-|------|--------|
-| `src/views/NotesView.vue` | Google Docs-style document view |
-| `src/components/Header.vue` | Styled header with Volt Toolbar |
-| `src/data/notes.ts` | Placeholder notes data (extracted) |
-| `src/assets/base.css` | Caveat font + complete surface palette |
-| `tsconfig.app.json` | Added `@/*` path alias for TypeScript |
-
-## Implementation Details
-
-### Layout Structure (Google Docs Style)
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│  Header: "Mycelium" brand (Volt Toolbar)        │
-├──────────────┬──────────────────────────────────┤
-│  Sidebar     │  Document View (gray bg)         │
-│  w-64        │                                  │
-│  shrink-0    │  ┌─────────────────────────┐     │
-│              │  │  Title                  │     │
-│ ┌──────────┐ │  │  ─────────────────────  │     │
-│ │ My Notes │ │  │                         │     │
-│ └──────────┘ │  │  # Markdown content     │     │
-│              │  │  ## Rendered as doc     │     │
-│ • Note 1    │  │                         │     │
-│ • Note 2    │  │  (816px white paper     │     │
-│ • Note 3    │  │   with shadow)          │     │
-│              │  └─────────────────────────┘     │
-└──────────────┴──────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  Header: "Mycelium" (Volt Toolbar)                  │
+├───────────────┬─────────────────────────────────────┤
+│  Sidebar      │  Document View                      │
+│  w-64         │  bg-surface-200                     │
+│               │                                     │
+│  ┌─────────┐  │  ┌───────────────────────────┐      │
+│  │ Notes   │  │  │  Card                     │      │
+│  ├─────────┤  │  │  ────────────────────     │      │
+│  │Listbox  │  │  │  Title                    │      │
+│  │         │  │  │                           │      │
+│  │ • Note1 │  │  │  Content (pre-formatted)  │      │
+│  │ • Note2 │  │  │                           │      │
+│  │ • Note3 │  │  │                           │      │
+│  └─────────┘  │  └───────────────────────────┘      │
+└───────────────┴─────────────────────────────────────┘
 ```
 
-### Volt Components Used
+## Volt Components
 
-| Component | Usage | Props |
-|-----------|-------|-------|
-| `Toolbar` | Header bar | Custom dark mode classes |
-| `SecondaryButton` | Note list items | `text` variant |
+| Component | Usage | Why |
+|-----------|-------|-----|
+| `Listbox` | Note selection | Built-in keyboard nav, a11y, selection state |
+| `Card` | Document container | Consistent styling with title/content slots |
+| `Toolbar` | Header bar | Flexible slot-based layout |
 
-### Document View Styling
+## File Structure
 
-Google Docs-like centered paper:
-- **Container**: `bg-surface-200 dark:bg-surface-950` (gray background)
-- **Paper**: `max-w-[816px] min-h-[1056px]` (letter size proportions)
-- **Shadow**: `shadow-lg rounded-sm`
-- **Padding**: `p-16` (64px margins like real documents)
-
-### Tailwind Theme Extension
-
-Added custom font via `@theme` block in `base.css`:
-
-```css
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
-
-@theme {
-  --font-handwritten: 'Caveat', cursive;
-}
+```
+src/
+├── views/
+│   └── NotesView.vue      # Master-detail layout
+├── components/
+│   └── Header.vue         # App header with Toolbar
+├── data/
+│   └── notes.ts           # Note interface + placeholder data
+├── volt/                  # Volt UI components (60+)
+│   ├── Listbox.vue
+│   ├── Card.vue
+│   ├── Toolbar.vue
+│   └── ...
+└── assets/
+    └── base.css           # Theme variables + fonts
 ```
 
-Usage: `class="font-handwritten text-xl"`
+## NotesView Implementation
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import Listbox from '@/volt/Listbox.vue';
+import Card from '@/volt/Card.vue';
+import { notes, type Note } from '@/data/notes';
+
+const selectedNote = ref<Note>(notes[0]!);
+</script>
+
+<template>
+  <div class="flex h-[calc(100vh-60px)]">
+    <!-- Sidebar -->
+    <aside class="w-64 shrink-0 ...">
+      <Listbox
+        v-model="selectedNote"
+        :options="notes"
+        optionLabel="title"
+        dataKey="id"
+        pt:root:class="border-0 shadow-none bg-transparent"
+      />
+    </aside>
+
+    <!-- Document -->
+    <main class="flex-1 ...">
+      <Card pt:root:class="w-full max-w-3xl min-h-[800px]">
+        <template #title>{{ selectedNote.title }}</template>
+        <template #content>
+          <pre>{{ selectedNote.content }}</pre>
+        </template>
+      </Card>
+    </main>
+  </div>
+</template>
+```
+
+## Key Patterns
+
+### Volt Component Customization
+
+Use `pt:root:class` for per-instance styling without fighting the design system:
+
+```vue
+<Listbox pt:root:class="border-0 shadow-none bg-transparent" />
+<Card pt:root:class="w-full max-w-3xl min-h-[800px]" />
+```
+
+### Object Selection with Listbox
+
+When binding to objects, use `dataKey` for proper comparison:
+
+```vue
+<Listbox
+  v-model="selectedNote"
+  :options="notes"
+  optionLabel="title"
+  dataKey="id"          <!-- Compare by id, not object reference -->
+/>
+```
 
 ### SSR Safety
 
 - Static placeholder data (no `Date.now()`, `Math.random()`)
-- No `window`/`document` access at top-level
-- All browser APIs wrapped in event handlers
+- No `window`/`document` access at script-setup top-level
+- All browser APIs in `onMounted` or event handlers
 
-## Testing
+## Theme Configuration
 
-Verified via Chrome WebDriver MCP:
-- SSR renders correctly at `/notes`
-- Click handlers update selected note
-- Tag content updates reactively
-- Layout maintains fixed sidebar + fluid main
+`src/assets/base.css`:
 
-## Dark Mode Fix
+```css
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap');
+@import "tailwindcss";
+@import "tailwindcss-primeui";
 
-Initial implementation had poor contrast in dark mode. Fixed by:
+@theme {
+  --font-handwritten: 'Caveat', cursive;
+}
 
-1. **Complete surface palette** in `base.css` - added all values from 0-950
-2. **Layered backgrounds**:
-   - Main area: `dark:bg-surface-950` (darkest)
-   - Card: `dark:bg-surface-800` (lighter, stands out)
-   - Sidebar: `dark:bg-surface-900`
-3. **Visible borders**: Changed from `surface-700` to `surface-600`
-4. **Selected state**: Added `!text-surface-100` for button text contrast
+:root {
+  /* Primary (emerald) */
+  --p-primary-500: #10b981;
+  /* ... */
 
-## Data Extraction
+  /* Surface (zinc) - complete 0-950 palette */
+  --p-surface-0: #ffffff;
+  --p-surface-50: #fafafa;
+  /* ... */
+  --p-surface-950: #09090b;
+}
+```
 
-Moved placeholder notes to `src/data/notes.ts`:
+## Data Model
+
+`src/data/notes.ts`:
 
 ```ts
-// src/data/notes.ts
 export interface Note {
   id: string;
   title: string;
-  content: string;  // Raw markdown
+  content: string;  // Raw markdown (to be rendered)
 }
 
-export const notes: Note[] = [...]
+export const notes: Note[] = [
+  { id: '1', title: 'Meeting Notes', content: '# Meeting...' },
+  { id: '2', title: 'Project Ideas', content: '# Project...' },
+  { id: '3', title: 'Shopping List', content: '# Shopping...' },
+];
 ```
 
-Import in view: `import { notes } from '@/data/notes'`
+## Dependencies
 
-## Header Component
-
-Simplified header using Volt Toolbar with just brand text:
-
-```vue
-<Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900">
-  <template #start>
-    <span class="text-xl font-bold text-primary-500">Mycelium</span>
-  </template>
-</Toolbar>
+```json
+{
+  "dependencies": {
+    "@primevue/icons": "^4.5.4",
+    "primevue": "^4.5.4",
+    "vue": "^3.5.27",
+    "vue-router": "^4.6.4"
+  }
+}
 ```
-
-## Next Steps
-
-- [ ] Add markdown renderer for document content
-- [ ] Implement note CRUD operations
-- [ ] Connect to backend API
-
-## Related
-
-- Plan: See planning transcript for full design rationale
-- Components reference: `DOCS/components/`
