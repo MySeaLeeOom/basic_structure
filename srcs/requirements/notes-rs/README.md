@@ -2,22 +2,18 @@
 
 This service is a simple REST API for creating and retrieving notes. It is written in Rust using the Axum web framework.
 
-## Features
-
-*   Create a new note with a title and content (POST).
-*   Retrieve all existing notes (GET).
-
 ## Endpoints
 
-*   `GET /api/notes`: get_notes()
-*   `POST /api/notes`: post_note(). requires JSON object with `title` and `content` fields.
+*   `GET /api/notes`: Retrieves all notes.
+*   `GET /api/note/{id}`: Retrieves a single note by its ID.
+*   `POST /api/notes`: Creates a new note. Requires a JSON object with `title` and `content` fields.
 
 ## Dependencies
 
-*   [axum](https://github.com/tokio-rs/axum): Web framework for building the API.
-*   [serde](https://serde.rs/): Framework for serializing and deserializing Rust data structures.
-*   [sqlx](https://github.com/launchbadge/sqlx): Rust SQL toolkit for interacting with the PostgreSQL database.
-*   [tokio](https://tokio.rs/): Asynchronous runtime for Rust.
+*   [axum](https://github.com/tokio-rs/axum) (0.8.8)
+*   [serde](https://serde.rs/) (1.0.228)
+*   [sqlx](https://github.com/launchbadge/sqlx) (0.8.6)
+*   [tokio](https://tokio.rs/) (1.49.0)
 
 ## Database
 
@@ -29,10 +25,7 @@ The service connects to a PostgreSQL database. The following environment variabl
 
 ## To be done
 
-*   `Makros`: Include ports, IP-adresses, and other vars in env or similar file.
-*   `ORM`: For now Im talking to the db via SQL comands.
-*   `End-Points`: There are a lot more end points to be written.
-	*	get_note(id)
-	*	delete_post(id)
-	*	..
-*	`Logging`: add better logging with tracing.
+*   Use environment variables for configuration (ports, IP addresses).
+*   Consider using an ORM for database interaction instead of raw SQL.
+*   Implement more endpoints (e.g., for editing and deleting notes).
+*   Add structured logging with `tracing`.
