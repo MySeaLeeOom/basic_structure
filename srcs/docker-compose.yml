@@ -44,6 +44,10 @@ services:
     restart: always
     networks:
       - transcendence
+    environment:
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
 
   nginx:
     build:
