@@ -11,7 +11,7 @@ Master-detail layout for Notes view using Volt UI components. Fixed-width sideba
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Header: "Mycelium" (Volt Toolbar)                  │
+│  Header: "Mycelium"    [Home] [Notes] [Mindmap]     │
 ├───────────────┬─────────────────────────────────────┤
 │  Sidebar      │  Document View                      │
 │  w-64         │  bg-surface-200                     │
@@ -28,6 +28,8 @@ Master-detail layout for Notes view using Volt UI components. Fixed-width sideba
 └───────────────┴─────────────────────────────────────┘
 ```
 
+> Navigation added in [sidebar-layout-navigation](./2026-02-02-sidebar-layout-navigation.md).
+
 ## Volt Components
 
 | Component | Usage | Why |
@@ -41,21 +43,29 @@ Master-detail layout for Notes view using Volt UI components. Fixed-width sideba
 ```
 src/
 ├── views/
-│   └── NotesView.vue      # Master-detail layout
+│   ├── HomeView.vue       # Dashboard (uses SidebarLayout)
+│   ├── NotesView.vue      # Notes master-detail
+│   └── MindmapView.vue    # Mindmap (uses SidebarLayout)
 ├── components/
-│   └── Header.vue         # App header with Toolbar
+│   ├── Header.vue         # App header with nav links
+│   └── layouts/
+│       └── SidebarLayout.vue  # Reusable sidebar wrapper
 ├── data/
-│   └── notes.ts           # Note interface + placeholder data
+│   └── notes.ts           # Note interface (type only)
 ├── volt/                  # Volt UI components (60+)
 │   ├── Listbox.vue
 │   ├── Card.vue
 │   ├── Toolbar.vue
 │   └── ...
 └── assets/
-    └── base.css           # Theme variables + fonts
+    └── base.css           # Theme variables + @layer components
 ```
 
 ## NotesView Implementation
+
+> **Note:** This shows the initial scaffold. For current implementation with API integration and create form, see [notes-api-integration](./2026-02-01-notes-api-integration.md).
+
+**Initial scaffold (static data):**
 
 ```vue
 <script setup lang="ts">
@@ -66,30 +76,33 @@ import { notes, type Note } from '@/data/notes';
 
 const selectedNote = ref<Note>(notes[0]!);
 </script>
+```
+
+**Current implementation** uses SidebarLayout wrapper and fetches from API:
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import SidebarLayout from '@/components/layouts/SidebarLayout.vue';
+import Listbox from '@/volt/Listbox.vue';
+import type { Note } from '@/data/notes';
+
+const notes = ref<Note[]>([]);
+const selectedNote = ref<Note | null>(null);
+
+async function fetchNotes() { /* ... */ }
+onMounted(fetchNotes);
+</script>
 
 <template>
-  <div class="flex h-[calc(100vh-60px)]">
-    <!-- Sidebar -->
-    <aside class="w-64 shrink-0 ...">
-      <Listbox
-        v-model="selectedNote"
-        :options="notes"
-        optionLabel="title"
-        dataKey="id"
-        pt:root:class="border-0 shadow-none bg-transparent"
-      />
-    </aside>
-
-    <!-- Document -->
-    <main class="flex-1 ...">
-      <Card pt:root:class="w-full max-w-3xl min-h-[800px]">
-        <template #title>{{ selectedNote.title }}</template>
-        <template #content>
-          <pre>{{ selectedNote.content }}</pre>
-        </template>
-      </Card>
-    </main>
-  </div>
+  <SidebarLayout>
+    <template #sidebar>
+      <Listbox :modelValue="selectedNote" :options="notes" ... />
+    </template>
+    <div class="document-container">
+      <Card v-if="selectedNote" pt:root:class="card-document">...</Card>
+    </div>
+  </SidebarLayout>
 </template>
 ```
 
@@ -155,17 +168,13 @@ When binding to objects, use `dataKey` for proper comparison:
 
 ```ts
 export interface Note {
-  id: string;
+  id: number;       // Matches PostgreSQL SERIAL
   title: string;
-  content: string;  // Raw markdown (to be rendered)
+  content: string;
 }
-
-export const notes: Note[] = [
-  { id: '1', title: 'Meeting Notes', content: '# Meeting...' },
-  { id: '2', title: 'Project Ideas', content: '# Project...' },
-  { id: '3', title: 'Shopping List', content: '# Shopping...' },
-];
 ```
+
+> **Note:** Placeholder data removed after API integration. See [notes-api-integration](./2026-02-01-notes-api-integration.md).
 
 ## Dependencies
 
@@ -253,4 +262,8 @@ Added semantic classes to `src/assets/base.css`:
 | `src/components/layouts/SidebarLayout.vue` | New layout wrapper |
 | `src/assets/base.css` | Added `@layer components` |
 | `src/views/NotesView.vue` | Refactored to use semantic classes |
-```
+
+## Related Devlogs
+
+- [Notes API Integration](./2026-02-01-notes-api-integration.md) - API integration & create form
+- [SidebarLayout & Navigation](./2026-02-02-sidebar-layout-navigation.md) - All views use SidebarLayout, header nav
