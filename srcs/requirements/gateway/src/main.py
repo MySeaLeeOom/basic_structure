@@ -58,30 +58,40 @@ SERVICES = {
 	"/api/notes": "http://notes:8000/api/notes"
 }
 
+
 async def verify_token(id_token: str):
+    # verify token is good
     jwks = await oauth.auth0.fetch_jwk_set()
     try:
         decoded_jwt = jwt.decode(s=id_token, key=jwks)
     except Exception:
         print("Failed to decode jwt")
         raise HTTPException(status_code=401)
-    metadata = await oauth.auth0.load_server_metadata()
+    metadata = await oauth.auth0.load_server_metadata() 
     if decoded_jwt["iss"] != metadata["issuer"]:
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=401)  
     if decoded_jwt["aud"] != settings.oidc_client_id:
         raise HTTPException(status_code=401)
+
+	# check it hasn't expired
     exp = datetime.fromtimestamp(decoded_jwt["exp"])
     if exp < datetime.now():
         raise HTTPException(status_code=401)
+    
     return decoded_jwt
 
+
+# to check if user is logged in
 async def verify_user(request: Request):
     id_token = request.session.get("id_token")
+
     if id_token is None:
         raise HTTPException(status_code=401)
+
     decoded_jwt = await verify_token(id_token=id_token)
     user_id = decoded_jwt["sub"]
     user = USER_DATABASE.get(user_id, None)
+
     if user is None:
         raise HTTPException(status_code=401)
     return user
@@ -127,6 +137,7 @@ async def auth(request: Request):
     request.session["id_token"] = token.get("id_token")
     return RedirectResponse(url="/")
 
+
 @app.get("/api/userinfo")
 async def userinfo(request: Request, user: User = Depends(verify_user)):
     print(f"Successful log in: user_id={user.id} name={user.name}")
@@ -136,6 +147,7 @@ async def userinfo(request: Request, user: User = Depends(verify_user)):
             "name": user.name,
         }
     }
+
 
 # handler for everything
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"])
