@@ -59,7 +59,7 @@ const theme = ref<ListboxPassThroughOptions>({
         text-surface-700 dark:text-surface-0
         hover:not-p-selected:bg-surface-100 dark:hover:not-p-selected:bg-surface-800 hover:not-p-selected:text-surface-800 dark:hover:not-p-selected:text-surface-0
         p-focus:not-p-selected:bg-surface-100 dark:p-focus:not-p-selected:bg-surface-800 p-focus:not-p-selected:text-surface-800 dark:p-focus:not-p-selected:text-surface-0
-        p-selected:bg-highlight p-selected:p-focus:bg-highlight-emphasis
+        p-selected:bg-highlight p-selected:text-surface-0 p-selected:p-focus:bg-highlight-emphasis
         group-p-disabled:text-surface-500 dark:group-p-disabled:text-surface-400 group-p-disabled:pointer-events-none
         p-disabled:opacity-60 p-disabled:pointer-events-none
         transition-colors duration-200`,

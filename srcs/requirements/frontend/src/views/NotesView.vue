@@ -61,18 +61,15 @@ onMounted(fetchNotes);
         <Button
           v-if="!showCreateForm"
           label="+"
-          severity="secondary"
           text
           rounded
           @click="showCreateForm = true"
-          pt:root:class="!text-xl !w-8 !h-8 !p-0"
         />
       </div>
 
-      <p v-if="error" class="text-red-500 text-sm">{{ error }}</p>
+      <p v-if="error" class="error-text">{{ error }}</p>
       <Listbox
-        :modelValue="selectedNote"
-        @update:modelValue="(val: Note) => val && (selectedNote = val)"
+        v-model="selectedNote"
         :options="notes"
         optionLabel="title"
         dataKey="id"
@@ -99,7 +96,7 @@ onMounted(fetchNotes);
           <pre class="document-body">{{ selectedNote.content }}</pre>
         </template>
       </Card>
-      <div v-else class="p-8 text-center text-muted-color">Select a note</div>
+      <div v-else class="empty-state">Select a note</div>
     </div>
   </SidebarLayout>
 </template>

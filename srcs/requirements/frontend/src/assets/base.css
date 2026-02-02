@@ -23,6 +23,14 @@
     @apply whitespace-pre-wrap font-sans leading-relaxed
            text-surface-700 dark:text-surface-300;
   }
+
+  .error-text {
+    @apply text-red-500 text-sm;
+  }
+
+  .empty-state {
+    @apply p-8 text-center text-muted-color;
+  }
 }
 
 :root {
