@@ -12,7 +12,7 @@ const navItems = [
 <template>
   <Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
-      <span class="text-xl font-bold text-primary-500">Mycelium</span>
+      <RouterLink to="/" class="text-xl font-bold text-primary-500 no-underline">Mycelium</RouterLink>
     </template>
     <template #center>
       <nav class="flex gap-1">

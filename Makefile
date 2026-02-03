@@ -5,6 +5,10 @@ all: up
 up:
 	$(COMPOSE) up -d --build
 
+logs:
+	$(COMPOSE) up --build
+
+
 down:
 	$(COMPOSE) down
 

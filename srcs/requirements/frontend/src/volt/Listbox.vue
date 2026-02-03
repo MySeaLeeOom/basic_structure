@@ -53,6 +53,19 @@ const theme = ref<ListboxPassThroughOptions>({
     filterIcon: `text-surface-400`,
     listContainer: `overflow-auto`,
     virtualScroller: ``,
+    // Helper elements for accessibility - hide them
+    // @ts-ignore
+    hiddenFirstFocusableElement: {
+        root: "sr-only",
+    },
+    // @ts-ignore
+    hiddenLastFocusableElement: {
+        root: "sr-only",
+    },
+    // @ts-ignore
+    pcHiddenSelectedMessage: {
+        root: "sr-only",
+    },
     list: `list-none m-0 p-1 outline-none flex flex-col gap-[2px]`,
     optionGroup: `m-0 px-3 py-2 text-surface-500 dark:text-surface-400 font-semibold`,
     option: `flex items-center cursor-pointer relative overflow-hidden px-3 py-2 border-none rounded-sm
