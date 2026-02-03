@@ -1,5 +1,11 @@
 import { createApp } from "./main";
 
+declare global {
+  interface Window {
+    __INITIAL_STATE__?: any;
+  }
+}
+
 const { app, router, pinia } = createApp("client");
 
 // HYDRATION:
