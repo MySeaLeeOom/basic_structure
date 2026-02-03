@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Card from '@/volt/Card.vue';
-import type { Note } from '@/data/notes';
+import type { Note } from '@/types';
 
 defineProps<{
   note: Note;

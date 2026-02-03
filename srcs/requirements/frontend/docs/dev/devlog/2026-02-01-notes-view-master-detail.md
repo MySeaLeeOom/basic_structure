@@ -164,7 +164,7 @@ When binding to objects, use `dataKey` for proper comparison:
 
 ## Data Model
 
-`src/data/notes.ts`:
+`src/data/notes.ts`: (types.ts)
 
 ```ts
 export interface Note {

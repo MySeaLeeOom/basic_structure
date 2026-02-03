@@ -46,8 +46,18 @@ async function createServer() {
         render = (await import('./dist/server/entry-server.js')).render
       }
 
-      const { html } = await render(url)
-      const responseHtml = template.replace('<!--ssr-outlet-->', html)
+      const { html, state } = await render(url)
+      
+      // INJECTION:
+      // 1. Replace <!--ssr-outlet--> with the rendered HTML app.
+      // 2. Replace <!--pinia-state--> with the serialized state script.
+      // This ensures the browser receives both the Visuals (HTML) and the Data (State).
+      const responseHtml = template
+        .replace('<!--ssr-outlet-->', html)
+        .replace(
+          '<!--pinia-state-->',
+          `<script>window.__INITIAL_STATE__=${state}</script>`
+        )
       
       reply.type('text/html').send(responseHtml)
     } catch (e) {

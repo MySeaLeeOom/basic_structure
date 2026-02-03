@@ -130,7 +130,7 @@ Vue's dependency tracking ensures both stay synchronized automatically.
 
 ## Data Source
 
-The notes come from `@/data/notes.ts`:
+The notes come from `@/data/notes.ts`: (CHANGE TO types.ts)
 
 ```typescript
 export interface Note {
