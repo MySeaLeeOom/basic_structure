@@ -5,8 +5,9 @@ This service is a simple REST API for creating and retrieving notes. It is writt
 ## Endpoints
 
 *   `GET /api/notes`: Retrieves all notes.
-*   `GET /api/note/{id}`: Retrieves a single note by its ID.
+*   `GET /api/notes/{id}`: Retrieves a single note by its ID.
 *   `POST /api/notes`: Creates a new note. Requires a JSON object with `title` and `content` fields.
+*   `DELETE /api/notes/{id}`: Deletes a note by its ID.
 
 ## Dependencies
 
@@ -26,6 +27,5 @@ The service connects to a PostgreSQL database. The following environment variabl
 ## To be done
 
 *   Use environment variables for configuration (ports, IP addresses).
-*   Consider using an ORM for database interaction instead of raw SQL.
-*   Implement more endpoints (e.g., for editing and deleting notes).
+*   Implement editing endpoint.
 *   Add structured logging with `tracing`.
