@@ -12,15 +12,18 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - NOTES_API_URL=http://notes:8000     # Internal SSR communication 
+      - NOTES_API_URL=http://notes:3000     # Internal SSR communication 
       - NODE_ENV=development
-
+      # Allow connection from gateway container to vite development server 
+      # https://vite.dev/config/server-options#server-allowedhosts
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=gateway
+  
   notes:
     build:
-      context: ./requirements/notes
+      context: ./requirements/notes-rs
       dockerfile: Dockerfile
-    image: notes
-    container_name: notes
+    image: notes-rs
+    container_name: notes-rs
     restart: always
     environment:
       DB_HOST: postgres
@@ -31,6 +34,20 @@ services:
       - postgres
     networks:
       - transcendence
+
+  gateway:
+    build:
+      context: ./requirements/gateway
+      dockerfile: Dockerfile
+    image: gateway
+    container_name: gateway
+    restart: always
+    networks:
+      - transcendence
+    environment:
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
 
   nginx:
     build:
