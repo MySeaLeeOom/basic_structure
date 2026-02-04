@@ -17,7 +17,7 @@ async fn main() {
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note))
 		.with_state(db_pool);
 
-	let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+	let addr = SocketAddr::from(([0, 0, 0, 0], 3003));
 	let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 	axum::serve(listener, app).await.unwrap();
 }
