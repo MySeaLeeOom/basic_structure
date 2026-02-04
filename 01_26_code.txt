@@ -43,9 +43,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
 
-EXPOSE 8000
+EXPOSE 3003
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "3003", "--reload"]
 
 -------------------------------------------------------------------------------
 FILE: ./srcs/requirements/notes/.dockerignore
@@ -190,7 +190,7 @@ server {
 
     # API routes (specific)
     location /api/notes {
-        proxy_pass http://notes:8000;
+        proxy_pass http://notes:3003;
     }
 
     # location /api/auth {

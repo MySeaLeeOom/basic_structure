@@ -55,7 +55,7 @@ http_client = httpx.AsyncClient()
 
 SERVICES = {
 	"/": "http://frontend:3000",
-	"/api/notes": "http://notes:8000/api/notes"
+	"/api/notes": "http://notes:3003/api/notes"
 }
 
 
