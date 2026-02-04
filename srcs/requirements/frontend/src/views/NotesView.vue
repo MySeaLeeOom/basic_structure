@@ -57,11 +57,7 @@ onServerPrefetch(async () => {
 				<Button v-if="!showCreateForm" label="+" text rounded @click="showCreateForm = true"></button>
 			</div>
 
-			<!-- <p v-if="error" class="error-text">{{ error }}</p>
-			<Listbox v-model="selectedNote" :options="notes" optionLabel="title" dataKey="id" /> -->
-			<!-- Display error from store if exists -->
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
-			<!-- Loading state -->
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
