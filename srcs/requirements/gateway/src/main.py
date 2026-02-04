@@ -54,8 +54,8 @@ http_client = httpx.AsyncClient()
 
 
 SERVICES = {
-	"/": "http://frontend:3000",
-	"/api/notes": "http://notes:3003/api/notes"
+	"/api/notes": "http://notes:3003",
+	"/": "http://frontend:3000"
 }
 
 
@@ -152,20 +152,29 @@ async def userinfo(request: Request, user: User = Depends(verify_user)):
 # handler for everything
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"])
 async def forward(request: Request, path: str):
-    # where is the user trying to go?
-	service = request.url.path
-
-	# if it's an API endpoint, forward to the relevant service
-    # otherwise, forward to the frontend service
-	if service.startswith("/api"):
-		upstream = SERVICES.get(service, None)
+	# find the service that matches the path
+	req_path = "/" + path
+	for service_path, upstream in SERVICES.items():
+		if req_path.startswith(service_path):
+			break
+	# if we dont find a matching service, then 404
 	else:
-		upstream = SERVICES.get("/", None)
-	print(f"the service is: {service}")
-
-	# if it's not a thing, 404
-	if upstream is None:
 		return Response(status_code=404)
+
+	# where is the user trying to go?
+	# service = request.url.path
+	# 
+	# # if it's an API endpoint, forward to the relevant service
+	# # otherwise, forward to the frontend service
+	# if service.startswith("/api"):
+	# 	upstream = SERVICES.get(service, None)
+	# else:
+	# 	upstream = SERVICES.get("/", None)
+	# print(f"the service is: {service}")
+
+	# # if it's not a thing, 404
+	# if upstream is None:
+	# 	return Response(status_code=404)
 
 	# craft request
 	body = await request.body()
