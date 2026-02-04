@@ -12,7 +12,7 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - NOTES_API_URL=http://notes:3000     # Internal SSR communication 
+      - NOTES_API_URL=http://notes:3003     # Internal SSR communication 
       - NODE_ENV=development
       # Allow connection from gateway container to vite development server 
       # https://vite.dev/config/server-options#server-allowedhosts
