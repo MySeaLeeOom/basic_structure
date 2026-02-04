@@ -36,3 +36,17 @@ pub async fn post_note(State(pool): State<PgPool>, Json(payload): Json<CreateNot
 
 	Ok(Json(note))
 }
+
+pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result<StatusCode, StatusCode> {
+	let result = sqlx::query("DELETE FROM notes WHERE id = $1")
+		.bind(id)
+		.execute(&pool)
+		.await
+		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+	if result.rows_affected() == 0 {
+		return Err(StatusCode::NOT_FOUND);
+	}
+
+	Ok(StatusCode::NO_CONTENT)
+}
