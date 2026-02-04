@@ -61,6 +61,7 @@ services:
     ports:
       - "0.0.0.0:8080:80"
       - "0.0.0.0:8081:81"
+      - "0.0.0.0:8082:82"
 
   postgres:
     build: ./requirements/postgres
