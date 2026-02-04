@@ -6,8 +6,8 @@ all: up
 up:
 	$(COMPOSE) up -d --build $(FLAGS)
 
-# logs:
-# 	$(COMPOSE) up --build
+live:
+	$(COMPOSE) up --build
 
 
 down:
