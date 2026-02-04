@@ -4,7 +4,7 @@ FLAGS   := --remove-orphans
 all: up
 
 up:
-	$(COMPOSE) up --build $(FLAGS)
+	$(COMPOSE) -d up --build $(FLAGS)
 
 down:
 	$(COMPOSE) down $(FLAGS)

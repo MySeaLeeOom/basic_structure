@@ -17,23 +17,6 @@ services:
       # Allow connection from gateway container to vite development server 
       # https://vite.dev/config/server-options#server-allowedhosts
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=gateway
-
-  # notes:
-  #   build:
-  #     context: ./requirements/notes
-  #     dockerfile: Dockerfile
-  #   image: notes
-  #   container_name: notes
-  #   restart: always
-  #   environment:
-  #     DB_HOST: postgres
-  #     DB_USER: ${DB_USER}
-  #     DB_PASSWORD: ${DB_PASSWORD}
-  #     DB_NAME: ${DB_NAME}
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - transcendence
   
   notes:
     build:
