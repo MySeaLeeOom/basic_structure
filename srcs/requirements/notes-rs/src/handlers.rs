@@ -12,13 +12,13 @@ pub async fn get_all_notes(State(pool): State<PgPool>) -> Result<Json<Vec<Note>>
 }
 
 pub async fn get_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result<Json<Note>, StatusCode> {
-	let maybe_note = sqlx::query_as::<_, Note>("SELECT id, title, content FROM notes WHERE id = $1")
+	let note = sqlx::query_as::<_, Note>("SELECT id, title, content FROM notes WHERE id = $1")
 		.bind(id)
 		.fetch_optional(&pool)
 		.await
 		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?; 
 
-	match maybe_note {
+	match note {
 		Some(note) => Ok(Json(note)),
 		None => Err(StatusCode::NOT_FOUND),
 	}
@@ -49,4 +49,21 @@ pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result
 	}
 
 	Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn edit_note(State(pool): State<PgPool>, Path(id): Path<i32>, Json(payload): Json<CreateNote>) -> Result<Json<Note>, StatusCode> {
+	let note = sqlx::query_as::<_, Note>(
+		"UPDATE notes SET title = $1, content = $2 WHERE id = $3 RETURNING id, title, content"
+		)
+		.bind(payload.title)
+		.bind(payload.content)
+		.bind(id)
+		.fetch_optional(&pool)
+		.await
+		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?; 
+
+	match note {
+		Some(note) => Ok(Json(note)),
+		None => Err(StatusCode::NOT_FOUND),
+	}
 }
