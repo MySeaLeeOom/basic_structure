@@ -37,10 +37,10 @@ export const useNoteStore = defineStore("notes", () => {
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
 
-			// Auto-select first note if none selected
-			if (!selectedNote.value && notes.value.length) {
-				selectedNote.value = notes.value[0]!;
-			}
+			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load)
+			// if (!selectedNote.value && notes.value.length) {
+			// 	selectedNote.value = notes.value[0]!;
+			// }
 
 			// Update fetch timestamp
 			lastFetchTimestamp.value = currentTime;
@@ -74,6 +74,29 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 	}
 
+	async function editNote(id:number|null, title:string, content:string)
+	{
+		if (id===null || id ===undefined){
+			createNote(title, content);
+			return;
+		}
+		try{
+			const response = await fetch("/api/notes", {
+				method: "PUT",
+				headers: {"Content-Type":"application/json"},
+				body: JSON.stringify({id:id, title:title.trim(), content:content})
+			})
+			if (response.ok) throw new Error(`HTTP ${response.status}`);
+			const note: Note = await response.json()
+			notes.value.push(note);
+			selectedNote.value = note;
+		}catch (e){
+			const errorMsg = e instanceof Error ? e.message : "Save failed";
+			error.value = errorMsg;
+			console.error("Failed to create note:", errorMsg);
+		}
+	}
+
 	// Computed properties for easy access and potential RAG integration
 	const notesCount = computed(() => notes.value.length);
 	const getNoteTitles = computed(() => notes.value.map((note) => note.title));
@@ -93,6 +116,7 @@ export const useNoteStore = defineStore("notes", () => {
 		getNoteTitles,
 		fetchNotes,
 		createNote,
+		editNote,
 		searchNotes,
 	};
 });
