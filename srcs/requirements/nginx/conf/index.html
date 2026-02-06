@@ -14,6 +14,11 @@
     <h1>Notes Service: Proof of Concept</h1>
 
     <div class="box">
+        <h3>User:</h3>
+        <div id="userinfo"></div>
+    </div>
+
+    <div class="box">
         <h3>Create a New Poem</h3>
         <textarea id="noteContent" placeholder="Type your note here..."></textarea><br>
         <button onclick="saveNote()">Save to Database</button>
@@ -56,6 +61,24 @@
                 output.textContent = "Error fetching: " + err;
             }
         }
+
+        const loginButton = `<a href="/api/login">Login</a>`;
+        async function getUserInfo() {
+            const output = document.querySelector("#userinfo");
+            try {
+                const response = await fetch('/api/userinfo');
+                if (response.status == 200) {
+                    const data = await response.json();
+                    output.innerHTML = `Hello, ${data["userinfo"]["name"]}`;
+                } else {
+                    output.innerHTML = loginButton;
+                }
+            } catch (err) {
+                output.innerHtml = loginButton;
+            }
+        }
+
+        getUserInfo();
     </script>
 </body>
 </html>

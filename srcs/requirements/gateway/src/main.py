@@ -30,16 +30,14 @@ oauth.register(
 	#server_metadata_url=settings.oidc_config_endpoint,
     #request_token_url='',
     #request_token_params=None,
-    access_token_url='https://api.intra.42.fr/oauth/token',
+    access_token_url='https://github.com/login/oauth/access_token',
     access_token_params=None,
-    authorize_url='https://api.intra.42.fr/oauth/authorize',
+    authorize_url='https://github.com/login/oauth/authorize',
     authorize_params=None,
 	client_id=settings.oidc_client_id,
 	client_secret=settings.oidc_client_secret,
-	client_kwargs={"scope": "public"},
+	#client_kwargs={"scope": "public"},
 )
-
-print(oauth)
 
 # user class
 @dataclass
@@ -59,37 +57,15 @@ SERVICES = {
 }
 
 
-async def verify_token(id_token: str):
-    # verify token is good
-    jwks = await oauth.auth0.fetch_jwk_set()
-    try:
-        decoded_jwt = jwt.decode(s=id_token, key=jwks)
-    except Exception:
-        print("Failed to decode jwt")
-        raise HTTPException(status_code=401)
-    metadata = await oauth.auth0.load_server_metadata() 
-    if decoded_jwt["iss"] != metadata["issuer"]:
-        raise HTTPException(status_code=401)  
-    if decoded_jwt["aud"] != settings.oidc_client_id:
-        raise HTTPException(status_code=401)
-
-	# check it hasn't expired
-    exp = datetime.fromtimestamp(decoded_jwt["exp"])
-    if exp < datetime.now():
-        raise HTTPException(status_code=401)
-    
-    return decoded_jwt
-
-
 # to check if user is logged in
 async def verify_user(request: Request):
-    id_token = request.session.get("id_token")
+    access_token = request.session.get("access_token")
 
-    if id_token is None:
+    if access_token is None:
         raise HTTPException(status_code=401)
 
-    decoded_jwt = await verify_token(id_token=id_token)
-    user_id = decoded_jwt["sub"]
+    userinfo = await get_github_user_info(access_token)
+    user_id = userinfo["id"]
     user = USER_DATABASE.get(user_id, None)
 
     if user is None:
@@ -97,10 +73,24 @@ async def verify_user(request: Request):
     return user
 
 
+async def get_github_user_info(token: str):
+    headers = {
+         "authorization": f"bearer {token}"
+	}
+    response = await http_client.request(
+		"GET",
+		"https://api.github.com/user",
+		headers=headers
+	)
+    if response.status_code != 200:
+         raise HTTPException(status_code=401)
+    return response.json()
+
+
 @app.get("/api/login")
 async def login(request: Request):
     # TODO correct way: redirect_uri = request.url_for("auth")
-    redirect_uri = 'http://localhost:8080/api/auth'
+    redirect_uri = 'http://localhost:8081/api/auth'
     # user gets redirected to login page (e.g. on 42 intra)
     # we also pass where to go if the login succeeds
     return await oauth.auth0.authorize_redirect(request, redirect_uri)
@@ -116,13 +106,14 @@ async def auth(request: Request):
         print("An error occurred while verifying authorization response.")
         raise HTTPException(status_code=401)
     print(token)
-    userinfo = token.get("userinfo")
+    userinfo = await get_github_user_info(token["access_token"])
+    print(userinfo)
     if not userinfo:
         raise ValueError()
 
     user_dict = dict(userinfo)
-    user_id = user_dict["sub"]
-    name = user_dict["name"]
+    user_id = user_dict["id"]
+    name = user_dict["login"]
     user = USER_DATABASE.get(user_id, None)
 
 	# if user did not exist, put it in the database
@@ -133,8 +124,8 @@ async def auth(request: Request):
     else:
         print(f"The user exists; skipped registration. user_id={user.id} name={user.name}")
 
-	# put the token in the session
-    request.session["id_token"] = token.get("id_token")
+	# put the token in the session (encoded as JWT)
+    request.session["access_token"] = token["access_token"]
     return RedirectResponse(url="/")
 
 
@@ -161,7 +152,7 @@ async def forward(request: Request, path: str):
 		upstream = SERVICES.get(service, None)
 	else:
 		upstream = SERVICES.get("/", None)
-	print(f"the service is: {service}")
+	#print(f"the service is: {service}")
 
 	# if it's not a thing, 404
 	if upstream is None:
@@ -184,12 +175,12 @@ async def forward(request: Request, path: str):
 	# get response
 	response = await http_client.request(
 		method,
-		f"{upstream}/{path}",
+		f"{upstream.strip(path)}/{path}", # TODO This is wrong for the Vue frontend
 		content=body,
 		params=query_params,
 		headers=headers
 	)
-	print(f"-> reponse: {response}")
+	#print(f"-> reponse: {response}")
 
 	return Response(
         content=response.content,
