@@ -4,35 +4,32 @@ import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteCreateForm from "@/components/notes/NoteCreateForm.vue";
+import NoteEdit from "@/components/notes/NoteEdit.vue";
 import NoteDisplay from "@/components/notes/NoteDisplay.vue";
 
-// Previous implementation using composable
-// import { useNotes } from "@/composables/useNotes";
-// const { notes, selectedNote, error, fetchNotes, createNote } = useNotes();
-
-// New implementation using Pinia store
 import { useNoteStore } from "@/stores/noteStore";
 
 // Create store instance
 const noteStore = useNoteStore();
 
 // Ref to control create form visibility
-const showCreateForm = ref(false);
+const showEditForm = ref(true);
 
 // Function to handle note creation
 async function handleCreate(title: string, content: string) {
 	// Use store's create note method
 	await noteStore.createNote(title, content);
 	// Close create form
-	showCreateForm.value = false;
+	showEditForm.value = false;
 }
+
 
 // Function to cancel note creation
 function handleCancel() {
-	showCreateForm.value = false;
+	showEditForm.value = false;
+	//for now, unselect note ? TODO:check
+	noteStore.selectedNote = null;
 }
-
-// onServerPrefetch
 
 // Fetch notes when component mounts
 onMounted(() => {
@@ -54,7 +51,7 @@ onServerPrefetch(async () => {
 		<template #sidebar>
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="section-title !mb-0">Notes</h2>
-				<Button v-if="!showCreateForm" label="+" text rounded @click="showCreateForm = true"></button>
+				<Button v-if="!showEditForm" label="+" text rounded @click="showEditForm = true"></button>
 			</div>
 
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
@@ -66,8 +63,14 @@ onServerPrefetch(async () => {
 		</template>
 
 		<div class="document-container">
-			<NoteCreateForm v-if="showCreateForm" @create="handleCreate" @cancel="handleCancel" />
-			<NoteDisplay v-else-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
+			<!-- creation only -->
+			<!-- <NoteCreateForm v-if="showCreateForm" @create="handleSave" @cancel="handleCancel" /> -->
+
+			<!-- EDIT NOTE -->
+			<NoteEdit v-if="showEditForm" @cancel="handleCancel" :note="noteStore.selectedNote"/>
+			<!-- PREVIEW -->
+			<NoteDisplay v-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
+			<!-- IT NO NOTE SELECTED -->
 			<div v-else-if="!noteStore.isLoading" class="empty-state">Select a note</div>
 		</div>
 	</SidebarLayout>
