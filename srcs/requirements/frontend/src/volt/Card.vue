@@ -29,8 +29,7 @@ const theme = ref<CardPassThroughOptions>({
     body: `p-5 flex flex-col gap-2`,
     caption: `flex flex-col gap-2`,
     title: `font-medium text-xl`,
-    subtitle: `text-surface-500 dark:text-surface-400`,
-    content: ``,
+    subtitle: `text-surface-500 dark:text-surface-400`,    content: ``,
     footer: ``
 });
 </script>

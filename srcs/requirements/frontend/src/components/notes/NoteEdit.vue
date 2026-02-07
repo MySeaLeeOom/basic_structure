@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Card from '@/volt/Card.vue';
 import Button from '@/volt/Button.vue';
 import InputText from '@/volt/InputText.vue';
@@ -9,7 +9,6 @@ import { useNoteStore } from '@/stores/noteStore';
 
 // ----
 import { useConfirm } from 'primevue/useconfirm';
-import VoltConfirmDialog from '@/volt/ConfirmDialog.vue';
 
 const confirm = useConfirm();
 const noteStore = useNoteStore();
@@ -27,12 +26,14 @@ const id = ref<number | null>(null);
 
 const currentNote = ref(props.note);
 
-// Initialize form with existing note data if present
-if (currentNote.value) {
-  title.value = currentNote.value.title;
-  content.value = currentNote.value.content;
-  id.value = currentNote.value.id;
-}
+// Watch for prop changes to update local state
+// We need this because we work on the note locally until SAVE
+watch(() => props.note, (newNote) => {
+  currentNote.value = newNote;
+  title.value = newNote?.title || '';
+  content.value = newNote?.content || '';
+  id.value = newNote?.id || null;
+}, { immediate: true });
 
 // Check if there are unsaved changes
 const hasUnsavedChanges = computed(() => {
@@ -45,19 +46,33 @@ const hasUnsavedChanges = computed(() => {
   );
 });
 
-function handleSave() {
-  noteStore.editNote(id.value, title.value, content.value);
-  emit('cancel'); // Close the editor after saving
+async function handleSave() {
+  await noteStore.editNote(id.value, title.value, content.value);
+
+  // If we created a new note, sync the new id value & currentNote so we can keep editing
+  if (id.value === null && noteStore.selectedNote) {
+    id.value = noteStore.selectedNote.id;
+    currentNote.value = noteStore.selectedNote;
+  }
 }
 
 function handleCancel() {
   if (hasUnsavedChanges.value) {
     confirm.require({
-      message: 'You have unsaved changes. Do you want to discard them?',
       header: 'Unsaved Changes',
+      message: 'You have unsaved changes. Do you want to discard them?',
       icon: 'pi pi-exclamation-triangle',
+      acceptProps: {
+        label: 'Discard',
+        severity: 'danger'
+      },
+      rejectProps: {
+        label: 'Keep Editing',
+        severity: 'secondary'
+      },
       accept: () => {
         //cancel closing the edit note
+        // noteStore.selectedNote = null;
         emit('cancel');
       },
       reject: () => {
@@ -65,6 +80,7 @@ function handleCancel() {
       }
     });
   } else {
+    // noteStore.selectedNote = null;
     emit('cancel');
   }
 }

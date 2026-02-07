@@ -13,8 +13,14 @@ defineProps<{
       <slot name="sidebar" />
     </aside>
 
-    <main class="flex-1 bg-surface-200 dark:bg-surface-950 overflow-auto">
+    <main class="flex-1 flex gap-8 p-8 bg-surface-200 dark:bg-surface-950 overflow-auto items-start justify-center">
       <slot />
     </main>
   </div>
 </template>
+
+<style scoped>
+/* .flex-1 {
+  gap: 1rem;
+} */
+</style>
