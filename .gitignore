@@ -5,7 +5,7 @@ node_modules
 # Claude Code config
 **/DOCS/claude/
 **/.claude/
-# CLAUDE.md
+CLAUDE.md
 
 copilot-instructions.md
 masha*.*
