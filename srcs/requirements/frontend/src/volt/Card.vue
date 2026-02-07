@@ -30,3 +30,6 @@ const theme = ref<CardPassThroughOptions>({
     footer: ``
 });
 </script>
+
+<!-- body: `p-5 flex flex-col gap-2 flex-1 min-h-0`, // Added flex-1 min-h-0
+content: `flex-1 min-h-0`, // Added flex-1 min-h-0 -->

@@ -16,12 +16,25 @@ By binding both the Editor and Preview components to the same `editStore`, we ac
 - **`NoteEdit.vue`:** Binds `v-model` directly to `editStore.draftTitle` and `editStore.draftContent`.
 - **`NoteDisplay.vue`:** Now observes `editStore.draftContent` instead of a static `props.note`.
 
-## 3. Persistent Workspace Layout
+## 3. Responsive Workspace Layout
 The UI was moved from a "Modal/Form" approach to a "Workspace" approach.
 - **`NotesView.vue`:** Conditionally renders `NoteEdit` and `NoteDisplay` side-by-side.
-- **`SidebarLayout.vue`:** Updated to use horizontal flex layouts, ensuring the editor and preview share the screen effectively.
+- **`SidebarLayout.vue`:** Implements **Mobile-First** responsiveness.
+    - **Mobile:** Uses `flex-col` and `w-full` sidebar (stacked view).
+    - **Desktop:** Uses `md:flex-row` and `md:w-64` (side-by-side view).
 
-## 4. Guarded Navigation
+## 4. Height & Overflow Management
+To prevent the application from growing beyond the viewport or the editor cards from expanding infinitely:
+- **Card Constraints:** Applied `flex-1` and `min-h-0` to the `Card` component’s internal slots ([src/volt/Card.vue](src/volt/Card.vue)).
+- **Scrolling:** The `Textarea` and `NoteDisplay` use `overflow-auto` and `resize-none` to ensure long notes create internal scrollbars instead of breaking the layout.
+
+## 5. Sidebar CRUD UI
+We've improved the sidebar accessibility and management:
+- **Quick Delete:** Added a "Times/X" button to each list item in the `Listbox` that appears on hover (`group-hover/item`).
+- **Context Menus:** Implemented a right-click menu for advanced actions (Delete, etc.) using a custom `ContextMenu.vue` component.
+- **Safe Actions:** All deletion operations are wrapped in `confirm.require` to prevent accidental data loss.
+
+## 6. Guarded Navigation
 Implemented a "Discard Changes" workflow using PrimeVue’s `useConfirm`.
 - If `editStore.isDirty` is true when clicking "Cancel", the user is prompted to confirm discarding their work.
 - The `handleSave` logic was updated to stay in the editor after saving (preventing unwanted view closures while still syncing the new database ID).
