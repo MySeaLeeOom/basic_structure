@@ -111,6 +111,29 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 	}
 
+	async function deleteNote(id: number) {
+		error.value = null;
+		isLoading.value = true;
+		try {
+			const response = await fetch(`/api/notes/${id}`, {
+				method: "DELETE",
+			});
+
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+			notes.value = notes.value.filter((n) => n.id !== id);
+			if (selectedNote.value?.id === id) {
+				selectedNote.value = null;
+			}
+		} catch (catchError) {
+			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
+			error.value = errorMsg;
+			console.error("Failed to delete note:", errorMsg);
+		} finally {
+			isLoading.value = false;
+		}
+	}
+
 	// Computed properties for easy access and potential RAG integration
 	const notesCount = computed(() => notes.value.length);
 	const getNoteTitles = computed(() => notes.value.map((note) => note.title));
@@ -144,6 +167,7 @@ export const useNoteStore = defineStore("notes", () => {
 		fetchNotes,
 		createNote,
 		editNote,
+		deleteNote,
 		searchNotes,
 		resetSelected,
 	};
