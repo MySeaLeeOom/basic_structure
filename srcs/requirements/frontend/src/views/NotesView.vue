@@ -18,7 +18,7 @@ const noteStore = useNoteStore();
 const confirm = useConfirm();
 
 // Ref to control create form visibility
-const showEditForm = ref(false);
+const showEditForm = ref(true);
 
 
 
