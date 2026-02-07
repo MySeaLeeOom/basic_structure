@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: frontend_dev
     volumes:
-      - ./requirements/frontend:/app        # Mount code for live updates
+      - ./requirements/frontend:/app:z      # Mount for live updates (:z is for SELinux)
       - /app/node_modules                   # Protect container-specific libs
     networks:
       - transcendence                        # Connect to 'notes' and 'postgres' [cite: 21]
