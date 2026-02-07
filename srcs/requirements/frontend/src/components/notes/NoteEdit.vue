@@ -51,9 +51,21 @@ function handleCancel() {
   <Card pt:root:class="card-document">
     <template #title>New Note</template>
     <template #content>
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-4 h-full">
         <InputText v-model="editStore.draftTitle" placeholder="Title" fluid />
-        <Textarea v-model="editStore.draftContent" placeholder="Content..." rows="8" fluid />
+        <Textarea 
+          v-model="editStore.draftContent" 
+          placeholder="Content..." 
+          rows="8"
+          fluid 
+          class="flex-1 min-h-0 resize-none"
+        />
+        <!-- <Textarea 
+          v-model="editStore.draftContent" 
+            placeholder="Content..." 
+              rows="8" 
+                fluid /> -->
+
         <div class="flex gap-2 justify-end">
           <Button label="Cancel" severity="secondary" text @click="handleCancel" />
           <Button label="Save" :disabled="!editStore.draftTitle.trim()" @click="editStore.save" />

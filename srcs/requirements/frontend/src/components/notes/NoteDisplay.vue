@@ -9,7 +9,9 @@ const editStore = useEditStore();
   <Card pt:root:class="card-document">
     <template #title>{{ editStore.draftTitle }}</template>
     <template #content>
-      <pre class="document-body flex-1 overflow-auto">{{ editStore.draftContent }}</pre>
+      <div class="h-full flex flex-col min-h-0">
+        <pre class="document-body flex-1 overflow-auto">{{ editStore.draftContent }}</pre>
+      </div>
     </template>
   </Card>
 </template>
