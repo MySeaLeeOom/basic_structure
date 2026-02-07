@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
 import Card from '@/volt/Card.vue';
 import Button from '@/volt/Button.vue';
 import InputText from '@/volt/InputText.vue';
 import Textarea from '@/volt/Textarea.vue';
-import type { Note } from '@/types';
 import { useNoteStore } from '@/stores/noteStore';
 import { useEditStore } from '@/stores/editStore';
 // ----

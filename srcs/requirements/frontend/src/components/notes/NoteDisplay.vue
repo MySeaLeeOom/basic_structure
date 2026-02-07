@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import Card from '@/volt/Card.vue';
-import type { Note } from '@/types';
 import { useEditStore } from '@/stores/editStore';
 
 const editStore = useEditStore();
-defineProps<{
-  note: Note;
-}>();
 </script>
 
 <template>
