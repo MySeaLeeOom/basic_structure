@@ -37,10 +37,10 @@ export const useNoteStore = defineStore("notes", () => {
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
 
-			// Auto-select first note if none selected
-			if (!selectedNote.value && notes.value.length) {
-				selectedNote.value = notes.value[0]!;
-			}
+			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load)
+			// if (!selectedNote.value && notes.value.length) {
+			// 	selectedNote.value = notes.value[0]!;
+			// }
 
 			// Update fetch timestamp
 			lastFetchTimestamp.value = currentTime;
@@ -55,6 +55,8 @@ export const useNoteStore = defineStore("notes", () => {
 	}
 
 	async function createNote(title: string, content: string) {
+		error.value = null;
+		isLoading.value = true;
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
@@ -71,6 +73,64 @@ export const useNoteStore = defineStore("notes", () => {
 			const errorMsg = catchError instanceof Error ? catchError.message : "Create failed";
 			error.value = errorMsg;
 			console.error("Failed to create note:", errorMsg);
+		} finally {
+			isLoading.value = false;
+		}
+	}
+
+	async function editNote(id: number | null, title: string, content: string) {
+		if (id === null || id === undefined) {
+			await createNote(title, content);
+			return;
+		}
+
+		error.value = null;
+		isLoading.value = true;
+		try {
+			const response = await fetch(`/api/notes/${id}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title: title.trim(), content }),
+			});
+
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+			const updatedNote: Note = await response.json();
+
+			const index = notes.value.findIndex((n) => n.id === id);
+			if (index !== -1) {
+				notes.value[index] = updatedNote;
+			}
+			selectedNote.value = updatedNote;
+		} catch (e) {
+			const errorMsg = e instanceof Error ? e.message : "Save failed";
+			error.value = errorMsg;
+			console.error("Failed to edit note:", errorMsg);
+		} finally {
+			isLoading.value = false;
+		}
+	}
+
+	async function deleteNote(id: number) {
+		error.value = null;
+		isLoading.value = true;
+		try {
+			const response = await fetch(`/api/notes/${id}`, {
+				method: "DELETE",
+			});
+
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+			notes.value = notes.value.filter((n) => n.id !== id);
+			if (selectedNote.value?.id === id) {
+				selectedNote.value = null;
+			}
+		} catch (catchError) {
+			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
+			error.value = errorMsg;
+			console.error("Failed to delete note:", errorMsg);
+		} finally {
+			isLoading.value = false;
 		}
 	}
 
@@ -84,6 +144,19 @@ export const useNoteStore = defineStore("notes", () => {
 		return notes.value.filter((note) => note.title.toLowerCase().includes(lowercaseQuery) || note.content.toLowerCase().includes(lowercaseQuery));
 	}
 
+	function resetSelected() {
+		selectedNote.value = null;
+	}
+
+	// function setSelected(id: number | null) {
+	// 	if (id === null) {
+	// 		selectedNote.value = null;
+	// 		return;
+	// 	}
+	// 	const found = notes.value.find((n) => n.id === id);
+	// 	selectedNote.value = found || null;
+	// }
+
 	return {
 		notes,
 		selectedNote,
@@ -93,6 +166,9 @@ export const useNoteStore = defineStore("notes", () => {
 		getNoteTitles,
 		fetchNotes,
 		createNote,
+		editNote,
+		deleteNote,
 		searchNotes,
+		resetSelected,
 	};
 });
