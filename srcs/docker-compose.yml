@@ -3,11 +3,11 @@ services:
     build:
       context: ./requirements/frontend
       dockerfile: Dockerfile.dev
-    user: "1000:1000"             # <--- The Linux Fix (Safe on Mac too)
+    # user: "${UID:-1000}:${GID:-1000}" # <--- The Linux Fix (Safe on Mac too)
     container_name: frontend_dev
     volumes:
       - ./requirements/frontend:/app:z      # Mount for live updates (:z is for SELinux)
-      - /app/node_modules                   # Protect container-specific libs
+      - ./requirements/frontend/node_modules_image/:/app/node_modules:z # Protect container-specific libs
     networks:
       - transcendence                        # Connect to 'notes' and 'postgres' [cite: 21]
     # ports:

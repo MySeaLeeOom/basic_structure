@@ -117,7 +117,7 @@ onServerPrefetch(async () => {
 			<!-- EDIT NOTE -->
 			<NoteEdit v-if="noteStore.selectedNote || showEditForm" @cancel="handleCancel" :note="noteStore.selectedNote"/>
 			<!-- PREVIEW (UNCOMMENT THIS)-->
-			<!-- <NoteDisplay v-if="noteStore.selectedNote" :note="noteStore.selectedNote" /> -->
+			<NoteDisplay v-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
 			<!-- IT NO NOTE SELECTED -->
 			<div v-else-if="!noteStore.isLoading && !showEditForm  && !noteStore.selectedNote" class="empty-state">Select a note</div>
 		<!-- </div> -->
