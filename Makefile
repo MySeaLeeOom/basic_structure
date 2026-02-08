@@ -1,16 +1,24 @@
-COMPOSE = docker compose -f srcs/docker-compose.yml
+COMPOSE := docker compose -f srcs/docker-compose.yml
+FLAGS   := --remove-orphans
 
 all: up
 
 up:
+	$(COMPOSE) up -d --build $(FLAGS)
+
+live:
 	$(COMPOSE) up --build
 
+
 down:
-	$(COMPOSE) down
+	$(COMPOSE) down $(FLAGS)
 
 clean:
-	$(COMPOSE) down -v --rmi all
+	$(COMPOSE) down -v --rmi all $(FLAGS)
 
 re: clean all
 
-.PHONY: all up down clean re
+logs:
+	$(COMPOSE) logs -f $(service)
+
+.PHONY: all up down clean re logs

@@ -12,18 +12,18 @@ services:
     # ports:
     #   - "3000:3000"
     environment:
-      - NOTES_API_URL=http://notes:8000     # Internal SSR communication 
+      - NOTES_API_URL=http://notes:3003     # Internal SSR communication 
       - NODE_ENV=development
       # Allow connection from gateway container to vite development server 
       # https://vite.dev/config/server-options#server-allowedhosts
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=gateway
-
+  
   notes:
     build:
-      context: ./requirements/notes
+      context: ./requirements/notes-rs
       dockerfile: Dockerfile
-    image: notes
-    container_name: notes
+    image: notes-rs
+    container_name: notes-rs
     restart: always
     environment:
       DB_HOST: postgres
@@ -61,6 +61,7 @@ services:
     ports:
       - "0.0.0.0:8080:80"
       - "0.0.0.0:8081:81"
+      - "0.0.0.0:8082:82"
 
   postgres:
     build: ./requirements/postgres

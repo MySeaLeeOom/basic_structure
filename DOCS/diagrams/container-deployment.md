@@ -84,13 +84,13 @@ flowchart LR
   Host(Host Port 8080)
   Nginx[nginx:80]
   Frontend[frontend:3000]
-  Notes[notes:8000]
+  Notes[notes:3003]
   Postgres[(postgres:5432)]
 
   Browser -->|HTTP 8080| Host --> Nginx
   Nginx -->|proxy / →| Frontend
   Nginx -->|proxy /api/notes →| Notes
-  Frontend -->|internal: NOTES_API_URL=notes:8000| Notes
+  Frontend -->|internal: NOTES_API_URL=notes:3003| Notes
   Notes -->|postgres connection| Postgres
 
   subgraph docker_network [bridge network: transcendence]
@@ -107,7 +107,7 @@ flowchart LR
   %% Notes
   Note_Nginx["Host mapping: 8080:80 (exposed)"]
   Note_Frontend["frontend not exposed (internal 3000)"]
-  Note_Notes["notes not exposed (internal 8000)"]
+  Note_Notes["notes not exposed (internal 3003)"]
   Note_Postgres["postgres not exposed (internal 5432), volume: postgres_data"]
 
   Host --> Note_Nginx
