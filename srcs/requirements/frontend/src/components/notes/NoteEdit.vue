@@ -3,13 +3,13 @@ import Card from '@/volt/Card.vue';
 import Button from '@/volt/Button.vue';
 import InputText from '@/volt/InputText.vue';
 import Textarea from '@/volt/Textarea.vue';
-import { useNoteStore } from '@/stores/noteStore';
+// import { useNoteStore } from '@/stores/noteStore';
 import { useEditStore } from '@/stores/editStore';
 // ----
 import { useConfirm } from 'primevue/useconfirm';
 
 const confirm = useConfirm();
-const noteStore = useNoteStore();
+// const noteStore = useNoteStore();
 const editStore = useEditStore();
 
 const emit = defineEmits<{

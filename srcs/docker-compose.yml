@@ -3,11 +3,14 @@ services:
     build:
       context: ./requirements/frontend
       dockerfile: Dockerfile.dev
-    # user: "${UID:-1000}:${GID:-1000}" # <--- The Linux Fix (Safe on Mac too)
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}" # <--- The Linux Fix (Safe on Mac too)
     container_name: frontend_dev
     volumes:
       - ./requirements/frontend:/app:z      # Mount for live updates (:z is for SELinux)
-      - ./requirements/frontend/node_modules_image/:/app/node_modules:z # Protect container-specific libs
+      - /app/node_modules                   # Protect container-specific libs
     networks:
       - transcendence                        # Connect to 'notes' and 'postgres' [cite: 21]
     # ports:
@@ -15,6 +18,7 @@ services:
     environment:
       - NOTES_API_URL=http://notes:3003     # Internal SSR communication 
       - NODE_ENV=development
+      - HOME=/tmp                           # Fix for Corepack/pnpm permission issues
       # Allow connection from gateway container to vite development server 
       # https://vite.dev/config/server-options#server-allowedhosts
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=gateway
