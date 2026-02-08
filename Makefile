@@ -14,6 +14,9 @@ down:
 	$(COMPOSE) down $(FLAGS)
 
 clean:
+	$(COMPOSE) down --rmi all $(FLAGS)
+
+fclean:
 	$(COMPOSE) down -v --rmi all $(FLAGS)
 
 re: clean all

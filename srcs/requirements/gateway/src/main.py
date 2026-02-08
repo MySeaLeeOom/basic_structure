@@ -157,20 +157,7 @@ async def forward(request: Request, path: str):
 	if upstream is None:
 		return Response(status_code=404)
 
-	# where is the user trying to go?
-	# service = request.url.path
-	# 
-	# # if it's an API endpoint, forward to the relevant service
-	# # otherwise, forward to the frontend service
-	# if service.startswith("/api"):
-	# 	upstream = SERVICES.get(service, None)
-	# else:
-	# 	upstream = SERVICES.get("/", None)
-	# print(f"the service is: {service}")
 
-	# # if it's not a thing, 404
-	# if upstream is None:
-	# 	return Response(status_code=404)
 
 	# craft request
 	body = await request.body()
@@ -189,7 +176,8 @@ async def forward(request: Request, path: str):
 	# get response
 	response = await http_client.request(
 		method,
-		f"{upstream.strip(path)}/{path}", # TODO This is wrong for the Vue frontend
+		# f"{upstream.strip(path)}/{path}", # TODO This is wrong for the Vue frontend
+        f"{upstream}/{path}",
 		content=body,
 		params=query_params,
 		headers=headers
@@ -201,3 +189,19 @@ async def forward(request: Request, path: str):
         status_code=response.status_code,
         headers=dict(response.headers),
     )
+
+
+	# where is the user trying to go?
+	# service = request.url.path
+	# 
+	# # if it's an API endpoint, forward to the relevant service
+	# # otherwise, forward to the frontend service
+	# if service.startswith("/api"):
+	# 	upstream = SERVICES.get(service, None)
+	# else:
+	# 	upstream = SERVICES.get("/", None)
+	# print(f"the service is: {service}")
+
+	# # if it's not a thing, 404
+	# if upstream is None:
+	# 	return Response(status_code=404)
