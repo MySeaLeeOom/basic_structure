@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 # Note: We do NOT use --frozen-lockfile here so you can add packages as you develop.
 RUN pnpm install
 
-RUN chown -R 1000:1000 /app/node_modules 
+# RUN chown -R ${UID}:${GID} /app/node_modules 
 # make the user own node modules (permissions on Linux)
 
 # Port for the SSR server
