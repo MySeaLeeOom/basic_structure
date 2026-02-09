@@ -22,3 +22,5 @@ export function createApp(type: "client" | "server") {
 
 	return { app, router, pinia };
 }
+
+
