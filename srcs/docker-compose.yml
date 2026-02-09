@@ -18,7 +18,7 @@ services:
     environment:
       - NOTES_API_URL=http://notes:3003     # Internal SSR communication 
       - NODE_ENV=development
-      - HOME=/tmp                           # Fix for Corepack/pnpm permission issues
+      # - HOME=/tmp                           # Fix for Corepack/pnpm permission issues
       # Allow connection from gateway container to vite development server 
       # https://vite.dev/config/server-options#server-allowedhosts
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=gateway
@@ -53,6 +53,18 @@ services:
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
       SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+
+  auth:
+    build:
+      context: ./requirements/auth
+      dockerfile: Dockerfile
+    image: auth
+    container_name: auth
+    restart: always
+    networks:
+      - transcendence
+    environment:
+
 
   nginx:
     build:
