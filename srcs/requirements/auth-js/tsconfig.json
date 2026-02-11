@@ -1,0 +1,10 @@
+{
+	"extends": "@tsconfig/node20/tsconfig.json",
+	"compilerOptions": {
+		"target": "es2017"
+	},
+	"outDir": "./dist",   // Where the compiled JS goes
+    "rootDir": "./src",   // Where your TS files live
+	"include": ["src/**/*", "drizzle.config.ts"],
+	"exclude": ["node_modules"]
+}
