@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",             // Essential for modern Node.js
+    "moduleResolution": "NodeNext",   // Ensures imports work correctly in Docker
+    "outDir": "./dist",               // Where the compiled JS goes
+    "rootDir": "./",               // Where your TS files live
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,                   // Keeps the red lines
+    "skipLibCheck": true,
+    "noEmit": false                   // We NEED to emit files to run the server!
+  },
+  "include": ["src/**/*", "drizzle.config.ts"],
+  "exclude": ["node_modules"]
+}
