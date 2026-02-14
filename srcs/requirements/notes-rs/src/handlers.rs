@@ -1,9 +1,5 @@
 use axum::{
-    extract::{State, Path, Query, Request, ws::{WebSocketUpgrade, WebSocket}},
-    http::StatusCode,
-    Json,
-    body::to_bytes,
-    response::IntoResponse,
+    Json, body::to_bytes, extract::{Path, Query, Request, State, ws::{Message, WebSocket, WebSocketUpgrade}}, http::StatusCode, response::IntoResponse
 };
 use crate::models::{Note, NoteSummary, NoteUpdate, CreateNote};
 use crate::sync::{AppState, DocumentRoom};
@@ -188,7 +184,7 @@ pub async fn ws_sync(
     ws.on_upgrade(move |socket| handle_socket(socket, state, note_id))
 }
 
-async fn handle_socket(_socket: WebSocket, state: Arc<AppState>, note_id: Uuid) {
+async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uuid) {
     // Sketch for sync flow:
     //
     let room = get_or_create_room(&state, note_id).await;
@@ -200,9 +196,8 @@ async fn handle_socket(_socket: WebSocket, state: Arc<AppState>, note_id: Uuid) 
         room_guard.clients.insert(client_id, tx);
     }
     //
-    // // Send initial state to the connecting client.
-    // // Build update bytes from room.doc under a short read/write lock and send afterward.
-    // send_initial_state(socket, room.doc).await?;
+   
+    let _ = send_initial_state(&mut socket, room).await;
     //
     // // Typical setup is split reader/writer loops:
     // // - reader loop: receive ws binary update -> validate/decode -> apply to doc -> persist -> fanout
@@ -253,4 +248,17 @@ async fn get_or_create_room(
             }))
         })
         .clone()
+}
+
+async fn send_initial_state(
+    socket: &mut WebSocket,
+    room: Arc<RwLock<DocumentRoom>>,
+) -> Result<(), axum::Error> {
+    let initial_update = {
+        let room_guard = room.read().await;
+        let doc_guard = room_guard.doc.read().await;
+        let txn = doc_guard.transact();
+        txn.encode_state_as_update_v1(&StateVector::default())
+    };
+   socket.send(Message::Binary(initial_update.into())).await 
 }
