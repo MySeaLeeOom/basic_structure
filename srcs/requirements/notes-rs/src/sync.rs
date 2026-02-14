@@ -1,17 +1,25 @@
 use sqlx::PgPool;
-use yrs::{Doc, Update};
+use yrs::Doc;
 use std::collections::HashMap;
-use std::sync::{Arc};
+use std::sync::Arc;
 use uuid::Uuid;
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc::UnboundedSender, RwLock};
 
-struct DocumentRoom {
-    doc: Arc<RwLock<Doc>>,                          
-    clients: HashMap<u64, UnboundedSender<Vec<u8>>>
+pub struct DocumentRoom {
+    pub doc: Arc<RwLock<Doc>>,
+    pub clients: HashMap<u64, UnboundedSender<Vec<u8>>>,
 }
 
-struct AppState {
-    pool: PgPool,
-    rooms: RwLock<HashMap<Uuid, Arc<RwLock<DocumentRoom>>>>
+pub struct AppState {
+    pub pool: PgPool,
+    pub rooms: RwLock<HashMap<Uuid, Arc<RwLock<DocumentRoom>>>>,
+}
+
+impl AppState {
+    pub fn new(pool: PgPool) -> Self {
+        Self {
+            pool,
+            rooms: RwLock::new(HashMap::new()),
+        }
+    }
 }
