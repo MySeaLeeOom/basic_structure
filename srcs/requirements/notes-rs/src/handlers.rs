@@ -1,23 +1,28 @@
-use axum::{extract::{State, Path}, http::StatusCode, Json};
+use axum::{extract::{State, Path}, http::StatusCode, Json, body::Bytes};
 use sqlx::PgPool;
-use crate::models::{Note, CreateNote};
-use yrs::{Doc, Transact, updates::decoder::Decode};
+use crate::models::{Note, NoteSummary, CreateNote};
+use yrs::{Doc, ReadTxn, StateVector, Transact, Update, updates::decoder::Decode};
+use uuid::Uuid;
 
-pub async fn get_all_notes(State(pool): State<PgPool>) -> Result<Json<Vec<Note>>, StatusCode> {
-	let notes = sqlx::query_as::<_, Note>("SELECT id, title, content FROM notes")
-		.fetch_all(&pool)
-		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+pub async fn get_all_notes(State(pool): State<PgPool>) -> Result<Json<Vec<NoteSummary>>, StatusCode> {
+	let notes = sqlx::query_as::<_, NoteSummary>(
+		"SELECT id, title_preview, content_preview, created_at, updated_at FROM notes"
+	)
+	.fetch_all(&pool)
+	.await
+	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
 	Ok(Json(notes))
 }
 
-pub async fn get_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result<Json<Note>, StatusCode> {
-	let note = sqlx::query_as::<_, Note>("SELECT id, title, content FROM notes WHERE id = $1")
-		.bind(id)
-		.fetch_optional(&pool)
-		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?; 
+pub async fn get_note(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> Result<Json<Note>, StatusCode> {
+	let note = sqlx::query_as::<_, Note>(
+		"SELECT id, doc_state, created_at, updated_at, title_preview, content_preview FROM notes WHERE id = $1"
+	)
+	.bind(id)
+	.fetch_optional(&pool)
+	.await
+	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
 	match note {
 		Some(note) => Ok(Json(note)),
@@ -25,20 +30,38 @@ pub async fn get_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result
 	}
 }
 
-pub async fn post_note(State(pool): State<PgPool>, Json(payload): Json<CreateNote>) -> Result<Json<Note>, StatusCode> {
-	let note = sqlx::query_as::<_, Note>(
-		"INSERT INTO notes (title, content) VALUES ($1, $2) RETURNING id, title, content",
+pub async fn create_note(State(pool): State<PgPool>, Json(payload): Json<CreateNote>) -> Result<(StatusCode, Json<NoteSummary>), StatusCode> {
+	let doc = Doc::new();
+	let title_text = doc.get_or_insert_text("title");
+	let content_text = doc.get_or_insert_text("content");
+	{
+		let mut txn = doc.transact_mut();
+		if let Some(ref t) = payload.title {
+			title_text.insert(&mut txn, 0, t);
+		}
+		if let Some(ref c) = payload.content {
+			content_text.insert(&mut txn, 0, c);
+		}
+	}
+	let doc_state = doc.transact().encode_state_as_update_v1(&StateVector::default());
+
+	let note = sqlx::query_as::<_, NoteSummary>(
+		"INSERT INTO notes (doc_state, title_preview, content_preview, owner_id) \
+		 VALUES ($1, $2, $3, $4) \
+		 RETURNING id, title_preview, content_preview, created_at, updated_at"
 	)
-	.bind(payload.title)
-	.bind(payload.content)
+	.bind(&doc_state)
+	.bind(&payload.title)
+	.bind(&payload.content)
+	.bind(&payload.owner_id)
 	.fetch_one(&pool)
 	.await
 	.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-	Ok(Json(note))
+	Ok((StatusCode::CREATED, Json(note)))
 }
 
-pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result<StatusCode, StatusCode> {
+pub async fn delete_note(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> Result<StatusCode, StatusCode> {
 	let result = sqlx::query("DELETE FROM notes WHERE id = $1")
 		.bind(id)
 		.execute(&pool)
@@ -50,23 +73,6 @@ pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<i32>) -> Result
 	}
 
 	Ok(StatusCode::NO_CONTENT)
-}
-
-pub async fn edit_note(State(pool): State<PgPool>, Path(id): Path<i32>, Json(payload): Json<CreateNote>) -> Result<Json<Note>, StatusCode> {
-	let note = sqlx::query_as::<_, Note>(
-		"UPDATE notes SET title = $1, content = $2 WHERE id = $3 RETURNING id, title, content"
-		)
-		.bind(payload.title)
-		.bind(payload.content)
-		.bind(id)
-		.fetch_optional(&pool)
-		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?; 
-
-	match note {
-		Some(note) => Ok(Json(note)),
-		None => Err(StatusCode::NOT_FOUND),
-	}
 }
 
 pub async fn apply_update(
