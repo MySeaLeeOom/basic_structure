@@ -16,9 +16,12 @@ async fn main() {
     let state = Arc::new(AppState::new(db_pool));
 
     let app = Router::new()
+        // REST endpoints are for snapshot/bootstrap and note lifecycle operations.
         .route("/api/notes", get(handlers::get_all_notes).post(handlers::create_note))
         .route("/api/notes/{id}", get(handlers::get_note).delete(handlers::delete_note))
+        // WebSocket is the primary sync transport for collaborative editing.
         .route("/api/notes/{id}/sync", get(handlers::ws_sync))
+        // Legacy REST sync endpoints kept for reconnect fallback; responses include deprecation headers.
         .route("/api/notes/{id}/update", post(handlers::apply_update))
         .route("/api/notes/{id}/updates", get(handlers::get_updates_since))
         .with_state(state);
