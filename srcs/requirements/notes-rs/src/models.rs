@@ -8,8 +8,17 @@ pub struct Note {
 	pub doc_state: Vec<u8>,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
-	pub title: String,
-	pub content: String,
+	pub title_preview: Option<String>,
+	pub content_preview: Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct NoteSummary {
+	pub id: Uuid,
+	pub title_preview: Option<String>,
+	pub content_preview: Option<String>,
+	pub created_at: DateTime<Utc>,
+	pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
@@ -31,10 +40,9 @@ pub struct ClientSyncState {
 
 #[derive(Deserialize)]
 pub struct CreateNote {
-	pub doc_state: Vec<u8>,
-	pub owner_id: Option<Uuid>,
 	pub title: Option<String>,
 	pub content: Option<String>,
+	pub owner_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]

@@ -1,5 +1,6 @@
 mod models;
 mod handlers;
+mod sync;
 
 use axum::{
 	routing::{get},
@@ -13,8 +14,8 @@ async fn main() {
 	let db_pool = setup_database().await;
 
 	let app = Router::new()
-		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
-		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_note))
+		.route("/api/notes", get(handlers::get_all_notes).post(handlers::create_note))
+		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::delete_note))
 		.with_state(db_pool);
 
 	let addr = SocketAddr::from(([0, 0, 0, 0], 3003));
