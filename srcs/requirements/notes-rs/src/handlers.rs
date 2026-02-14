@@ -1,5 +1,5 @@
 use axum::{
-    Json, body::to_bytes, extract::{Path, Query, Request, State, ws::{Message, WebSocket, WebSocketUpgrade}}, http::StatusCode, response::IntoResponse
+    Json, body::to_bytes, extract::{Path, Query, Request, State, ws::{Message, WebSocket, WebSocketUpgrade}}, http::{StatusCode, HeaderValue}, response::{IntoResponse, Response}
 };
 use crate::models::{Note, NoteSummary, NoteUpdate, CreateNote};
 use crate::sync::{AppState, DocumentRoom};
@@ -99,57 +99,54 @@ pub async fn delete_note(
 
 const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
+fn with_legacy_sync_deprecation_headers(
+    mut response: Response,
+    successor_path: &str,
+) -> Response {
+    let headers = response.headers_mut();
+    headers.insert("Deprecation", HeaderValue::from_static("true"));
+    headers.insert("Sunset", HeaderValue::from_static("Wed, 31 Dec 2026 23:59:59 GMT"));
+    headers.insert(
+        "Warning",
+        HeaderValue::from_static(
+            "299 - \"Legacy REST sync endpoint is deprecated. Use WebSocket sync endpoint.\"",
+        ),
+    );
+    if let Ok(link) = HeaderValue::from_str(&format!("<{}>; rel=\"successor-version\"", successor_path)) {
+        headers.insert("Link", link);
+    }
+    response
+}
+
 pub async fn apply_update(
     State(state): State<Arc<AppState>>,
     Path(note_id): Path<Uuid>,
     request: Request,
-) -> Result<StatusCode, StatusCode> {
-    let body = to_bytes(request.into_body(), BODY_LIMIT)
-        .await
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> impl IntoResponse {
+    eprintln!(
+        "Deprecated endpoint used: POST /api/notes/{note_id}/update. Prefer /api/notes/{note_id}/sync."
+    );
 
-    let existing_state: Vec<u8> = sqlx::query_scalar(
-        "SELECT doc_state FROM notes WHERE id = $1"
-    )
-    .bind(note_id)
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|_| StatusCode::NOT_FOUND)?;
+    let result: Result<(), StatusCode> = async {
+        let body = to_bytes(request.into_body(), BODY_LIMIT)
+            .await
+            .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    let incoming_update = Update::decode_v1(&body)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+        persist_note_update(&state.pool, note_id, body.as_ref()).await?;
 
-    let new_state = {
-        let doc = Doc::new();
-        {
-            let mut txn = doc.transact_mut();
-            let existing_update = Update::decode_v1(&existing_state)
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-            txn.apply_update(existing_update);
-            txn.apply_update(incoming_update);
-        }
-        doc.transact().encode_state_as_update_v1(&StateVector::default())
+        Ok(())
+    }
+    .await;
+
+    let status = match result {
+        Ok(()) => StatusCode::OK,
+        Err(code) => code,
     };
 
-    sqlx::query(
-        "UPDATE notes SET doc_state = $1, updated_at = NOW() WHERE id = $2"
+    with_legacy_sync_deprecation_headers(
+        status.into_response(),
+        &format!("/api/notes/{note_id}/sync"),
     )
-    .bind(&new_state)
-    .bind(note_id)
-    .execute(&state.pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    sqlx::query(
-        "INSERT INTO note_updates (note_id, update_data) VALUES ($1, $2)"
-    )
-    .bind(note_id)
-    .bind(body.as_ref())
-    .execute(&state.pool)
-    .await
-    .ok();
-
-    Ok(StatusCode::OK)
 }
 
 #[derive(Deserialize)]
@@ -161,8 +158,12 @@ pub async fn get_updates_since(
     State(state): State<Arc<AppState>>,
     Path(note_id): Path<Uuid>,
     Query(params): Query<UpdatesSinceParams>,
-) -> Result<Json<Vec<NoteUpdate>>, StatusCode> {
-    let updates = sqlx::query_as::<_, NoteUpdate>(
+) -> impl IntoResponse {
+    eprintln!(
+        "Deprecated endpoint used: GET /api/notes/{note_id}/updates. Prefer /api/notes/{note_id}/sync."
+    );
+
+    let response = match sqlx::query_as::<_, NoteUpdate>(
         "SELECT id, note_id, update_data, created_at, client_id \
          FROM note_updates WHERE note_id = $1 AND id > $2 ORDER BY id"
     )
@@ -170,9 +171,15 @@ pub async fn get_updates_since(
     .bind(params.since)
     .fetch_all(&state.pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    {
+        Ok(updates) => Json(updates).into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
 
-    Ok(Json(updates))
+    with_legacy_sync_deprecation_headers(
+        response,
+        &format!("/api/notes/{note_id}/sync"),
+    )
 }
 
 pub async fn ws_sync(
@@ -184,7 +191,13 @@ pub async fn ws_sync(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uuid) {
-    let room = get_or_create_room(&state, note_id).await;
+    let room = match get_or_create_room(&state, note_id).await {
+        Ok(room) => room,
+        Err(_) => {
+            let _ = socket.send(Message::Close(None)).await;
+            return;
+        }
+    };
     let client_id = new_client_id();
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
 
@@ -207,15 +220,14 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uui
     while let Some(Ok(message)) = ws_receiver.next().await {
         match message {
             Message::Binary(bytes) => {
-                if apply_room_update(&room, bytes.as_ref()).await.is_err() {
-                    continue;
-                }
-
                 if persist_ws_update_shell(&state, note_id, bytes.as_ref())
                     .await
                     .is_err()
                 {
-                    continue;
+                    break;
+                }
+                if apply_room_update(&room, bytes.as_ref()).await.is_err() {
+                    break;
                 }
                 broadcast_to_room(&room, client_id, bytes.to_vec()).await;
             }
@@ -253,17 +265,23 @@ fn new_client_id() -> u64 {
 async fn get_or_create_room(
     state: &Arc<AppState>,
     note_id: Uuid,
-) -> Arc<RwLock<DocumentRoom>> {
+) -> Result<Arc<RwLock<DocumentRoom>>, ()> {
+    if let Some(existing_room) = state.rooms.read().await.get(&note_id).cloned() {
+        return Ok(existing_room);
+    }
+
+    let initial_doc = load_note_doc(&state.pool, note_id).await?;
+    let candidate_room = Arc::new(RwLock::new(DocumentRoom {
+        doc: Arc::new(RwLock::new(initial_doc)),
+        clients: HashMap::new(),
+    }));
+
     let mut rooms = state.rooms.write().await;
-    rooms
+    let room = rooms
         .entry(note_id)
-        .or_insert_with(|| {
-            Arc::new(RwLock::new(DocumentRoom {
-                doc: Arc::new(RwLock::new(Doc::new())),
-                clients: HashMap::new(),
-            }))
-        })
-        .clone()
+        .or_insert_with(|| candidate_room.clone())
+        .clone();
+    Ok(room)
 }
 
 async fn send_initial_state(
@@ -310,38 +328,70 @@ async fn persist_ws_update_shell(
     note_id: Uuid,
     update_bytes: &[u8],
 ) -> Result<(), ()> {
-    let existing_state: Vec<u8> = sqlx::query_scalar("SELECT doc_state FROM notes WHERE id = $1")
-        .bind(note_id)
-        .fetch_one(&state.pool)
+    persist_note_update(&state.pool, note_id, update_bytes)
         .await
-        .map_err(|_| ())?;
+        .map_err(|_| ())
+}
 
-    let incoming_update = Update::decode_v1(update_bytes).map_err(|_| ())?;
+async fn load_note_doc(pool: &sqlx::PgPool, note_id: Uuid) -> Result<Doc, ()> {
+    let existing_state = sqlx::query_scalar::<_, Vec<u8>>("SELECT doc_state FROM notes WHERE id = $1")
+        .bind(note_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| ())?
+        .ok_or(())?;
+
+    let doc = Doc::new();
+    {
+        let mut txn = doc.transact_mut();
+        let existing_update = Update::decode_v1(&existing_state).map_err(|_| ())?;
+        txn.apply_update(existing_update);
+    }
+    Ok(doc)
+}
+
+async fn persist_note_update(
+    pool: &sqlx::PgPool,
+    note_id: Uuid,
+    update_bytes: &[u8],
+) -> Result<(), StatusCode> {
+    let existing_state = sqlx::query_scalar::<_, Vec<u8>>("SELECT doc_state FROM notes WHERE id = $1")
+        .bind(note_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let incoming_update = Update::decode_v1(update_bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let new_state = {
         let doc = Doc::new();
         {
             let mut txn = doc.transact_mut();
-            let existing_update = Update::decode_v1(&existing_state).map_err(|_| ())?;
+            let existing_update = Update::decode_v1(&existing_state)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             txn.apply_update(existing_update);
             txn.apply_update(incoming_update);
         }
         doc.transact().encode_state_as_update_v1(&StateVector::default())
     };
 
+    let mut tx = pool.begin().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     sqlx::query("UPDATE notes SET doc_state = $1, updated_at = NOW() WHERE id = $2")
         .bind(&new_state)
         .bind(note_id)
-        .execute(&state.pool)
+        .execute(&mut *tx)
         .await
-        .map_err(|_| ())?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     sqlx::query("INSERT INTO note_updates (note_id, update_data) VALUES ($1, $2)")
         .bind(note_id)
         .bind(update_bytes)
-        .execute(&state.pool)
+        .execute(&mut *tx)
         .await
-        .map_err(|_| ())?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    tx.commit().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
 }
