@@ -1,14 +1,14 @@
-mod models;
 mod handlers;
+mod models;
 mod sync;
 
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
-use sync::AppState;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use sync::AppState;
 
 #[tokio::main]
 async fn main() {
@@ -17,8 +17,14 @@ async fn main() {
 
     let app = Router::new()
         // REST endpoints are for snapshot/bootstrap and note lifecycle operations.
-        .route("/api/notes", get(handlers::get_all_notes).post(handlers::create_note))
-        .route("/api/notes/{id}", get(handlers::get_note).delete(handlers::delete_note))
+        .route(
+            "/api/notes",
+            get(handlers::get_all_notes).post(handlers::create_note),
+        )
+        .route(
+            "/api/notes/{id}",
+            get(handlers::get_note).delete(handlers::delete_note),
+        )
         // WebSocket is the primary sync transport for collaborative editing.
         .route("/api/notes/{id}/sync", get(handlers::ws_sync))
         // Legacy REST sync endpoints kept for reconnect fallback; responses include deprecation headers.
