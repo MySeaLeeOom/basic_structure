@@ -3,6 +3,7 @@ use axum::{
 };
 use crate::models::{Note, NoteSummary, NoteUpdate, CreateNote};
 use crate::sync::{AppState, DocumentRoom};
+use futures_util::{SinkExt, StreamExt};
 use yrs::{Doc, ReadTxn, StateVector, Text, Transact, Update, updates::decoder::Decode};
 use uuid::Uuid;
 use std::collections::HashMap;
@@ -47,7 +48,6 @@ pub async fn create_note(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateNote>,
 ) -> Result<(StatusCode, Json<NoteSummary>), StatusCode> {
-    // Scope Doc so it is dropped before the .await (Doc is !Send)
     let doc_state = {
         let doc = Doc::new();
         let title_text = doc.get_or_insert_text("title");
@@ -97,7 +97,7 @@ pub async fn delete_note(
     Ok(StatusCode::NO_CONTENT)
 }
 
-const BODY_LIMIT: usize = 2 * 1024 * 1024; // 2MB
+const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 pub async fn apply_update(
     State(state): State<Arc<AppState>>,
@@ -119,7 +119,6 @@ pub async fn apply_update(
     let incoming_update = Update::decode_v1(&body)
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    // Scope Doc so it is dropped before the next .await (Doc is !Send)
     let new_state = {
         let doc = Doc::new();
         {
@@ -185,44 +184,47 @@ pub async fn ws_sync(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uuid) {
-    // Sketch for sync flow:
-    //
     let room = get_or_create_room(&state, note_id).await;
     let client_id = new_client_id();
-    let (tx, mut _rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
 
     {
         let mut room_guard = room.write().await;
         room_guard.clients.insert(client_id, tx);
     }
-    //
-   
+
     let _ = send_initial_state(&mut socket, room.clone()).await;
-    //
-    // // Typical setup is split reader/writer loops:
-    // // - reader loop: receive ws binary update -> validate/decode -> apply to doc -> persist -> fanout
-    // // - writer loop: pull bytes from rx and send to this client
-    // //
-    // // Reader loop sketch:
-    // // while let Some(msg) = socket.recv().await {
-    // //     match msg {
-    // //         Binary(bytes) => {
-    // //             // decode incoming Yrs update
-    // //             // apply under short doc write lock
-    // //             // persist to notes/note_updates tables
-    // //             // broadcast bytes to other clients in room (exclude client_id)
-    // //         }
-    // //         Close(_) => break,
-    // //         Ping/Pong/Text => ignore or handle as needed
-    // //     }
-    // // }
-    // //
-    // // Writer loop sketch:
-    // // while let Some(bytes) = rx.recv().await {
-    // //     if socket.send(Binary(bytes)).await.is_err() {
-    // //         break;
-    // //     }
-    // // }
+
+    let (mut ws_sender, mut ws_receiver) = socket.split();
+    let writer_task = tokio::spawn(async move {
+        while let Some(bytes) = rx.recv().await {
+            if ws_sender.send(Message::Binary(bytes.into())).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    while let Some(Ok(message)) = ws_receiver.next().await {
+        match message {
+            Message::Binary(bytes) => {
+                if apply_room_update(&room, bytes.as_ref()).await.is_err() {
+                    continue;
+                }
+
+                if persist_ws_update_shell(&state, note_id, bytes.as_ref())
+                    .await
+                    .is_err()
+                {
+                    continue;
+                }
+                broadcast_to_room(&room, client_id, bytes.to_vec()).await;
+            }
+            Message::Close(_) => break,
+            Message::Ping(_) | Message::Pong(_) | Message::Text(_) => {}
+        }
+    }
+
+    writer_task.abort();
 
     let remove_room = {
         let mut room_guard = room.write().await;
@@ -275,4 +277,71 @@ async fn send_initial_state(
         txn.encode_state_as_update_v1(&StateVector::default())
     };
    socket.send(Message::Binary(initial_update.into())).await 
+}
+
+async fn apply_room_update(
+    room: &Arc<RwLock<DocumentRoom>>,
+    update_bytes: &[u8],
+) -> Result<(), ()> {
+    let room_guard = room.read().await;
+    let doc_guard = room_guard.doc.write().await;
+    let update = Update::decode_v1(update_bytes).map_err(|_| ())?;
+    let mut txn = doc_guard.transact_mut();
+    txn.apply_update(update);
+    Ok(())
+}
+
+async fn broadcast_to_room(
+    room: &Arc<RwLock<DocumentRoom>>,
+    source_client_id: u64,
+    payload: Vec<u8>,
+) {
+    let mut room_guard = room.write().await;
+    room_guard.clients.retain(|client_id, sender| {
+        if *client_id == source_client_id {
+            return true;
+        }
+        sender.send(payload.clone()).is_ok()
+    });
+}
+
+async fn persist_ws_update_shell(
+    state: &Arc<AppState>,
+    note_id: Uuid,
+    update_bytes: &[u8],
+) -> Result<(), ()> {
+    let existing_state: Vec<u8> = sqlx::query_scalar("SELECT doc_state FROM notes WHERE id = $1")
+        .bind(note_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|_| ())?;
+
+    let incoming_update = Update::decode_v1(update_bytes).map_err(|_| ())?;
+
+    let new_state = {
+        let doc = Doc::new();
+        {
+            let mut txn = doc.transact_mut();
+            let existing_update = Update::decode_v1(&existing_state).map_err(|_| ())?;
+            txn.apply_update(existing_update);
+            txn.apply_update(incoming_update);
+        }
+        doc.transact().encode_state_as_update_v1(&StateVector::default())
+    };
+
+    sqlx::query("UPDATE notes SET doc_state = $1, updated_at = NOW() WHERE id = $2")
+        .bind(&new_state)
+        .bind(note_id)
+        .execute(&state.pool)
+        .await
+        .map_err(|_| ())?;
+
+    sqlx::query("INSERT INTO note_updates (note_id, update_data) VALUES ($1, $2)")
+        .bind(note_id)
+        .bind(update_bytes)
+        .execute(&state.pool)
+        .await
+        .map_err(|_| ())?;
+
+    Ok(())
 }
