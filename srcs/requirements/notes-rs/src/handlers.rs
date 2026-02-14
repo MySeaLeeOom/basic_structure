@@ -108,8 +108,6 @@ pub async fn apply_update(
     let body = to_bytes(request.into_body(), BODY_LIMIT)
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?;
-    let update = Update::decode_v1(&body)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let existing_state: Vec<u8> = sqlx::query_scalar(
         "SELECT doc_state FROM notes WHERE id = $1"
@@ -119,13 +117,18 @@ pub async fn apply_update(
     .await
     .map_err(|_| StatusCode::NOT_FOUND)?;
 
+    let incoming_update = Update::decode_v1(&body)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
     // Scope Doc so it is dropped before the next .await (Doc is !Send)
     let new_state = {
         let doc = Doc::new();
         {
             let mut txn = doc.transact_mut();
-            txn.apply_update(Update::decode_v1(&existing_state).unwrap());
-            txn.apply_update(update);
+            let existing_update = Update::decode_v1(&existing_state)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            txn.apply_update(existing_update);
+            txn.apply_update(incoming_update);
         }
         doc.transact().encode_state_as_update_v1(&StateVector::default())
     };
@@ -183,10 +186,47 @@ pub async fn ws_sync(
 }
 
 async fn handle_socket(_socket: WebSocket, _state: Arc<AppState>, _note_id: Uuid) {
-    // TODO: implement sync protocol
-    // 1. Load or create DocumentRoom for note_id
-    // 2. Send current doc state vector to client
-    // 3. Register client in room
-    // 4. Loop: forward updates between client and other room members
-    // 5. On disconnect: remove client from room
+    // Sketch for sync flow:
+    //
+    // let room = get_or_create_room(state.rooms, note_id).await;
+    // let client_id = new_client_id();
+    // let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
+    //
+    // {
+    //     // Keep lock scope short. Only mutate room state while locked.
+    //     let mut room_guard = room.write().await;
+    //     room_guard.clients.insert(client_id, tx);
+    // }
+    //
+    // // Send initial state to the connecting client.
+    // // Build update bytes from room.doc under a short read/write lock and send afterward.
+    // send_initial_state(socket, room.doc).await?;
+    //
+    // // Typical setup is split reader/writer loops:
+    // // - reader loop: receive ws binary update -> validate/decode -> apply to doc -> persist -> fanout
+    // // - writer loop: pull bytes from rx and send to this client
+    // //
+    // // Reader loop sketch:
+    // // while let Some(msg) = socket.recv().await {
+    // //     match msg {
+    // //         Binary(bytes) => {
+    // //             // decode incoming Yrs update
+    // //             // apply under short doc write lock
+    // //             // persist to notes/note_updates tables
+    // //             // broadcast bytes to other clients in room (exclude client_id)
+    // //         }
+    // //         Close(_) => break,
+    // //         Ping/Pong/Text => ignore or handle as needed
+    // //     }
+    // // }
+    // //
+    // // Writer loop sketch:
+    // // while let Some(bytes) = rx.recv().await {
+    // //     if socket.send(Binary(bytes)).await.is_err() {
+    // //         break;
+    // //     }
+    // // }
+    //
+    // // On disconnect/error, remove this client from room.
+    // // Optionally drop empty rooms from AppState.rooms.
 }
