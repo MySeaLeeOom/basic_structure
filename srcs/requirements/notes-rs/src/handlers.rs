@@ -197,7 +197,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uui
     }
     //
    
-    let _ = send_initial_state(&mut socket, room).await;
+    let _ = send_initial_state(&mut socket, room.clone()).await;
     //
     // // Typical setup is split reader/writer loops:
     // // - reader loop: receive ws binary update -> validate/decode -> apply to doc -> persist -> fanout
@@ -223,9 +223,23 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, note_id: Uui
     // //         break;
     // //     }
     // // }
-    //
-    // // On disconnect/error, remove this client from room.
-    // // Optionally drop empty rooms from AppState.rooms.
+
+    let remove_room = {
+        let mut room_guard = room.write().await;
+        room_guard.clients.remove(&client_id);
+        room_guard.clients.is_empty()
+    };
+
+    if remove_room {
+        let mut rooms = state.rooms.write().await;
+        let should_remove = rooms
+            .get(&note_id)
+            .map(|existing_room| Arc::ptr_eq(existing_room, &room))
+            .unwrap_or(false);
+        if should_remove {
+            rooms.remove(&note_id);
+        }
+    }
 }
 
 static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
