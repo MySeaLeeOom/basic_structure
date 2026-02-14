@@ -6,11 +6,14 @@ use axum::{
     response::IntoResponse,
 };
 use crate::models::{Note, NoteSummary, NoteUpdate, CreateNote};
-use crate::sync::AppState;
+use crate::sync::{AppState, DocumentRoom};
 use yrs::{Doc, ReadTxn, StateVector, Text, Transact, Update, updates::decoder::Decode};
 use uuid::Uuid;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use serde::Deserialize;
+use tokio::sync::RwLock;
 
 pub async fn get_all_notes(
     State(state): State<Arc<AppState>>,
@@ -185,18 +188,17 @@ pub async fn ws_sync(
     ws.on_upgrade(move |socket| handle_socket(socket, state, note_id))
 }
 
-async fn handle_socket(_socket: WebSocket, _state: Arc<AppState>, _note_id: Uuid) {
+async fn handle_socket(_socket: WebSocket, state: Arc<AppState>, note_id: Uuid) {
     // Sketch for sync flow:
     //
-    // let room = get_or_create_room(state.rooms, note_id).await;
-    // let client_id = new_client_id();
-    // let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
-    //
-    // {
-    //     // Keep lock scope short. Only mutate room state while locked.
-    //     let mut room_guard = room.write().await;
-    //     room_guard.clients.insert(client_id, tx);
-    // }
+    let room = get_or_create_room(&state, note_id).await;
+    let client_id = new_client_id();
+    let (tx, mut _rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
+
+    {
+        let mut room_guard = room.write().await;
+        room_guard.clients.insert(client_id, tx);
+    }
     //
     // // Send initial state to the connecting client.
     // // Build update bytes from room.doc under a short read/write lock and send afterward.
@@ -229,4 +231,26 @@ async fn handle_socket(_socket: WebSocket, _state: Arc<AppState>, _note_id: Uuid
     //
     // // On disconnect/error, remove this client from room.
     // // Optionally drop empty rooms from AppState.rooms.
+}
+
+static NEXT_CLIENT_ID: AtomicU64 = AtomicU64::new(1);
+
+fn new_client_id() -> u64 {
+    NEXT_CLIENT_ID.fetch_add(1, Ordering::Relaxed)
+}
+
+async fn get_or_create_room(
+    state: &Arc<AppState>,
+    note_id: Uuid,
+) -> Arc<RwLock<DocumentRoom>> {
+    let mut rooms = state.rooms.write().await;
+    rooms
+        .entry(note_id)
+        .or_insert_with(|| {
+            Arc::new(RwLock::new(DocumentRoom {
+                doc: Arc::new(RwLock::new(Doc::new())),
+                clients: HashMap::new(),
+            }))
+        })
+        .clone()
 }
