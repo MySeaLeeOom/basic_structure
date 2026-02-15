@@ -27,9 +27,6 @@ async fn main() {
         )
         // WebSocket is the primary sync transport for collaborative editing.
         .route("/api/notes/{id}/sync", get(handlers::ws_sync))
-        // Legacy REST sync endpoints kept for reconnect fallback; responses include deprecation headers.
-        .route("/api/notes/{id}/update", post(handlers::apply_update))
-        .route("/api/notes/{id}/updates", get(handlers::get_updates_since))
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3003));
