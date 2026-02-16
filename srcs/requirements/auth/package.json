@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prestart": "pnpm run build",
-    "start": "node index.js"
+    "start": "node index.js",
+    "db:generate": "drizzle-kit   generate",
+    "db:push": "drizzle-kit push"
   },
   "keywords": [],
   "author": "",

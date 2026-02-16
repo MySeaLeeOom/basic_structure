@@ -1,10 +1,12 @@
 import fastify from 'fastify'
 import postgres from '@fastify/postgres'
 import { readFileSync } from 'node:fs'; //for getting the secret from a file
+import {drizzle} from 'drizzle-orm/node-postgres'
+// import * as schema from './db/schema';    // Your tables (not ready)
 
-import { randomUUID } from 'node:crypto';
-
+// import { randomUUID } from 'node:crypto';
 // const sessionID = randomUUID(); //this is for the UUID/session
+
 // AUTH_DB_URL=postgres://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@${POSTGRES}/${AUTH_DB_NAME} 
 
 
@@ -18,7 +20,12 @@ const connectionString = `postgres://${user}:${auth_pass}@${host}/${db_name}`;
 
 // this register db ass a plugin, the server makes sure the connection is there  
 // (pool of connections)
-server.register(postgres, {connectionString: connectionString});
+server.register(postgres, {
+  connectionString: connectionString,
+  max: 10,
+  idleTimeoutMillis: 30000, //this is time sitting waiting in pool
+  statement_timeout: 500 //5 seconds searching db
+});
 
 server.get('/ping', async (request, reply) => {
   return 'pong\n'
