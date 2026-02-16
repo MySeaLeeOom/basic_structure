@@ -1,10 +1,133 @@
+
+
+
+
 # Fastify Auth
 
+## Features
+
++ Create a separate database for notes (A, MY) 
++ Create a testing proxy in nginx (port 83)
+
+- Schema
+  - User
+  - Session
+
+
+## Tech Stack 
+
+- **Framework**: Fastify
+- **Language**: TypeScript
+- **ORM**: Drizzle
+- **Driver**: pg (node-postgres)
+- **Database**: PostgreSQL 16
+
+### Project Status
+
+#### Completed
+
+- [x] Service scaffolding (Node 20 + TypeScript)
+- [x] Docker Environment variables & Docker Secrets
+- [x] Database connection pooling (`@fastify/postgres`)
+- [x] Data Type definitions ([schema.ts](src/schema.ts))
+- [ ] Nginx `auth_request` configuration strategy
+
+### In Progress / Next Steps
+
+- [ ] Configure Drizzle Schema (converting TypeScript interfaces to DB tables)
+- [ ] Implement GitHub OAuth handshake (Login route)
+- [ ] Session Creation (generating UUIDs and storing in DB)
+- [ ] Role-based check logic (for Nginx headers)
+- [ ] Admin "Block/Disable User" endpoint
+
+### Frontend recommendations
+- [ ] Catch the 500 or 502 with a pretty page saying Server is busy, try again later 
+
+### Planned Features
+
+- [ ] Token rotation (Refresh tokens)
+- [ ] Rate limiting for login attempts (Maybe)
+- [ ] Multi-factor authentication (Maybe)
+
+
+
+
+
+
+## Installation
+  - fastify 
+  ```
+  # Core server and its Postgres bridge
+  pnpm add fastify @fastify/postgres
+  # Types for Node.js itself
+  pnpm add -D @types/node 
+  ```
+  - typescript 
+  ```
+  pnpm add -D typescript @tsconfig/node20
+  ```
+  - postgres 
+  ```
+  # The actual driver (the "engine")
+  pnpm add pg
+
+  # TypeScript help for the driver
+  pnpm add -D @types/pg
+  ```
+  - drizzle
+  ```
+  # The tool used in the code (index.ts / schema.ts)
+  pnpm add drizzle-orm
+
+  # The CLI tool for generating migrations
+  pnpm add -D drizzle-kit
+  ```
+
+## Why do we need pg, and the connection flow
+
+The short answer is: **`pg` is the "Driver" (the engine), while everything else is the "Dashboard" (the steering wheel and buttons).**
+
+If we doen't explicitly have **pg** then drizzle is handling the driver with its default settings in the background!
+
+Here is the hierarchy of how a message travels from your code to the database:
+
+### Level 1: The Database (Postgres)
+This is the actual software running in a separate container. It only speaks its own binary language over the network.
+
+### Level 2: The Driver (`pg`) — **THE ENGINE**
+This is the low-level library that knows how to:
+*   Open a network socket to the Postgres container.
+*   Handle the handshake and password authentication.
+*   Send raw SQL strings and get back rows of data.
+*   **Without `pg`, your application literally has no "hands" to reach out and touch the database.**
+
+### Level 3: The ORM (`drizzle-orm`) — **THE TRANSLATOR**
+Drizzle doesn't actually know how to "talk" to a network. It only knows how to:
+*   Convert your TypeScript code into SQL strings.
+*   Map the results back into nice TypeScript objects.
+*   **It "sits on top" of `pg`.** When you use Drizzle, it internally says to `pg`: *"Hey engine, please send this SQL string I just generated to the database for me."*
+
+### Level 4: The Framework Bridge (`@fastify/postgres`) — **THE MANAGER**
+This is a small wrapper that manages **Efficiency**.
+*   Instead of opening a new connection for every user, it creates a **Connection Pool** (it keeps 10 connections open and ready).
+*   It makes sure that if your server crashes, the database connections are closed properly so you don't leak memory.
+*   **It also "sits on top" of `pg`.**
+
+### Summary: Why you need all of them
+1.  **`pg`**: To actually move data over the network.
+2.  **`drizzle-orm`**: So you don't have to write raw SQL by hand (and for Type Safety).
+3.  **`@fastify/postgres`**: To handle connection math and make development easier.
+
+If you removed `pg`, Drizzle and Fastify would both crash because they would have no way to actually "speak" to the database
+
+
+
+## Notes
 - No redis for development, but an option later
 
-## Schema
+## Schema Draft
 
-user {
+User {
   id : some kind of automatically generated uid,
   username: "octocat", 
   auth_provider: "github",
@@ -15,6 +138,13 @@ user {
 }
 
 - Make sure a user can't sign up twice with the same GitHub ID.
+
+session {
+  id : UUID,
+  user_ud : User["id"],
+  role : User["role"],
+  expires_at: Date
+}
 
 
 
