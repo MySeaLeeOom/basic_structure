@@ -5,7 +5,7 @@ export const providerEnum = pgEnum('provider_type', ['github', 'local', 'google'
 export const roleEnum = pgEnum('role', ['user','admin']);
 export const userStatusEnum = pgEnum('status', ['active','blocked', 'suspened']);
 
-// Export tables
+// 1. Tables
 
 export const users= pgTable('users', {
 	id: serial('id').primaryKey(),
