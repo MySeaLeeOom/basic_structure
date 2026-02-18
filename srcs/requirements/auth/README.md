@@ -1,5 +1,19 @@
+Rules:
+- hash the password (we will never be able to see the password, it will be hashed and if the hassh matches, then we know the user entered the correct password)
 
+Considerations:
+- Password recovery
 
+Roles:
+- User: manage their own profile, manage their own notes, invite users to their own notes
+- Admin: Do we do an admin view? Ban or block specific users, change user roles
+
+## Question looking for answers
+- How to determine the expires at for sessions?
+- Cascade delete: if a user is deleted, all of their sessions should be deleted as well. 
+- What do we do if a user is banned?
+
+Github client secret - 
 
 
 # Fastify Auth
