@@ -21,6 +21,7 @@ clean: getuser
 	$(COMPOSE) down --rmi all $(FLAGS)
 
 fclean: getuser
+	@echo "Removing all volumes..."
 	$(COMPOSE) down -v --rmi all $(FLAGS)
 
 re: clean all
