@@ -3,22 +3,29 @@ FLAGS   := --remove-orphans
 
 all: up
 
-up:
+getuser:
+	@touch srcs/.env
+	@grep -q '^UID=' srcs/.env && sed -i.bak "s/^UID=.*/UID=$$(id -u)/" srcs/.env && rm -f srcs/.env.bak || echo "UID=$$(id -u)" >> srcs/.env
+	@grep -q '^GID=' srcs/.env && sed -i.bak "s/^GID=.*/GID=$$(id -g)/" srcs/.env && rm -f srcs/.env.bak || echo "GID=$$(id -g)" >> srcs/.env
+
+up: getuser
 	$(COMPOSE) up -d --build $(FLAGS)
 
-live:
+live: getuser
 	$(COMPOSE) up --build
 
-
-down:
+down: getuser
 	$(COMPOSE) down $(FLAGS)
 
-clean:
+clean: getuser
+	$(COMPOSE) down --rmi all $(FLAGS)
+
+fclean: getuser
 	$(COMPOSE) down -v --rmi all $(FLAGS)
 
 re: clean all
 
-logs:
+logs: getuser
 	$(COMPOSE) logs -f $(service)
 
 .PHONY: all up down clean re logs
