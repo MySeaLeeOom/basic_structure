@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import Card from '@/volt/Card.vue';
-import type { Note } from '@/types';
+import { useEditStore } from '@/stores/editStore';
 
-defineProps<{
-  note: Note;
-}>();
+const editStore = useEditStore();
 </script>
 
 <template>
   <Card pt:root:class="card-document">
-    <template #title>{{ note.title }}</template>
+    <template #title>{{ editStore.draftTitle }}</template>
     <template #content>
-      <pre class="document-body">{{ note.content }}</pre>
+      <div class="h-full flex flex-col min-h-0">
+        <pre class="document-body flex-1 overflow-auto">{{ editStore.draftContent }}</pre>
+      </div>
     </template>
   </Card>
 </template>

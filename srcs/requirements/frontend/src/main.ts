@@ -1,6 +1,7 @@
 import { createSSRApp } from "vue";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
+import ConfirmationService from "primevue/confirmationservice";
 import App from "./App.vue";
 import { createRouter } from "./router";
 
@@ -17,6 +18,7 @@ export function createApp(type: "client" | "server") {
 	app.use(PrimeVue, {
 		unstyled: true,
 	});
+	app.use(ConfirmationService);
 
 	return { app, router, pinia };
 }

@@ -1,28 +1,49 @@
 <script setup lang="ts">
-import { ref, onMounted, computed,watch, onServerPrefetch } from "vue";
+import { ref, onMounted, computed, watch, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
-// import NoteCreateForm from "@/components/notes/NoteCreateForm.vue";
+import NoteCreateForm from "@/components/notes/NoteCreateForm.vue";
 import NoteEdit from "@/components/notes/NoteEdit.vue";
 import NoteDisplay from "@/components/notes/NoteDisplay.vue";
 import { useConfirm } from "primevue/useconfirm";
-// import TrashIcon from "@primevue/icons/trash";
 import TimesIcon from "@primevue/icons/times";
+import ContextMenu from "@/volt/custom/ContextMenu.vue";
 
 import { useNoteStore } from "@/stores/noteStore";
 
+
+
+// WITH CONTEXT MENU
 
 // Create store instance
 const noteStore = useNoteStore();
 const confirm = useConfirm();
 
+const menu = ref();
+const menuNoteId = ref<number | null>(null);
+
+const menuItems = ref([
+	{
+		label: 'Delete',
+		icon: 'pi pi-trash',
+		command: () => {
+			if (menuNoteId.value) confirmDelete(menuNoteId.value);
+		}
+	}
+]);
+
+const onContextMenu = (event: MouseEvent, id: number) => {
+	menuNoteId.value = id;
+	menu.value.show(event);
+};
+
 // Ref to control create form visibility
-const showEditForm = ref(true);
+const showEditForm = ref(false);
 
 
 
-watch(()=>noteStore.selectedNote, (newSelected)=>{
+watch(() => noteStore.selectedNote, (newSelected) => {
 	if (newSelected)
 		showEditForm.value = false;
 })
@@ -95,31 +116,35 @@ onServerPrefetch(async () => {
 				Loading notes...
 			</div>
 			<!-- NOTES LIST listbox using pinia notesStore and selected note -->
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id">
+			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title"
+				dataKey="id">
 				<template #option="slotProps">
-					<div class="flex items-center justify-between w-full group/item ">
-						<!-- px-2 py-1 -->
+					<div class="flex items-center justify-between w-full group/item px-2 py-1"
+						@contextmenu.prevent="onContextMenu($event, slotProps.option.id)">
 						<span>{{ slotProps.option.title }}</span>
 						<Button severity="danger" text rounded size="small"
 							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
 							@click.stop="confirmDelete(slotProps.option.id)">
-							<TimesIcon class="w-2.5 h-2.5" />
+							<TimesIcon class="w-3 h-3" />
 						</Button>
 					</div>
 				</template>
 			</Listbox>
+			<ContextMenu ref="menu" :model="menuItems" />
 		</template>
 
 		<!-- <div class="document-container"> -->
-			<!-- creation only -->
-			<!-- <NoteCreateForm v-if="showCreateForm" @create="handleSave" @cancel="handleCancel" /> -->
+		<!-- creation only -->
+		<!-- <NoteCreateForm v-if="showCreateForm" @create="handleSave" @cancel="handleCancel" /> -->
 
-			<!-- EDIT NOTE -->
-			<NoteEdit v-if="noteStore.selectedNote || showEditForm" @cancel="handleCancel" :note="noteStore.selectedNote"/>
-			<!-- PREVIEW (UNCOMMENT THIS)-->
-			<NoteDisplay v-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
-			<!-- IT NO NOTE SELECTED -->
-			<div v-else-if="!noteStore.isLoading && !showEditForm  && !noteStore.selectedNote" class="empty-state">Select a note</div>
+		<!-- EDIT NOTE -->
+		<NoteEdit v-if="noteStore.selectedNote || showEditForm" @cancel="handleCancel" :note="noteStore.selectedNote" />
+		<!-- PREVIEW -->
+		<NoteDisplay v-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
+		<!-- IT NO NOTE SELECTED -->
+		<div v-else-if="!noteStore.isLoading && !showEditForm && !noteStore.selectedNote" class="empty-state">Select a
+			note
+		</div>
 		<!-- </div> -->
 	</SidebarLayout>
 </template>
