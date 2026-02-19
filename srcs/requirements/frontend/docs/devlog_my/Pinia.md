@@ -118,7 +118,7 @@ When the browser loads the app, Pinia checks for window.__INITIAL_STATE__. If it
 ### D. Smart Store Routing (src/stores/noteStore.ts)
 The store functions now detect their environment:
 - **On Server**: Talks directly to http://notes:8000/api/notes (Internal Docker network).
-- **On Client**: Talks to /api/notes (Relative path via Nginx/Gateway).
+- **On Client**: Talks to /api/notes (Relative path via Nginx).
 ## 2. Component Implementation (NotesView.vue)
 To trigger the server-side fetch, we use the onServerPrefetch hook:
 \`\`\`typescript

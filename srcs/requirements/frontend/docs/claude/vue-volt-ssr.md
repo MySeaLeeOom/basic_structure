@@ -1,1 +1,0 @@
-/home/ahmet/.claude/skills/vue-volt-ssr/SKILL.md
