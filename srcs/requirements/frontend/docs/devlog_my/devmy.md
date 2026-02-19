@@ -77,7 +77,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 		try {
 			// On the server, we MUST use the full internal Docker URL.
-			// On the client, we use a relative URL (which goes through the Gateway/Nginx).
+			// On the client, we use a relative URL (which goes through the Nginx).
 			const isServer = typeof window === "undefined";
 			const url = isServer ? "http://notes:3003/api/notes" : "/api/notes";
 

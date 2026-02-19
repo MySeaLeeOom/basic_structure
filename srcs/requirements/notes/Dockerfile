@@ -13,7 +13,7 @@ WORKDIR /usr/src/app
 # Install netcat for the entrypoint script
 RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/src/app/target/release/notes-rs .
+COPY --from=builder /usr/src/app/target/release/notes .
 COPY entrypoint.sh .
 
 RUN chmod +x entrypoint.sh
@@ -21,4 +21,4 @@ RUN chmod +x entrypoint.sh
 EXPOSE 3003
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["./notes-rs"]
+CMD ["./notes"]

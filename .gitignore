@@ -3,9 +3,9 @@ secrets
 node_modules
 
 # Claude Code config
-**/DOCS/claude/
-**/.claude/
-CLAUDE.md
+# **/DOCS/claude/
+# **/.claude/
+# CLAUDE.md
 
 copilot-instructions.md
 masha*.*
