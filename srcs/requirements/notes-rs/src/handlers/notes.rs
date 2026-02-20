@@ -7,7 +7,7 @@ use axum::{
 };
 use std::sync::Arc;
 use uuid::Uuid;
-use yrs::{Doc, ReadTxn, StateVector, Text, Transact};
+use yrs::{Doc, ReadTxn, StateVector, Text, Transact, XmlFragment};
 
 use crate::models::{CreateNote, Note, NoteSummary};
 use crate::sync::AppState;
@@ -51,15 +51,13 @@ pub async fn create_note(
     let doc_state = {
         let doc = Doc::new();
         let title_text = doc.get_or_insert_text("title");
-        let content_text = doc.get_or_insert_text("content");
+        let _content_frag = doc.get_or_insert_xml_fragment("content");
         {
             let mut txn = doc.transact_mut();
             if let Some(ref t) = payload.title {
                 title_text.insert(&mut txn, 0u32, t.as_str());
             }
-            if let Some(ref c) = payload.content {
-                content_text.insert(&mut txn, 0u32, c.as_str());
-            }
+            // content starts empty — Tiptap populates the XmlFragment via WebSocket
         }
         doc.transact()
             .encode_state_as_update_v1(&StateVector::default())
