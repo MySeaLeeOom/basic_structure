@@ -1,10 +1,9 @@
 import fastify from "fastify";
 import postgres from "@fastify/postgres";
-import { readFileSync } from "node:fs"; //for getting the secret from a file
 import { drizzle } from "drizzle-orm/node-postgres";
 import {databaseUrl} from "./db/connections"
-import { OAuth2Token } from "@fastify/oauth2";
 
+import { OAuth2Token } from "@fastify/oauth2";
 import { pgEnum } from "drizzle-orm/pg-core";
 import * as schema from './db/schema';    // DB tables
 

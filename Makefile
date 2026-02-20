@@ -22,7 +22,7 @@ clean: getuser
 
 fclean: getuser
 	@echo "Removing all volumes..."
-	$(COMPOSE) down -v --rmi all $(FLAGS)
+	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
 re: clean all
 
@@ -30,3 +30,6 @@ logs: getuser
 	$(COMPOSE) logs -f $(service)
 
 .PHONY: all up down clean re logs
+
+# Docker commands
+# docker volume rm $(docker volume ls -q)
