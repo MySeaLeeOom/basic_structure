@@ -1,3 +1,22 @@
+Authorization OAUTH2 Fundamentals:
+
+1. The Who:
+- User
+- Authorization Service (Google, Github, 42, etc)
+- Us, we are the client making a request to the Authorization Service
+
+2. The Flow:
+  1. Redirect the user to the Authorization Service (Google, Github, 42, etc)
+  2. They must accept
+  3. Authorization service redirects them to a URL we provided with some numbers attached to the URL
+  4. We request from the Authorization Code, our Client Id and out Client Secret
+  5. Authorization Service checks that all is in order and sends us back an access token
+    -we can use the access token to query for the User's Login name and Profile Information
+
+
+
+
+
 Rules:
 - hash the password (we will never be able to see the password, it will be hashed and if the hassh matches, then we know the user entered the correct password)
 
