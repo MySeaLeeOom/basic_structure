@@ -3,6 +3,7 @@ import postgres from "@fastify/postgres";
 import { readFileSync } from "node:fs"; //for getting the secret from a file
 import { drizzle } from "drizzle-orm/node-postgres";
 import {databaseUrl} from "./db/connections"
+import { OAuth2Token } from "@fastify/oauth2";
 
 import { pgEnum } from "drizzle-orm/pg-core";
 import * as schema from './db/schema';    // DB tables
@@ -10,8 +11,10 @@ import * as schema from './db/schema';    // DB tables
 // import { randomUUID } from 'node:crypto';
 // const sessionID = randomUUID(); //this is for the UUID/session
 
-const server = fastify();
-
+const server = fastify({
+	logger: { level: 'trace' }, // pino logger for prometheus
+	trustProxy: true // so we can check the ip of the user, not just nginx (nginx adds this)
+});
 
 // this register db as a plugin, the server makes sure the connection is there
 // (pool of connections)
