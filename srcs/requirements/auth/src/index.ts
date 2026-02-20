@@ -15,6 +15,8 @@ const server = fastify({
 	trustProxy: true // so we can check the ip of the user, not just nginx (nginx adds this)
 });
 
+//REGISTER OAUTH2 HERE - look up github
+
 // this register db as a plugin, the server makes sure the connection is there
 // (pool of connections)
 server.register(postgres, {
