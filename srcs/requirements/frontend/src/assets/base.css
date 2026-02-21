@@ -32,6 +32,62 @@
 	.empty-state {
 		@apply p-8 text-center text-muted-color;
 	}
+
+	/* Tiptap editor base styles */
+	.tiptap-editor .tiptap {
+		outline: none;
+		padding: 1rem;
+		min-height: 200px;
+		flex: 1;
+		overflow-y: auto;
+	}
+
+	.tiptap-editor .tiptap p {
+		margin: 0.5em 0;
+	}
+
+	.tiptap-editor .tiptap h1,
+	.tiptap-editor .tiptap h2,
+	.tiptap-editor .tiptap h3 {
+		margin-top: 1em;
+		margin-bottom: 0.5em;
+	}
+
+	/* Placeholder text (@tiptap/extension-placeholder) */
+	.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+		color: #adb5bd;
+		content: attr(data-placeholder);
+		float: left;
+		height: 0;
+		pointer-events: none;
+	}
+
+	/* Collaboration caret — remote user cursor */
+	.collaboration-cursor__caret {
+		border-left: 1px solid #0d0d0d;
+		border-right: 1px solid #0d0d0d;
+		margin-left: -1px;
+		margin-right: -1px;
+		pointer-events: none;
+		position: relative;
+		word-break: normal;
+	}
+
+	/* Collaboration caret — username label */
+	.collaboration-cursor__label {
+		border-radius: 3px 3px 3px 0;
+		color: #fff;
+		font-size: 12px;
+		font-style: normal;
+		font-weight: 600;
+		left: -1px;
+		line-height: normal;
+		padding: 0.1rem 0.3rem;
+		position: absolute;
+		top: -1.4em;
+		user-select: none;
+		white-space: nowrap;
+	}
 }
 
 :root {
