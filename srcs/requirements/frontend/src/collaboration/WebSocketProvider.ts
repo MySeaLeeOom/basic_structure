@@ -9,7 +9,7 @@ const MSG_SYNC = 0x00;
 const MSG_AWARENESS = 0x01;
 
 export interface ProviderOptions {
-  noteId: number;
+  noteId: string;
   doc: Y.Doc;
   awareness: Awareness;
 }
@@ -19,7 +19,7 @@ export class WebSocketProvider {
 
   private ws: WebSocket | null = null;
   private doc: Y.Doc;
-  private noteId: number;
+  private noteId: string;
   private _synced = false;
   private _connected = false;
   private shouldReconnect = false;
