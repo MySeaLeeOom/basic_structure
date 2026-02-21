@@ -18,10 +18,10 @@ CREATE TABLE note_updates (
     note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
     update_data BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    client_id UUID,  -- which client sent this update
-    
-    INDEX idx_note_updates_note_id_created (note_id, created_at)
+    client_id UUID  -- which client sent this update
 );
+
+CREATE INDEX idx_note_updates_note_id_created ON note_updates (note_id, created_at);
 
 -- Track client sync state
 CREATE TABLE client_sync_state (
