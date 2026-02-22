@@ -2,13 +2,17 @@
 secrets
 node_modules
 
-# Claude Code config
+Claude Code config
 **/DOCS/claude/
 **/.claude/
 CLAUDE.md
 
 copilot-instructions.md
+temp
 masha*.*
 crdt-migration-plan.md
+
+# Personal dev docs (pushed to MySeaLeeOom/transcendence-docs)
+srcs/requirements/frontend/docs/dev/
 
 target

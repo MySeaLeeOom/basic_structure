@@ -20,8 +20,8 @@
                 {{ message.message }}
             </div>
             <div class="pt-0 px-5 pb-5 flex justify-end gap-2">
-                <SecondaryButton @click="rejectCallback" :label="message.rejectProps.label" size="small" />
-                <Button @click="acceptCallback" :label="message.acceptProps.label" size="small" />
+                <SecondaryButton @click="rejectCallback" :label="message.rejectProps?.label" size="small" /> 
+                <Button @click="acceptCallback" :label="message.acceptProps?.label" size="small" />
             </div>
         </template>
     </ConfirmDialog>
