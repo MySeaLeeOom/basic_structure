@@ -7,9 +7,11 @@ const navItems = [
   { to: '/notes', label: 'Notes' },
   { to: '/mindmap', label: 'Mindmap' },
 ];
+
 </script>
 
 <template>
+  <a href="/api/auth/login/github">loginGit</a>
   <Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
       <RouterLink to="/" class="text-xl font-bold text-primary-500 no-underline">Mycelium</RouterLink>
