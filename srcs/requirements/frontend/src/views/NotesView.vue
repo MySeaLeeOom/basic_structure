@@ -1,49 +1,57 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onServerPrefetch } from "vue";
+import { ref, watch, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
-import NoteCreateForm from "@/components/notes/NoteCreateForm.vue";
-import NoteDisplay from "@/components/notes/NoteDisplay.vue";
-
-// Previous implementation using composable
-// import { useNotes } from "@/composables/useNotes";
-// const { notes, selectedNote, error, fetchNotes, createNote } = useNotes();
-
-// New implementation using Pinia store
+import NoteEditor from "@/components/notes/NoteEditor.vue";
+import { useConfirm } from "primevue/useconfirm";
+import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
 
-// Create store instance
 const noteStore = useNoteStore();
+const confirm = useConfirm();
 
-// Ref to control create form visibility
-const showCreateForm = ref(false);
+// SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
+const mounted = ref(false);
+onMounted(() => { mounted.value = true; });
 
-// Function to handle note creation
-async function handleCreate(title: string, content: string) {
-	// Use store's create note method
-	await noteStore.createNote(title, content);
-	// Close create form
-	showCreateForm.value = false;
+const editMode = ref(false);
+
+// Switching notes resets to view mode
+watch(() => noteStore.selectedNote, () => {
+	editMode.value = false;
+});
+
+async function handleCreate() {
+	await noteStore.createNote();
+	editMode.value = true;
 }
 
-// Function to cancel note creation
-function handleCancel() {
-	showCreateForm.value = false;
+function confirmDelete(id: string) {
+	confirm.require({
+		message: 'Are you sure you want to delete this note?',
+		header: 'Confirm Deletion',
+		icon: 'pi pi-trash',
+		acceptProps: {
+			label: 'Delete',
+			severity: 'danger'
+		},
+		rejectProps: {
+			label: 'Cancel',
+			severity: 'secondary'
+		},
+		accept: () => {
+			noteStore.deleteNote(id);
+		}
+	});
 }
 
-// onServerPrefetch
-
-// Fetch notes when component mounts
 onMounted(() => {
-	// Use store's fetch notes method if the notes are not fetched
 	if (noteStore.notesCount === 0)
 		noteStore.fetchNotes();
 });
 
-// Fetch notes during server-side rendering for /notes route
 onServerPrefetch(async () => {
-	console.log("PREFETCHING")
 	if (noteStore.notesCount === 0)
 		await noteStore.fetchNotes();
 });
@@ -54,28 +62,34 @@ onServerPrefetch(async () => {
 		<template #sidebar>
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="section-title !mb-0">Notes</h2>
-				<Button v-if="!showCreateForm" label="+" text rounded @click="showCreateForm = true"></button>
+				<Button label="+" text rounded @click="handleCreate" />
 			</div>
-
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
-			<!-- Listbox using store's notes and selected note -->
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id" />
+			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title_preview" dataKey="id">
+				<template #option="slotProps">
+					<div class="flex items-center justify-between w-full group/item">
+						<span>{{ slotProps.option.title_preview || "Untitled" }}</span>
+						<Button severity="danger" text rounded size="small"
+							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
+							@click.stop="confirmDelete(slotProps.option.id)">
+							<TimesIcon class="w-2.5 h-2.5" />
+						</Button>
+					</div>
+				</template>
+			</Listbox>
 		</template>
 
-		<div class="document-container">
-			<NoteCreateForm v-if="showCreateForm" @create="handleCreate" @cancel="handleCancel" />
-			<NoteDisplay v-else-if="noteStore.selectedNote" :note="noteStore.selectedNote" />
-			<div v-else-if="!noteStore.isLoading" class="empty-state">Select a note</div>
-		</div>
+		<NoteEditor
+			v-if="mounted && noteStore.selectedNote"
+			:key="noteStore.selectedNote.id"
+			:note-id="noteStore.selectedNote.id"
+			:editable="editMode"
+			@close="editMode = false"
+			@edit="editMode = true"
+		/>
+		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
 	</SidebarLayout>
 </template>
-
-<!-- 
-TODO:
-- edit note functionality (so we can update a note, depends on backend call to update)
-- when we select note, we can choose the edit view or Markdown preview view or both
-- maybe: some functionality for if you are writing a note but select a note to view without saving... popup where you can save/discard the current note you are working on
--->

@@ -24,7 +24,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 		try {
 			// On the server, we MUST use the full internal Docker URL.
-			// On the client, we use a relative URL (which goes through the Gateway/Nginx).
+			// On the client, we use a relative URL (which goes through the Nginx).
 			const isServer = typeof window === "undefined";
 			const url = isServer ? "http://notes:3003/api/notes" : "/api/notes";
 
@@ -37,10 +37,10 @@ export const useNoteStore = defineStore("notes", () => {
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
 
-			// Auto-select first note if none selected
-			if (!selectedNote.value && notes.value.length) {
-				selectedNote.value = notes.value[0]!;
-			}
+			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load)
+			// if (!selectedNote.value && notes.value.length) {
+			// 	selectedNote.value = notes.value[0]!;
+			// }
 
 			// Update fetch timestamp
 			lastFetchTimestamp.value = currentTime;
@@ -54,12 +54,14 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 	}
 
-	async function createNote(title: string, content: string) {
+	async function createNote() {
+		error.value = null;
+		isLoading.value = true;
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ title: title.trim(), content }),
+				body: JSON.stringify({}),
 			});
 
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -71,17 +73,38 @@ export const useNoteStore = defineStore("notes", () => {
 			const errorMsg = catchError instanceof Error ? catchError.message : "Create failed";
 			error.value = errorMsg;
 			console.error("Failed to create note:", errorMsg);
+		} finally {
+			isLoading.value = false;
 		}
 	}
 
-	// Computed properties for easy access and potential RAG integration
-	const notesCount = computed(() => notes.value.length);
-	const getNoteTitles = computed(() => notes.value.map((note) => note.title));
+	async function deleteNote(id: string) {
+		error.value = null;
+		isLoading.value = true;
+		try {
+			const response = await fetch(`/api/notes/${id}`, {
+				method: "DELETE",
+			});
 
-	// Method to search notes (useful for RAG)
-	function searchNotes(query: string) {
-		const lowercaseQuery = query.toLowerCase();
-		return notes.value.filter((note) => note.title.toLowerCase().includes(lowercaseQuery) || note.content.toLowerCase().includes(lowercaseQuery));
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+			notes.value = notes.value.filter((n) => n.id !== id);
+			if (selectedNote.value?.id === id) {
+				selectedNote.value = null;
+			}
+		} catch (catchError) {
+			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
+			error.value = errorMsg;
+			console.error("Failed to delete note:", errorMsg);
+		} finally {
+			isLoading.value = false;
+		}
+	}
+
+	const notesCount = computed(() => notes.value.length);
+
+	function resetSelected() {
+		selectedNote.value = null;
 	}
 
 	return {
@@ -90,9 +113,9 @@ export const useNoteStore = defineStore("notes", () => {
 		error,
 		isLoading,
 		notesCount,
-		getNoteTitles,
 		fetchNotes,
 		createNote,
-		searchNotes,
+		deleteNote,
+		resetSelected,
 	};
 });
