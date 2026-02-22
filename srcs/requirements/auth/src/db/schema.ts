@@ -1,9 +1,9 @@
-import { pgTable,pgEnum, serial, text, boolean, timestamp, integer} from "drizzle-orm/pg-core";
+import { pgTable,pgEnum, serial, text, boolean, timestamp, integer, unique} from "drizzle-orm/pg-core";
 import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
 export const providerEnum = pgEnum('provider_type', ['github', 'local', 'google', '42']);
 export const roleEnum = pgEnum('role', ['user','admin']);
-export const userStatusEnum = pgEnum('status', ['active','blocked', 'suspened']);
+export const userStatusEnum = pgEnum('status', ['active','blocked', 'suspended']);
 
 // 1. Tables
 
@@ -11,12 +11,16 @@ export const users= pgTable('users', {
 	id: serial('id').primaryKey(),
 	provider: providerEnum('provider').notNull().default('local'),
 	provider_id: text('provider_id').notNull(),
-	email: text('email').notNull(),
+	email: text('emailAddress'),
 	passwordHash: text('password_hash'),
 	role: roleEnum('role').notNull(). default('user'),
 	status:userStatusEnum('status').notNull().default('active'),
 	created_at: timestamp().defaultNow()
-})
+}, (table) => [
+	// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
+	unique('user_provider_id_unique').on(table.provider, table.provider_id)
+])
+
 
 export const sessions = pgTable('sessions', {
 	id: serial('id').primaryKey(),

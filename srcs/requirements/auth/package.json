@@ -7,9 +7,9 @@
 		"build": "tsc -p tsconfig.json",
 		"prestart": "pnpm run build",
 		"start": "node dist/index.js",
-		"dev": "tsx watch src/index.ts",
-		"db:generate": "drizzle-kit   generate",
-		"db:push": "drizzle-kit push"
+		"db:generate": "drizzle-kit generate",
+		"db:push": "drizzle-kit push",
+		"dev": "tsx watch src/index.ts"
 	},
 	"keywords": [],
 	"author": "",

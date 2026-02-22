@@ -3,12 +3,16 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "path";
 
 /*
-Template for the stadard DATABASE URL in Docker:
+Template URL
 postgres://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@${POSTGRES}/${AUTH_DB_NAME}
 */
 
-// ensure correct .env path location (works on host)
-dotenv.config({ path: resolve(__dirname, "../../.env") });
+// For local development on host, we look for a .env file.
+// Inside Docker, compose already injects these variables, so we skip this if they exist.
+const hostEnv = resolve(__dirname, "../../.env");
+if (!process.env.AUTH_DB_USER && existsSync(hostEnv)) {
+	dotenv.config({ path: hostEnv });
+}
 
 const user = process.env.AUTH_DB_USER as string;
 const host = process.env.POSTGRES_ADDR as string;
@@ -23,7 +27,5 @@ if (existsSync(containerSecret)) {
 } else if (existsSync(hostSecret)) {
 	auth_pass = readFileSync(hostSecret, "utf8").trim();
 }
-
-
 
 export const databaseUrl = `postgres://${user}:${auth_pass}@${host}/${db_name}`;
