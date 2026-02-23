@@ -36,7 +36,6 @@ server.register(postgres, {
 server.after(async () => {
 	const db = drizzle(server.pg.pool);
 	server.decorate("db", db);
-
 	// The Production Migration Gate (The "Actual Machine")
 	try {
 		console.log("Checking for pending migrations...");
