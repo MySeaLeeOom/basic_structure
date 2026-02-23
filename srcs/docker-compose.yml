@@ -35,6 +35,23 @@ services:
     networks:
       - transcendence
 
+  editor:
+      build:
+        context: ./requirements/editor
+        dockerfile: Dockerfile
+      image: editor
+      container_name: editor
+      restart: always
+      environment:
+        DB_HOST: postgres
+        DB_USER: ${DB_USER}
+        DB_PASSWORD: ${DB_PASSWORD}
+        DB_NAME: ${DB_NAME}
+      depends_on:
+        - postgres
+      networks:
+        - transcendence
+
   nginx:
     build:
       context: ./requirements/nginx
