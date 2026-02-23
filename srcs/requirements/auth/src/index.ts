@@ -1,22 +1,31 @@
+import { readFileSync, existsSync } from "node:fs";
 import fastify from "fastify";
 import postgres from "@fastify/postgres";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { databaseUrl } from "./db/connections";
-
-import { readFileSync, existsSync } from "node:fs";
 import fastifyOauth2 from "@fastify/oauth2";
-
-// import { FastifyInstance } from "fastify"; // This imports the FastifyInstance TYPE.
 import { OAuth2Namespace } from "@fastify/oauth2"; // This was previously added.
 
-import { pgEnum } from "drizzle-orm/pg-core";
 import * as schema from "./db/schema"; // DB tables
+import { authRoutes } from "./routes/auth"; // all routes
 
-// import { randomUUID } from 'node:crypto';
-// const sessionID = randomUUID(); //this is for the UUID/session
-const url = process.env.WEBSITE_URL || "";
-if (!url) throw new Error("No website url in the environment!");
+/**
+ * Declaration Merging (Module Augmentation): typescript
+ * Concept: let typescript know that the object might contain an extra property
+ * In this case, FastifyInstance might contain githubOAuth2
+ */
+declare module "fastify" {
+	interface FastifyInstance {
+		githubOAuth2: OAuth2Namespace;
+		db: NodePgDatabase<typeof schema>;
+	}
+}
+
+// Maybe dont really need this, can get it from request headers
+// const url = process.env.WEBSITE_URL || "";
+// if (!url) throw new Error("No website url in the environment!");
+
 // FASTIFY INSTANCE
 const server = fastify({
 	logger: { level: "trace" }, // pino logger for prometheus
@@ -34,7 +43,7 @@ server.register(postgres, {
 });
 // connect the pool of connections to drizzle
 server.after(async () => {
-	const db = drizzle(server.pg.pool);
+	const db = drizzle(server.pg.pool, { schema }); //TODO:check
 	server.decorate("db", db);
 	// The Production Migration Gate (The "Actual Machine")
 	try {
@@ -61,16 +70,7 @@ const gitSecretPath = "/run/secrets/github_client_secret";
 if (existsSync(gitSecretPath)) clientSecretGit = readFileSync(gitSecretPath, "utf8").trim();
 else throw new Error("CRITICAL: GITHUB_CLIENT_SECRET is missing from secrets!");
 
-/**
- * Declaration Merging (Module Augmentation): typescript
- * Concept: let typescript know that the object might contain an extra property
- * In this case, FastifyInstance might contain githubOAuth2
- */
-declare module "fastify" {
-	interface FastifyInstance {
-		githubOAuth2: OAuth2Namespace;
-	}
-}
+
 //REGISTER OAUTH2 GITHUB
 server.register(fastifyOauth2, {
 	name: "githubOAuth2",
@@ -86,59 +86,10 @@ server.register(fastifyOauth2, {
 	callbackUri: "http://localhost:8080/api/auth/login/github/callback",
 });
 
-//this function will receive the token
-// - needs to check if there is a user already with this info
-// - needs to either create the user or give them a session
-server.get("/login/github/callback", async function (request, reply) {
-	//get the token from github
-	const gitToken = await this.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
-	console.log(gitToken.token.access_token);
-
-	// get the user info using token information
-	const response = await fetch("https://api.github.com/user", {
-		headers: {
-			Authorization: `Bearer ${gitToken.token.access_token}`,
-			"User-Agent": "myceleum_catdev42",
-		},
-	});
-	const githubUser = await response.json();
-	console.log(githubUser);
-
-	// specialized request for emails (not doing, but tested)
-	// const emailResponse = await fetch("https://api.github.com/user/emails", {
-	//     headers: {
-	//         Authorization: `Bearer ${gitToken.token.access_token}`,
-	//         "User-Agent": "myceleum_catdev42",
-	//     },
-	// });
-	// const emails = await emailResponse.json();
-	// console.log(emails);
-
-	// TODO: DO DATABASE
-	// // ex: const user = await request.server.db.select().from(users);
-
-	reply.send({ access_token: gitToken.token.access_token });
-});
-
-/* Example usage of drizzle:
-server.get('/users', async (request, reply) => {
-    const allUsers = await request.server.db.select().from(users);
-});
-*/
+server.register(authRoutes);
 
 server.get("/ping", async (request, reply) => {
 	return "pong\n";
-});
-
-//what to do if we are registering a user locally
-// logic for registering a new user locally
-server.get("/login", async (request, reply) => {
-	return { message: "Local login placeholder" };
-});
-
-// separate one for checking cookie
-server.get("/", async (request, reply) => {
-	return { message: "Auth service root placeholder" };
 });
 
 server.listen({ port: 3000, host: "0.0.0.0" }, (err, address) => {
