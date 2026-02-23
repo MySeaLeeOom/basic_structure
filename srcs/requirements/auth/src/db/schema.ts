@@ -11,7 +11,7 @@ export const users= pgTable('users', {
 	id: serial('id').primaryKey(),
 	provider: providerEnum('provider').notNull().default('local'),
 	provider_id: text('provider_id').notNull(),
-	email: text('emailAddress'),
+	email: text('email'),
 	passwordHash: text('password_hash'),
 	role: roleEnum('role').notNull(). default('user'),
 	status:userStatusEnum('status').notNull().default('active'),
