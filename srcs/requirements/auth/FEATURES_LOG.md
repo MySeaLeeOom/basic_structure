@@ -1,7 +1,9 @@
 ## 20.02.26 - Feb 20
 
-- pnpm add -D pino-pretty: pino is an intergrated logger in fastify, it is super fast but naturally outputs logs in one line, with an entire json being one line. This makes it human readable
-  - why: for prometheus 
+- enable logging - from prometheus / graphana
+- pnpm add -D pino-pretty: pino is an intergrated logger in fastify, it is super fast but naturally outputs logs in one line, with an entire json being one line. This makes it human readable.
+`docker logs -f auth | pnpm exec pino-pretty`
+
 
 - pnpm add @fastify/oauth2: fastify native OAUTH2 libary, wrapper of simple-oauth2
 - create docs and diagrams to illustrate OAUTH2 
@@ -93,21 +95,28 @@ TODO:
 - things can be stored in local storage as well, but that is not sent automaticlaly by the browser
 
 
-22.02/26
+## 22.02.26
 
 - **Composite Unique Contraint**
   - add [unique('provider_p_id').on(table.provider, table.provider_id)] as third argument to pgTable
 
 - ~~TODO: "dev": "pnpm db:push && tsx watch src/index.ts"~~
-- Add to package.json: `"dev": "pnpm db:generate && tsx watch src/index.ts`
+- ~~Add to package.json: `"dev": "pnpm db:generate && tsx watch src/index.ts`~~
+  - run pnpm db:generate locally to make a migrate file
+  - auth server will run it on startup in server.after
   - This is for development only!
   - In production we will add the migration file to the server, it is source of truth
-
 ## Note: migration files and their usage
 - They function as the source of truth as we work with an existing database. We must track all changes because otherwise the db might assume we deleted one table and added another one...
 
 - How does the migration keep track of the fact that we Altered the column instead of deleting it and putting a new one???? Ddo we write that command? So we don't simply change the schema in schema.ts???
 
+## 23.02.26
+
+- Add things to sessions
+  - UUID token (why we need this outsire of the is on sessions?)
+  - userAgent (what type of device, to be able to tell the user)
+  - ip_address (the ip address of last access)
 
 
 
