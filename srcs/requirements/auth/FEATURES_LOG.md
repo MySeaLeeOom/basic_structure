@@ -102,11 +102,11 @@ TODO:
 
 - ~~TODO: "dev": "pnpm db:push && tsx watch src/index.ts"~~
 - ~~Add to package.json: `"dev": "pnpm db:generate && tsx watch src/index.ts`~~
-  - run pnpm db:generate locally to make a migrate file
-  - auth server will run it on startup in server.after
-  - This is for development only!
+### Instructions
+  - run pnpm db:generate locally to make a migrate file (LOCALLY/maintenance)
+  - auth server index.ts will run it on startup in server.after
   - In production we will add the migration file to the server, it is source of truth
-## Note: migration files and their usage
+### Note: migration files and their usage
 - They function as the source of truth as we work with an existing database. We must track all changes because otherwise the db might assume we deleted one table and added another one...
 
 - How does the migration keep track of the fact that we Altered the column instead of deleting it and putting a new one???? Ddo we write that command? So we don't simply change the schema in schema.ts???
@@ -119,4 +119,43 @@ TODO:
   - ip_address (the ip address of last access)
 
 
+### Cookie looks like this: `session_id=my-random-uuid.6H7z...`
+
+### COOKIE registration options
+```
+reply.setCookie("session_id", session.token, {
+			path: "/",
+			httpOnly: true,
+			secure: false, // Set to TRUE when using real HTTPS
+			sameSite: "lax",
+			expires: expiresAt,
+			signed: true,
+		});
+```
+  1. httpOnly (Preventing "The Script Thief")
+This prevents any js from getting a hold of the cookie in a "Cross-Site Scripting" or XSS attack. Otherwise it could simply run document.cookie and steal the session ID.
+
+By marking it httpOnly, you are telling the browser: "This cookie is for the network only. Do NOT let any JavaScript touch it or even know it exists." This makes it impossible for an XSS script to steal the session directly.
+
+2. signed: true (Preventing "The Identity Forger")
+When you "sign" a cookie, you take the Session ID and a Secret Key (your session_cookie_secret) and run them through a machine called a HMAC (Hash-based Message Authentication Code). This creates a "Signature."
+
+If a user tries to change their cookie from 123 to 456 in their browser, they don't know your Secret Key. When they send the fake 456 back to your server, Fastify will see that the signature doesn't match and will reject the cookie as tampered.
+
+It is the equivalent of a wax seal on a letter—if the seal is broken or looks wrong, you know the message inside cannot be trusted.
+
+3. secure: true / false (Preventing "The Eavesdropper")
+secure: true: Tells the browser to only send this cookie over a secure, encrypted HTTPS connection.
+In your current Docker dev environment, you are using secure: false because you're talking over plain HTTP. But once you move into "The Real World" with an SSL certificate, this becomes your final shield against anyone trying to "sniff" your network traffic.
+
+4. sameSite: "lax" (Preventing "The Impersonator")
+This prevents Cross-Site Request Forgery (CSRF). It tells the browser: "Only send this cookie if the user is actually on my website." If they are on evil-site.com and it tries to send a background request to masha-notes.com, the browser will refuse to include the cookie.
+
+### Working with the cookie
+
+		const sessionId = request.unsignCookie(request.cookies.session_id || "");
+
+
+when you receive the cookie, you can pull it out of request
+const sessionId= request.unsignCookie(request.cookies.session_id || "");
 
