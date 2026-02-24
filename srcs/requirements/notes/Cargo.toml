@@ -8,3 +8,5 @@ axum = "0.8.8"
 serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.49.0", features = ["full"] }
+uuid = { version = "1.12.1", features = ["serde", "v4"] }
+chrono = { version = "0.4.39", features = ["serde"] }
