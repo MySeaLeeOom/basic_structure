@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import fastify from "fastify";
 import postgres from "@fastify/postgres";
+import fastifyCookie from "@fastify/cookie";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { databaseUrl } from "./db/connections";
@@ -9,11 +10,11 @@ import { OAuth2Namespace } from "@fastify/oauth2"; // This was previously added.
 
 import * as schema from "./db/schema"; // DB tables
 import { authRoutes } from "./routes/auth"; // all routes
+import { sessionRoutes } from "./routes/sessions"; // verification logic
 
 /**
  * Declaration Merging (Module Augmentation): typescript
- * Concept: let typescript know that the object might contain an extra property
- * In this case, FastifyInstance might contain githubOAuth2
+ * Concept: let typescript know that the object might contain extra properties
  */
 declare module "fastify" {
 	interface FastifyInstance {
@@ -22,19 +23,13 @@ declare module "fastify" {
 	}
 }
 
-// Maybe dont really need this, can get it from request headers
-// const url = process.env.WEBSITE_URL || "";
-// if (!url) throw new Error("No website url in the environment!");
-
 // FASTIFY INSTANCE
 const server = fastify({
-	logger: { level: "trace" }, // pino logger for prometheus
+	logger: { level: "trace" }, 
 	trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
 });
 
 // POSTGRES
-// this register db as a plugin, the server makes sure the connection is there
-// (pool of connections)
 server.register(postgres, {
 	connectionString: databaseUrl,
 	max: 10,
@@ -43,9 +38,9 @@ server.register(postgres, {
 });
 // connect the pool of connections to drizzle
 server.after(async () => {
-	const db = drizzle(server.pg.pool, { schema }); //TODO:check
+	const db = drizzle(server.pg.pool, { schema }); //TODO:check schema
 	server.decorate("db", db);
-	// The Production Migration Gate (The "Actual Machine")
+	// The Production Migration Gate
 	try {
 		console.log("Checking for pending migrations...");
 		// This looks at our 'drizzle/' folder and ensures the DB matches
@@ -59,17 +54,26 @@ server.after(async () => {
 });
 
 //OAUTH2 GITHUB
-// github client id
-const clientIdGit = process.env.GITHUB_CLIENT_ID;
+const clientIdGit = process.env.GITHUB_CLIENT_ID; // id of registed OAuth app
 if (!clientIdGit) {
 	throw new Error("CRITICAL: GITHUB_CLIENT_ID is missing from the environment!");
 }
-// github client secret
-let clientSecretGit = "";
-const gitSecretPath = "/run/secrets/github_client_secret";
+const gitSecretPath = "/run/secrets/github_client_secret"; //secret of registerd OAuth app
+let clientSecretGit = ""; // help with scope
 if (existsSync(gitSecretPath)) clientSecretGit = readFileSync(gitSecretPath, "utf8").trim();
 else throw new Error("CRITICAL: GITHUB_CLIENT_SECRET is missing from secrets!");
 
+// READ SESSION SECRET (For signing cookies)
+let sessionSecret = "";
+const sessionSecretPath = "/run/secrets/session_secret_key";
+if (existsSync(sessionSecretPath)) sessionSecret = readFileSync(sessionSecretPath, "utf8").trim();
+else throw new Error("CRITICAL: SESSION_SECRET_KEY is missing from secrets! Add it for security.");
+
+// REGISTER CORE PLUGINS
+server.register(fastifyCookie, {
+	secret: sessionSecret,
+	parseOptions: {},
+});
 
 //REGISTER OAUTH2 GITHUB
 server.register(fastifyOauth2, {
@@ -87,6 +91,7 @@ server.register(fastifyOauth2, {
 });
 
 server.register(authRoutes);
+server.register(sessionRoutes);
 
 server.get("/ping", async (request, reply) => {
 	return "pong\n";

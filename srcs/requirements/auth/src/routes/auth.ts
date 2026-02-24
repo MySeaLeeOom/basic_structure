@@ -59,31 +59,48 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			email: githubUser.email,
 			role: "user",
 		};
-		//TODO TODO
-		// ADD LOGIC IF USER EXISTS... if exists, just log them in... which means send them back a session cookie
+		
+		// Find or Create User
 		const existingUsers = await server.db.select().from(schema.users).where(eq(schema.users.provider_id, thisUser.provider_id));
-		//select() always returns an array. To see if a user exists, we check if the length of that array is greater than zero.
+
+		let user;
 		if (existingUsers.length > 0) {
 			console.log("Found existing user:", existingUsers[0].id);
-
-			const origin = getOrigin(request);
-			console.log("Detected Origin:", origin);
-
-		
-
-			//TODO replace this with actual session creation and redirect
-			return reply.send({
-				access_token: gitToken.token.access_token,
-				user: existingUsers[0],
-				redirect_to: `${origin}/`,
-			});
+			user = existingUsers[0];
+		} else {
+			const [inserted] = await server.db.insert(schema.users).values(thisUser).returning();
+			user = inserted;
+			console.log("Created new user:", user.id);
 		}
 
-		// For now, let's just insert and see it work
-		const user = await server.db.insert(schema.users).values(thisUser).returning();
-		console.log("DB User:", user);
+		// CREATE SESSION
+		const expiresAt = new Date();
+		expiresAt.setHours(expiresAt.getHours() + 24 * 7); // Valid for 1 week
 
-		reply.send({ access_token: gitToken.token.access_token });
+		// Create a session row and get the session token (uuid) of the session for cookie
+		const [session] = await server.db
+			.insert(schema.sessions)
+			.values({
+				user_id: user.id,
+				role: user.role,
+				expiresAt: expiresAt,
+				userAgent: request.headers["user-agent"],
+				ipAddress: request.ip,
+			})
+			.returning();
+
+		// SET THE IDENTITY TICKET (The Cookie)
+		console.log(`Creating session for User ${user.id}, Token: ${session.token}`);
+		return reply
+			.setCookie("session_id", session.token, {
+				path: "/",
+				httpOnly: true,
+				secure: false, // Set to TRUE when using real HTTPS
+				sameSite: "lax",
+				expires: expiresAt,
+				signed: true,
+			})
+			.redirect(getOrigin(request));
 	});
 
 	// separate one for checking session/cookie
