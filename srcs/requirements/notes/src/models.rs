@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct Note {
-pub id: Uuid,
+	pub id: Uuid,
     pub title: String,
     pub owner_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
