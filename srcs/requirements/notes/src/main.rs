@@ -2,7 +2,7 @@ mod models;
 mod handlers;
 
 use axum::{
-	routing::{get},
+	routing::get,
 	Router,
 };
 use sqlx::PgPool;
