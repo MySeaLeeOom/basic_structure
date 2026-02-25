@@ -159,3 +159,145 @@ This prevents Cross-Site Request Forgery (CSRF). It tells the browser: "Only sen
 when you receive the cookie, you can pull it out of request
 const sessionId= request.unsignCookie(request.cookies.session_id || "");
 
+## 24.02.26
+
+## Route registration:
+Register: Runs once at boot. Builds the Router.
+
+1. Setup: initialization of all the routes - fastify will know
+2. Request: fastify already knows all the routes
+3. Context: the sessionRoutes / authRoutes will know the server forever
+
+### routes/session_helper.ts
+```
+export async function createSession(
+	request: FastifyRequest,
+	reply: FastifyReply,
+	db: NodePgDatabase<typeof schema>,
+	userId: number,
+	role: "admin" | "user" = "user",
+) {
+  ...
+  return session;
+}
+
+export async function verifySession(request: FastifyRequest, db: NodePgDatabase<typeof schema>) {
+	...
+	return user || null;
+}
+
+
+
+```
+
+### routes/auth_utils.ts
+
+### routes/auth.ts
+Makes separate file / logic for authorization
+```
+export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+	server.get("/login/github/callback", async function (request, reply) {
+    ...
+  })
+
+  TODO:
+  	// separate one for checking session/cookie
+	server.get("/", async (request, reply) => {
+		return { message: "Auth service root placeholder" };
+	});
+
+	// local login placeholder
+	server.get("/login", async (request, reply) => {
+		return { message: "Local login placeholder" };
+	});
+}
+```
+`server.register(authRoutes);`
+
+
+### routes/sessions.ts
+```
+export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+  server.get("/verify", async (request, reply) => {
+		// 1. HELPER: Verify Session
+		const user = await verifySession(request, server.db);
+
+		if (!user) {
+			console.log("Session invalid or expired.");
+			return reply.status(401).send({ error: "No active session." });
+		}
+
+		// SUCCESS: The Identity is Verified
+		return {
+			authenticated: true,
+			user: {
+				id: user.id,
+				email: user.email,
+				role: user.role,
+			},
+		};
+	});
+
+	// LOGOUT: The Revocation
+	server.post("/logout", async (request, reply) => {
+		// 2. HELPER: Revoke Session
+		await revokeSession(request, reply, server.db);
+		return { message: "Logged out successfully" };
+	});
+}
+```
+`server.register(sessionRoutes);`
+
+## Fastify Hooks: Information
+
+Fastify's Lifecycle is a precise, ordered sequence of events. The most "First Principle" hooks give you control at crucial moments of that sequence.
+
+### 1. `onRequest` (The Gatekeeper)
+**When**: Before Fastify even looks at the body or parses cookies. It happens the moment the request hits the server.
+**Use Case**: 
+-   **Rate Limiting**: "You've sent too many requests, stop right there."
+-   **IP Filtering**: "We don't serve your country."
+-   **Logging**: "Someone is knocking at the door."
+
+**Usecase**: It runs *before* any potentially expensive parsing logic. It saves your server resources by rejecting bad requests early.
+
+### 2. `preValidation` (The Bouncer)
+**When**: After parsing the request body/cookies/query, but *before* validation.
+**Use Case**:
+-   **Authentication (Our JWT/Session Checks)**: "Let me check your ID card before I let you into the VIP room."
+-   **Content-Type Check**: "We only accept JSON here."
+
+**Usecase**: This is where you manipulate the request object (add `request.user`) so that your route handler receives a "complete" and "verified" object.
+
+### 3. `onSend` (The Editor)
+**When**: The route handler has finished, and the response payload is ready, but *before* it is sent to the client.
+**Use Case**:
+-   **Modifying Payload**: Wraps every response in `{ data: ..., meta: ... }`.
+-   **Setting Headers**: "Let's add `Cache-Control` to everything."
+-   **Encryption**: "Let's encrypt the body before we send it out."
+
+**Usecase**: It gives you one last chance to intercept the package before it leaves the building.
+
+### 4. `onError` (The Cleaner)
+**When**: An error is thrown anywhere in the lifecycle.
+**Use Case**:
+-   **Global Error Handling**: Converting ugly database errors into clean `500 Internal Server Error` messages.
+-   **Reporting**: Sending error details to Sentry or Datadog.
+
+### 5. `onClose` (The Shutdown)
+**When**: The server.close() method is called.
+**Use Case**:
+-   **Graceful Shutdown**: Closing database connections.
+-   **Stopping Timers**: Cleaning up intervals.
+
+**Why it's profound**: It ensures your application doesn't leave "ghost connections" hanging when it dies.
+
+For your Auth service, `preValidation` is your best friend. It is where you will verify sessions and decide if the route handler should even run.
+
+
+
+## 25.02.26
+
+- Added a login name to schema
+
+-track all changes
