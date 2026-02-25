@@ -11,8 +11,9 @@ export const users = pgTable(
 	"users",
 	{
 		id: serial("id").primaryKey(),
+		loginName: text("login_name").unique().notNull(),
 		provider: providerEnum("provider").notNull(),
-		provider_id: text("provider_id").notNull(),
+		providerId: text("provider_id").notNull(),
 		email: text("email"),
 		passwordHash: text("password_hash"),
 		role: roleEnum("role").notNull().default("user"),
@@ -21,7 +22,7 @@ export const users = pgTable(
 	},
 	(table) => [
 		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
-		unique("user_provider_id_unique").on(table.provider, table.provider_id),
+		unique("user_provider_id_unique").on(table.provider, table.providerId),
 	],
 );
 
