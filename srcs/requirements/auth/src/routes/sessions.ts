@@ -2,15 +2,14 @@ import { eq, and } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import * as schema from "../db/schema";
 
-import { verifySession, revokeSession } from "./session_helpers";
-import { getOrigin } from "./auth_utils";
+import { verifySession, revokeSession } from "../lib/session_helpers";
+import { getHomeURL, getOrigin } from "../lib/auth_utils";
 
 export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
 	// A simple endpoint to check "Who am I?"
 	server.get("/verify", async (request, reply) => {
-		// 1. HELPER: Verify Session
-		const user = await verifySession(request, server.db);
 
+		const user = await verifySession(request, server.db); // HELPER: Verify Session
 		if (!user) {
 			console.log("Session invalid or expired.");
 			return reply.status(401).send({ error: "No active session." });
@@ -29,13 +28,9 @@ export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance)
 
 	// LOGOUT: The Revocation
 	server.post("/logout", async (request, reply) => {
-		// 2. HELPER: Revoke Session
-		await revokeSession(request, reply, server.db);
-		// 3. UTILS: Determine where to send them
-		const origin = getOrigin(request);
-		
-		// 4. ACTION: Redirect to home/login
-		return reply.redirect(`${origin}`); 
+		await revokeSession(request, reply, server.db);		// HELPER: Revoke Session
+		return reply.redirect(getHomeURL(request));		// ACTION: Redirect to home/login
+
 	});
 };
 

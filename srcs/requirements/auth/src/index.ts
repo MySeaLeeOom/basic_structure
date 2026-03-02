@@ -25,7 +25,13 @@ declare module "fastify" {
 
 // FASTIFY INSTANCE
 const server = fastify({
-	logger: { level: "trace" }, 
+	logger: {
+		level: "trace",
+		redact: {
+			paths: ["body.password", "headers.cookie", "headers.authorization"],
+			censor: "[PRIVATE_INTEL]",
+		},
+	},
 	trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
 });
 
@@ -33,7 +39,7 @@ const server = fastify({
 server.register(postgres, {
 	connectionString: databaseUrl,
 	max: 10,
-	idleTimeoutMillis: 30000, //this is time sitting waiting in pool
+	idleTimeoutMillis: 30000, //30 sec this is time sitting waiting in pool 
 	statement_timeout: 5000, //5 seconds searching db
 });
 // connect the pool of connections to drizzle
@@ -69,7 +75,7 @@ const sessionSecretPath = "/run/secrets/session_secret_key";
 if (existsSync(sessionSecretPath)) sessionSecret = readFileSync(sessionSecretPath, "utf8").trim();
 else throw new Error("CRITICAL: SESSION_SECRET_KEY is missing from secrets! Add it for security.");
 
-// REGISTER CORE PLUGINS
+// REGISTER CORE PLUGINS (Cookie)
 server.register(fastifyCookie, {
 	secret: sessionSecret,
 	parseOptions: {},

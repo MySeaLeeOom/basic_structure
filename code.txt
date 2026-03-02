@@ -1,0 +1,955 @@
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/_temp/schema_js.ts
+-------------------------------------------------------------------------------
+/**
+ * User Identity Table
+ * Stores who the person is and their account status.
+ */
+export interface User {
+	id: number; // Internal database ID (SERIAL)
+	provider: "github" | "local";
+	provider_id: string; // The unique ID from GitHub (doesn't change)
+	username: string;
+	role: "user" | "admin";
+	status: "active" | "blocked" | "suspended";
+	created_at: Date;
+}
+
+/**
+ * Session Table (Temporary Tickets)
+ * Stores the active login "keys" (UUIDs) that go into the cookies.
+ * 
+	 * FOREIGN KEY logic:
+	 * This property "points" to a specific User.id.
+	 * It creates a relationship: 1 User can have Many Sessions (laptop, phone, etc.)
+ */
+export interface Session {
+	id: string; // UUID, generated in indesx.ts for direct session response
+	user_id: User["id"]; //key to the user table
+	role: User["role"]; // We "cache" the role here so we don't have to look up the User table every time
+	expires_at: Date; // When this specific login ticket becomes invalid
+}
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/FEATURES_LOG.md
+-------------------------------------------------------------------------------
+## 20.02.26 - Feb 20
+
+- enable logging - from prometheus / graphana
+- pnpm add -D pino-pretty: pino is an intergrated logger in fastify, it is super fast but naturally outputs logs in one line, with an entire json being one line. This makes it human readable.
+`docker logs -f auth | pnpm exec pino-pretty`
+
+
+- pnpm add @fastify/oauth2: fastify native OAUTH2 libary, wrapper of simple-oauth2
+- create docs and diagrams to illustrate OAUTH2 
+	- initial oauth flow
+	- potential options of what to do with credentials
+		- create our own user and manage sssions
+		- stay connected to provider with read/write privileges (we dont do this)
+		- potentially keep multiple providers
+- fix nginx config
+	- rewrite the request url (take out /api/auth/)  
+	- hold auth as variable
+	- add relevant headers to track ip or original request and host (!)
+	- make nginx config documentation in a README in requirement/nginx/
+
+### Access_token
+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
+### User api call
+{
+  login: 'catdev42',
+  id: 139005538,
+  node_id: 'U_kgDOCEkOYg',
+  avatar_url: 'https://avatars.githubusercontent.com/u/139005538?v=4',
+  gravatar_id: '',
+  url: 'https://api.github.com/users/catdev42',
+  html_url: 'https://github.com/catdev42',
+  followers_url: 'https://api.github.com/users/catdev42/followers',
+  following_url: 'https://api.github.com/users/catdev42/following{/other_user}',
+  gists_url: 'https://api.github.com/users/catdev42/gists{/gist_id}',
+  starred_url: 'https://api.github.com/users/catdev42/starred{/owner}{/repo}',
+  subscriptions_url: 'https://api.github.com/users/catdev42/subscriptions',
+  organizations_url: 'https://api.github.com/users/catdev42/orgs',
+  repos_url: 'https://api.github.com/users/catdev42/repos',
+  events_url: 'https://api.github.com/users/catdev42/events{/privacy}',
+  received_events_url: 'https://api.github.com/users/catdev42/received_events',
+  type: 'User',
+  user_view_type: 'public',
+  site_admin: false,
+  name: null,
+  company: null,
+  blog: '',
+  location: null,
+  email: null,
+  hireable: null,
+  bio: null,
+  twitter_username: null,
+  notification_email: null,
+  public_repos: 40,
+  public_gists: 0,
+  followers: 13,
+  following: 2,
+  created_at: '2023-07-08T17:45:46Z',
+  updated_at: '2026-01-31T22:28:17Z'
+}
+
+### user/emails permissions
+This api call and permissions request for github is as of now too invasive as we get access to the user's private emails.
+
+https://api.github.com/user/emails 
+[
+  {
+    "email": "139005538+catdev42@users.noreply.github.com",
+    "primary": false,
+    "verified": true,
+    "visibility": null
+  },
+  {
+    "email": "user@student.42berlin.de",
+    "primary": true,
+    "verified": true,
+    "visibility": "private"
+  },
+  {
+    "email": "johndoe@gmail.com",
+    "primary": false,
+    "verified": true,
+    "visibility": null
+  }
+]
+
+TODO: 
+2 endpoints needed:
+- one to redirect to a provider url (done)
+- one use that we send to provider to redirect to us and discover if they are verified
+
+## 21.02.26 - Feb 21
+
+### What is a cookie
+- a cookie is a key value pair that the browser stores in association with a website and sends automatically with every request
+- things can be stored in local storage as well, but that is not sent automaticlaly by the browser
+
+
+## 22.02.26
+
+- **Composite Unique Contraint**
+  - add [unique('provider_p_id').on(table.provider, table.provider_id)] as third argument to pgTable
+
+- ~~TODO: "dev": "pnpm db:push && tsx watch src/index.ts"~~
+- ~~Add to package.json: `"dev": "pnpm db:generate && tsx watch src/index.ts`~~
+### Instructions
+  - run pnpm db:generate locally to make a migrate file (LOCALLY/maintenance)
+  - auth server index.ts will run it on startup in server.after
+  - In production we will add the migration file to the server, it is source of truth
+### Note: migration files and their usage
+- They function as the source of truth as we work with an existing database. We must track all changes because otherwise the db might assume we deleted one table and added another one...
+
+- How does the migration keep track of the fact that we Altered the column instead of deleting it and putting a new one???? Ddo we write that command? So we don't simply change the schema in schema.ts???
+
+## 23.02.26
+
+- Add things to sessions
+  - UUID token (why we need this outsire of the is on sessions?)
+  - userAgent (what type of device, to be able to tell the user)
+  - ip_address (the ip address of last access)
+
+
+### Cookie looks like this: `session_id=my-random-uuid.6H7z...`
+
+### COOKIE registration options
+```
+reply.setCookie("session_id", session.token, {
+			path: "/",
+			httpOnly: true,
+			secure: false, // Set to TRUE when using real HTTPS
+			sameSite: "lax",
+			expires: expiresAt,
+			signed: true,
+		});
+```
+  1. httpOnly (Preventing "The Script Thief")
+This prevents any js from getting a hold of the cookie in a "Cross-Site Scripting" or XSS attack. Otherwise it could simply run document.cookie and steal the session ID.
+
+By marking it httpOnly, you are telling the browser: "This cookie is for the network only. Do NOT let any JavaScript touch it or even know it exists." This makes it impossible for an XSS script to steal the session directly.
+
+2. signed: true (Preventing "The Identity Forger")
+When you "sign" a cookie, you take the Session ID and a Secret Key (your session_cookie_secret) and run them through a machine called a HMAC (Hash-based Message Authentication Code). This creates a "Signature."
+
+If a user tries to change their cookie from 123 to 456 in their browser, they don't know your Secret Key. When they send the fake 456 back to your server, Fastify will see that the signature doesn't match and will reject the cookie as tampered.
+
+It is the equivalent of a wax seal on a letter—if the seal is broken or looks wrong, you know the message inside cannot be trusted.
+
+3. secure: true / false (Preventing "The Eavesdropper")
+secure: true: Tells the browser to only send this cookie over a secure, encrypted HTTPS connection.
+In your current Docker dev environment, you are using secure: false because you're talking over plain HTTP. But once you move into "The Real World" with an SSL certificate, this becomes your final shield against anyone trying to "sniff" your network traffic.
+
+4. sameSite: "lax" (Preventing "The Impersonator")
+This prevents Cross-Site Request Forgery (CSRF). It tells the browser: "Only send this cookie if the user is actually on my website." If they are on evil-site.com and it tries to send a background request to masha-notes.com, the browser will refuse to include the cookie.
+
+### Working with the cookie
+
+		const sessionId = request.unsignCookie(request.cookies.session_id || "");
+
+
+when you receive the cookie, you can pull it out of request
+const sessionId= request.unsignCookie(request.cookies.session_id || "");
+
+## 24.02.26
+
+## Route registration:
+Register: Runs once at boot. Builds the Router.
+
+1. Setup: initialization of all the routes - fastify will know
+2. Request: fastify already knows all the routes
+3. Context: the sessionRoutes / authRoutes will know the server forever
+
+### routes/session_helper.ts
+```
+export async function createSession(
+	request: FastifyRequest,
+	reply: FastifyReply,
+	db: NodePgDatabase<typeof schema>,
+	userId: number,
+	role: "admin" | "user" = "user",
+) {
+  ...
+  return session;
+}
+
+export async function verifySession(request: FastifyRequest, db: NodePgDatabase<typeof schema>) {
+	...
+	return user || null;
+}
+
+
+
+```
+
+### routes/auth_utils.ts
+
+### routes/auth.ts
+Makes separate file / logic for authorization
+```
+export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+	server.get("/login/github/callback", async function (request, reply) {
+    ...
+  })
+
+  TODO:
+  	// separate one for checking session/cookie
+	server.get("/", async (request, reply) => {
+		return { message: "Auth service root placeholder" };
+	});
+
+	// local login placeholder
+	server.get("/login", async (request, reply) => {
+		return { message: "Local login placeholder" };
+	});
+}
+```
+`server.register(authRoutes);`
+
+
+### routes/sessions.ts
+```
+export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+  server.get("/verify", async (request, reply) => {
+		// 1. HELPER: Verify Session
+		const user = await verifySession(request, server.db);
+
+		if (!user) {
+			console.log("Session invalid or expired.");
+			return reply.status(401).send({ error: "No active session." });
+		}
+
+		// SUCCESS: The Identity is Verified
+		return {
+			authenticated: true,
+			user: {
+				id: user.id,
+				email: user.email,
+				role: user.role,
+			},
+		};
+	});
+
+	// LOGOUT: The Revocation
+	server.post("/logout", async (request, reply) => {
+		// 2. HELPER: Revoke Session
+		await revokeSession(request, reply, server.db);
+		return { message: "Logged out successfully" };
+	});
+}
+```
+`server.register(sessionRoutes);`
+
+## Fastify Hooks: Information
+
+Fastify's Lifecycle is a precise, ordered sequence of events. The most "First Principle" hooks give you control at crucial moments of that sequence.
+
+### 1. `onRequest` (The Gatekeeper)
+**When**: Before Fastify even looks at the body or parses cookies. It happens the moment the request hits the server.
+**Use Case**: 
+-   **Rate Limiting**: "You've sent too many requests, stop right there."
+-   **IP Filtering**: "We don't serve your country."
+-   **Logging**: "Someone is knocking at the door."
+
+**Usecase**: It runs *before* any potentially expensive parsing logic. It saves your server resources by rejecting bad requests early.
+
+### 2. `preValidation` (The Bouncer)
+**When**: After parsing the request body/cookies/query, but *before* validation.
+**Use Case**:
+-   **Authentication (Our JWT/Session Checks)**: "Let me check your ID card before I let you into the VIP room."
+-   **Content-Type Check**: "We only accept JSON here."
+
+**Usecase**: This is where you manipulate the request object (add `request.user`) so that your route handler receives a "complete" and "verified" object.
+
+### 3. `onSend` (The Editor)
+**When**: The route handler has finished, and the response payload is ready, but *before* it is sent to the client.
+**Use Case**:
+-   **Modifying Payload**: Wraps every response in `{ data: ..., meta: ... }`.
+-   **Setting Headers**: "Let's add `Cache-Control` to everything."
+-   **Encryption**: "Let's encrypt the body before we send it out."
+
+**Usecase**: It gives you one last chance to intercept the package before it leaves the building.
+
+### 4. `onError` (The Cleaner)
+**When**: An error is thrown anywhere in the lifecycle.
+**Use Case**:
+-   **Global Error Handling**: Converting ugly database errors into clean `500 Internal Server Error` messages.
+-   **Reporting**: Sending error details to Sentry or Datadog.
+
+### 5. `onClose` (The Shutdown)
+**When**: The server.close() method is called.
+**Use Case**:
+-   **Graceful Shutdown**: Closing database connections.
+-   **Stopping Timers**: Cleaning up intervals.
+
+**Why it's profound**: It ensures your application doesn't leave "ghost connections" hanging when it dies.
+
+For your Auth service, `preValidation` is your best friend. It is where you will verify sessions and decide if the route handler should even run.
+
+
+
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/Dockerfile.dev
+-------------------------------------------------------------------------------
+# Use the 'slim' base for better compatibility with native modules
+FROM node:20-slim
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Layer Caching: Only install dependencies if they change
+# This keeps the 'make re' cycle fast.
+COPY package.json pnpm-lock.yaml ./
+
+# We install ALL dependencies (including devDependencies like Vite/Vue-server-renderer)
+# Note: We do NOT use --frozen-lockfile here so you can add packages as you develop.
+RUN pnpm install
+# COPY . .
+
+ARG UID=1000
+ARG GID=1000
+RUN chown -R ${UID}:${GID} /app/node_modules 
+RUN chown -R ${UID}:${GID} /app
+# make the user own node modules (permissions on Linux)
+
+# Port for the SSR server
+EXPOSE 3000
+
+# 4. The 'Shell' Strategy
+# We don't COPY the source code here because we will mount it via Volumes.
+# This command runs a script defined in your package.json that starts 
+# the Vue/Nuxt dev server with HMR (Hot Module Replacement).
+CMD ["pnpm", "run","dev"]
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/.dockerignore
+-------------------------------------------------------------------------------
+node_modules
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/package.json
+-------------------------------------------------------------------------------
+{
+	"name": "auth",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"prestart": "pnpm run build",
+		"start": "node dist/index.js",
+		"db:generate": "drizzle-kit generate",
+		"db:push": "drizzle-kit push",
+		"dev": "tsx watch src/index.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.28.2",
+	"dependencies": {
+		"@fastify/cookie": "^11.0.2",
+		"@fastify/oauth2": "^8.2.0",
+		"@fastify/postgres": "^6.0.2",
+		"drizzle-orm": "^0.45.1",
+		"fastify": "^5.7.4",
+		"pg": "^8.18.0"
+	},
+	"devDependencies": {
+		"@tsconfig/node20": "^20.1.9",
+		"@types/node": "^25.2.3",
+		"@types/pg": "^8.16.0",
+		"dotenv": "^17.3.1",
+		"drizzle-kit": "^0.31.9",
+		"pino-pretty": "^13.1.3",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
+	}
+}
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/tsconfig.json
+-------------------------------------------------------------------------------
+{
+	"extends": "@tsconfig/node20/tsconfig.json",
+	"compilerOptions": {
+		"target": "es2017",
+		"baseUrl":"./",
+		"outDir": "./dist",
+		"rootDir": "./src"
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules"]
+}
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/drizzle.config.ts
+-------------------------------------------------------------------------------
+import { defineConfig } from "drizzle-kit";
+import {databaseUrl} from "./src/db/connections"
+
+// Configure drizzle-kit migration tool
+
+export default defineConfig({
+	out: "./drizzle",
+	schema: "./src/db/schema.ts",
+	dialect: "postgresql",
+	dbCredentials: {
+		url: databaseUrl!,
+	},
+});
+
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/pnpm-workspace.yaml
+-------------------------------------------------------------------------------
+onlyBuiltDependencies:
+  - esbuild
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/types.ts
+-------------------------------------------------------------------------------
+export interface GithubUser {
+	id: number;
+	login: string;
+	email: string | null;
+	avatar_url: string;
+}
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/db/schema.ts
+-------------------------------------------------------------------------------
+import { pgTable, pgEnum, serial, text, boolean, timestamp, integer, unique, uuid } from "drizzle-orm/pg-core";
+import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
+
+export const providerEnum = pgEnum("provider_type", ["github", "local", "google", "42"]);
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const userStatusEnum = pgEnum("status", ["active", "blocked", "suspended"]);
+
+// 1. Tables
+
+export const users = pgTable(
+	"users",
+	{
+		id: serial("id").primaryKey(),
+		loginName: text("login_name").unique().notNull(),
+		provider: providerEnum("provider").notNull(),
+		provider_id: text("provider_id").notNull(),
+		email: text("email"),
+		passwordHash: text("password_hash"),
+		role: roleEnum("role").notNull().default("user"),
+		status: userStatusEnum("status").notNull().default("active"),
+		created_at: timestamp().defaultNow(),
+	},
+	(table) => [
+		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
+		unique("user_provider_id_unique").on(table.provider, table.provider_id),
+	],
+);
+
+export const sessions = pgTable("sessions", {
+	id: serial("id").primaryKey(),
+	token: uuid("token").defaultRandom().notNull().unique(),
+	user_id: integer("user_id")
+		.references(() => users.id, { onDelete: "cascade" })
+		.notNull(),
+	role: roleEnum("user_role").notNull(),
+	expiresAt: timestamp("expires_at").notNull(),
+	userAgent: text("user_agent"), // For device tracking
+	ipAddress: text("ip_address"),
+});
+
+// 2. Export the Types
+
+// Type for READING form the DB (includes all fields like ID and createdAt)
+export type User = InferSelectModel<typeof users>;
+export type Session = InferSelectModel<typeof sessions>;
+
+// Type for INSERTING into the DB (ID and createdAt are optional b/c they have defaults)
+export type NewUser = InferInsertModel<typeof users>;
+export type NewSession = InferInsertModel<typeof sessions>;
+
+// // 1. Define the Table
+// // "users" is the table name in the database
+// export const users = pgTable("users", {
+// 	// SERIAL: auto-incrementing integer (1, 2, 3...)
+// 	id: serial("id").primaryKey(),
+
+// 	// TEXT: standard string. We mark it as unique so no two users can have the same email
+// 	email: text("email").notNull().unique(),
+
+// 	// TEXT: for the hashed password
+// 	passwordHash: text("password_hash").notNull(),
+
+// 	// BOOLEAN: default to false
+// 	isAdmin: boolean("is_admin").default(false),
+
+// 	// TIMESTAMP: automatically set to "now()" when created
+// 	createdAt: timestamp("created_at").defaultNow(),
+// });
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/db/connections.ts
+-------------------------------------------------------------------------------
+import * as dotenv from "dotenv";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "path";
+
+/*
+Template URL
+postgres://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@${POSTGRES}/${AUTH_DB_NAME}
+*/
+
+// For local development on host, we look for a .env file.
+// Inside Docker, compose already injects these variables, so we skip this if they exist.
+const hostEnv = resolve(__dirname, "../../.env");
+if (!process.env.AUTH_DB_USER && existsSync(hostEnv)) {
+	dotenv.config({ path: hostEnv });
+}
+
+const user = process.env.AUTH_DB_USER as string;
+const host = process.env.POSTGRES_ADDR as string;
+const db_name = process.env.AUTH_DB_NAME as string;
+
+// Resolve the secret path mapping both for host and container
+let auth_pass = "";
+const containerSecret = "/run/secrets/auth_db_password";
+const hostSecret = resolve(__dirname, "../../secrets/auth_db_password");
+if (existsSync(containerSecret)) {
+	auth_pass = readFileSync(containerSecret, "utf8").trim();
+} else if (existsSync(hostSecret)) {
+	auth_pass = readFileSync(hostSecret, "utf8").trim();
+}
+
+export const databaseUrl = `postgres://${user}:${auth_pass}@${host}/${db_name}`;
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/index.ts
+-------------------------------------------------------------------------------
+import { readFileSync, existsSync } from "node:fs";
+import fastify from "fastify";
+import postgres from "@fastify/postgres";
+import fastifyCookie from "@fastify/cookie";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { databaseUrl } from "./db/connections";
+import fastifyOauth2 from "@fastify/oauth2";
+import { OAuth2Namespace } from "@fastify/oauth2"; // This was previously added.
+
+import * as schema from "./db/schema"; // DB tables
+import { authRoutes } from "./routes/auth"; // all routes
+import { sessionRoutes } from "./routes/sessions"; // verification logic
+
+/**
+ * Declaration Merging (Module Augmentation): typescript
+ * Concept: let typescript know that the object might contain extra properties
+ */
+declare module "fastify" {
+	interface FastifyInstance {
+		githubOAuth2: OAuth2Namespace;
+		db: NodePgDatabase<typeof schema>;
+	}
+}
+
+// FASTIFY INSTANCE
+const server = fastify({
+	logger: { level: "trace" }, 
+	trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
+});
+
+// POSTGRES
+server.register(postgres, {
+	connectionString: databaseUrl,
+	max: 10,
+	idleTimeoutMillis: 30000, //this is time sitting waiting in pool
+	statement_timeout: 5000, //5 seconds searching db
+});
+// connect the pool of connections to drizzle
+server.after(async () => {
+	const db = drizzle(server.pg.pool, { schema }); //TODO:check schema
+	server.decorate("db", db);
+	// The Production Migration Gate
+	try {
+		console.log("Checking for pending migrations...");
+		// This looks at our 'drizzle/' folder and ensures the DB matches
+		await migrate(db, { migrationsFolder: "./drizzle" });
+		console.log("Database is in sync.");
+	} catch (err) {
+		server.log.error("Migration failed! Refusing to start.");
+		server.log.error(err);
+		process.exit(1);
+	}
+});
+
+//OAUTH2 GITHUB
+const clientIdGit = process.env.GITHUB_CLIENT_ID; // id of registed OAuth app
+if (!clientIdGit) {
+	throw new Error("CRITICAL: GITHUB_CLIENT_ID is missing from the environment!");
+}
+const gitSecretPath = "/run/secrets/github_client_secret"; //secret of registerd OAuth app
+let clientSecretGit = ""; // help with scope
+if (existsSync(gitSecretPath)) clientSecretGit = readFileSync(gitSecretPath, "utf8").trim();
+else throw new Error("CRITICAL: GITHUB_CLIENT_SECRET is missing from secrets!");
+
+// READ SESSION SECRET (For signing cookies)
+let sessionSecret = "";
+const sessionSecretPath = "/run/secrets/session_secret_key";
+if (existsSync(sessionSecretPath)) sessionSecret = readFileSync(sessionSecretPath, "utf8").trim();
+else throw new Error("CRITICAL: SESSION_SECRET_KEY is missing from secrets! Add it for security.");
+
+// REGISTER CORE PLUGINS
+server.register(fastifyCookie, {
+	secret: sessionSecret,
+	parseOptions: {},
+});
+
+//REGISTER OAUTH2 GITHUB
+server.register(fastifyOauth2, {
+	name: "githubOAuth2",
+	scope: [], //"user:email"
+	credentials: {
+		client: {
+			id: clientIdGit,
+			secret: clientSecretGit,
+		},
+		auth: fastifyOauth2.GITHUB_CONFIGURATION,
+	},
+	startRedirectPath: "/login/github",
+	callbackUri: "http://localhost:8080/api/auth/login/github/callback",
+});
+
+server.register(authRoutes);
+server.register(sessionRoutes);
+
+server.get("/ping", async (request, reply) => {
+	return "pong\n";
+});
+
+server.listen({ port: 3000, host: "0.0.0.0" }, (err, address) => {
+	if (err) {
+		console.error(err);
+		process.exit(1);
+	}
+	console.log(`Auth Server listening at ${address}`);
+});
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/routes/session_helpers.ts
+-------------------------------------------------------------------------------
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { eq } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "../db/schema";
+
+/**
+ * Creates a secure session for a user.
+ * 1. Generates a session in the DB
+ * 2. Sets the signed cookie on the response
+ */
+export async function createSession(
+	request: FastifyRequest,
+	reply: FastifyReply,
+	db: NodePgDatabase<typeof schema>,
+	userId: number,
+	role: "admin" | "user" = "user",
+) {
+	const expiresAt = new Date(); //creates current date
+	expiresAt.setHours(expiresAt.getHours() + 24 * 7); // Valid for 1 week
+
+	// Create session in DB
+	const [session] = await db
+		.insert(schema.sessions)
+		.values({
+			user_id: userId,
+			role: role as "user" | "admin",
+			expiresAt: expiresAt,
+			userAgent: request.headers["user-agent"],
+			ipAddress: request.ip,
+		})
+		.returning();
+
+	// Set the cookie
+	reply.setCookie("session_id", session.token, {
+		path: "/",
+		httpOnly: true,
+		secure: false, // Set to TRUE when using real HTTPS
+		sameSite: "lax",
+		expires: expiresAt,
+		signed: true,
+	});
+
+	return session;
+}
+
+/**
+ * Verifies a session cookie and retrieves the associated user.
+ * Returns the User object if valid, or null if invalid/expired.
+ */
+export async function verifySession(request: FastifyRequest, db: NodePgDatabase<typeof schema>) {
+	const cookie = request.cookies.session_id;
+	if (!cookie) return null;
+
+	const decodedCookie = request.unsignCookie(cookie);
+	if (!decodedCookie.valid || !decodedCookie.value) return null;
+
+	const sessionUUID = decodedCookie.value;
+
+	// Database Lookup
+	const [session] = await db.select().from(schema.sessions).where(eq(schema.sessions.token, sessionUUID)).limit(1);
+	if (!session) return null;
+
+	// Expiry Check
+	if (session.expiresAt < new Date()) {
+		return null;
+	}
+
+	// Fetch User
+	const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.user_id)).limit(1);
+
+	return user || null;
+}
+
+/**
+ * Revokes a session (Logout).
+ * 1. Deletes from DB
+ * 2. Clears cookie
+ */
+export async function revokeSession(request: FastifyRequest, reply: FastifyReply, db: NodePgDatabase<typeof schema>) {
+	const cookie = request.cookies.session_id;
+	if (cookie) {
+		const unsigned = request.unsignCookie(cookie);
+		if (unsigned.valid && unsigned.value) {
+			await db.delete(schema.sessions).where(eq(schema.sessions.token, unsigned.value));
+		}
+	}
+	reply.clearCookie("session_id", { path: "/" }); //call for the browser to clear the cookie
+}
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/routes/auth_utils.ts
+-------------------------------------------------------------------------------
+import type { FastifyRequest } from "fastify";
+
+// path we want the user to go to by default
+const fallback = "/notes";
+
+/**
+ * A 'Pure helper' to reconstruct the absolute Origin of the request.
+ * It is outside the registration logic because it is a universal truth
+ * regardless of which route is calling it.
+ * Purpose: regirect back to the URL the login happened, in case we do a login popout
+ * Allow it to be dynamic instead of always redirecting to the profile page.
+ */
+export function getOrigin(request: FastifyRequest): string {
+	const protocol = (request.headers["x-forwarded-proto"] as string) || "http";
+	const host = request.headers["host"];
+	const origin = `${protocol}://${host}`;
+
+	// We check if the referer exists AND if it belongs to our own website
+	// (We don't want to redirect them to a malicious site by accident!)
+	const referer = request.headers["referer"];
+	const targetUrl = referer && referer.startsWith(origin) ? referer : `${origin}${fallback}`;
+
+	console.log("Redirect after login to: ", targetUrl);
+	return targetUrl;
+}
+
+export function getHomeURL(request: FastifyRequest): string {
+	const protocol = (request.headers["x-forwarded-proto"] as string) || "http";
+	const host = request.headers["host"];
+	const url = `${protocol}://${host}`;
+
+	console.log("Redirect after login to: ", url);
+	return url;
+}
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/routes/sessions.ts
+-------------------------------------------------------------------------------
+import { eq, and } from "drizzle-orm";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import * as schema from "../db/schema";
+
+import { verifySession, revokeSession } from "./session_helpers";
+import { getOrigin } from "./auth_utils";
+
+export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+	// A simple endpoint to check "Who am I?"
+	server.get("/verify", async (request, reply) => {
+		// 1. HELPER: Verify Session
+		const user = await verifySession(request, server.db);
+
+		if (!user) {
+			console.log("Session invalid or expired.");
+			return reply.status(401).send({ error: "No active session." });
+		}
+
+		// SUCCESS: The Identity is Verified
+		return {
+			authenticated: true,
+			user: {
+				id: user.id,
+				email: user.email,
+				role: user.role,
+			},
+		};
+	});
+
+	// LOGOUT: The Revocation
+	server.post("/logout", async (request, reply) => {
+		// 2. HELPER: Revoke Session
+		await revokeSession(request, reply, server.db);
+		// 3. UTILS: Determine where to send them
+		const origin = getOrigin(request);
+		
+		// 4. ACTION: Redirect to home/login
+		return reply.redirect(`${origin}`); 
+	});
+};
+
+/* THE IDENTITY LIFECYCLE (The "Atomic Flow"):
+ *
+ * 1. EXTRACTION: Pull the 'session_id' from the request cookies.
+ * 2. INTEGRITY CHECK: Unsign the cookie. If the 'wax seal' is broken, the request is a forgery.
+ * 3. EXISTENCE CHECK: Query the 'sessions' table for the random UUID token.
+ *    If the token exists, we have found a matching 'Certificate of Stay'.
+ * 4. TEMPORAL CHECK: Compare 'expires_at' with the current server time.
+ *    If the clock has run out, the session is dead regardless of the token's presence.
+ * 5. LINKAGE: Use 'user_id' from the session to find the actual 'User' record.
+ * 6. AUTHORIZATION: Attach the user's 'role' (user/admin) to the response for downstream microservices.
+ */
+
+/*
+- `/verify`: 
+
+*/
+
+
+-------------------------------------------------------------------------------
+FILE: ./srcs/requirements/auth/src/routes/auth.ts
+-------------------------------------------------------------------------------
+import { eq, and } from "drizzle-orm";
+import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from "fastify";
+import * as schema from "../db/schema";
+import type { GithubUser } from "../types";
+import { createSession } from "./session_helpers";
+import { getOrigin } from "./auth_utils";
+
+export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+	// this function will receive the token
+	// - needs to check if there is a user already with this info
+	// - needs to either create the user or give them a session
+	server.get("/login/github/callback", async function (request, reply) {
+		// get the token from github; this == request.server (if properly bound or using the instance)
+		const gitToken = await server.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
+		console.log("GitHub Token:", gitToken.token.access_token);
+
+		// get the user info using token information
+		const response = await fetch("https://api.github.com/user", {
+			headers: {
+				Authorization: `Bearer ${gitToken.token.access_token}`,
+				"User-Agent": "myceleum_catdev42",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`GitHub API responded with ${response.status}`);
+		}
+
+		const githubUser = (await response.json()) as GithubUser;
+		console.log("GitHub User Data:", githubUser);
+
+		// DATABASE Logic
+		// pull info of the user from githubUser
+		const thisUser: schema.NewUser = {
+			provider_id: githubUser.id.toString(),
+			provider: "github",
+			email: githubUser.email,
+			role: "user",
+		};
+
+		// Find or Create User
+		const existingUsers = await server.db.select().from(schema.users).where(eq(schema.users.provider_id, thisUser.provider_id));
+
+		let user;
+		if (existingUsers.length > 0) {
+			console.log("Found existing user:", existingUsers[0].id);
+			user = existingUsers[0];
+		} else {
+			const [inserted] = await server.db.insert(schema.users).values(thisUser).returning();
+			user = inserted;
+			console.log("Created new user:", user.id);
+		}
+
+		// CREATE SESSION & COOKIE (using Helper)
+		await createSession(request, reply, server.db, user.id, user.role || "user");
+		return reply.redirect(getOrigin(request));
+	});
+
+	// separate one for checking session/cookie
+	server.get("/", async (request, reply) => {
+		return { message: "Auth service root placeholder" };
+	});
+
+	// local login placeholder
+	server.get("/login", async (request, reply) => {
+		return { message: "Local login placeholder: local path not yet set up" };
+	});
+};
+

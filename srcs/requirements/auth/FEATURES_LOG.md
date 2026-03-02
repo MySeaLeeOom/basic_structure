@@ -301,3 +301,22 @@ For your Auth service, `preValidation` is your best friend. It is where you will
 - Added a login name to schema
 
 -track all changes
+
+
+### sinclaire/typebox
+
+- This is actually... great. It makes a specific schema for a request that would prevent a call to /register containing for example role:admin that could somehow sneak by us.
+
+- one can define SPECIFIC parameters - for example title length... because maybe this is something that is quite nice to verify on the back end... since you can "curl" anything without a frontend requirement. 
+  - password length, loginName length, etc etc.
+sinclaire/typebox can create a JSON schema (indicating what the body should be) and a type for typescript at the same time
+
+- Without Schema: Your function is function register(anything). You have to write if (typeof anything !== 'object') and if (!anything.email) manually.
+- With Schema: Your function is function register(guest: ValidatedGuest). Fastify handles all the "ifs" for you before the function is even called.
++2
+
+Questions:
+
+- if we return a message that is an error for example... can we wrote that as error for them to fix instead of the white screen/text situation?
+
+
