@@ -117,6 +117,8 @@ Github client secret -
   # The CLI tool for generating migrations
   pnpm add -D drizzle-kit
   ```
+  - vitest
+  `npm install -D vitest supertest @types/supertest`
 
 ## Why do we need pg, and the connection flow
 

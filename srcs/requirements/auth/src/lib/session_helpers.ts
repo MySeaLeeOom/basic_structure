@@ -33,7 +33,7 @@ export async function createSession(
 	// Set the cookie
 	reply.setCookie("session_id", session.token, {
 		path: "/",
-		httpOnly: true,
+		httpOnly: true, //this is javascript cant do anything to the cookie
 		secure: false, // Set to TRUE when using real HTTPS
 		sameSite: "lax",
 		expires: expiresAt,
@@ -45,7 +45,7 @@ export async function createSession(
 
 /**
  * Verifies a session cookie and retrieves the associated user.
- * Returns the User object if valid, or null if invalid/expired.
+ * @returns the User object if valid, or null if invalid/expired.
  */
 export async function verifySession(request: FastifyRequest, db: NodePgDatabase<typeof schema>) {
 	const cookie = request.cookies.session_id;
@@ -73,7 +73,7 @@ export async function verifySession(request: FastifyRequest, db: NodePgDatabase<
 
 /**
  * Revokes a session (Logout).
- * 1. Deletes from DB
+ * 1. Deletes the session from DB
  * 2. Clears cookie
  */
 export async function revokeSession(request: FastifyRequest, reply: FastifyReply, db: NodePgDatabase<typeof schema>) {

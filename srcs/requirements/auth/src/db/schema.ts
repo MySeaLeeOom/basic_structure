@@ -14,7 +14,7 @@ export const users = pgTable(
 		loginName: text("login_name").unique().notNull(),
 		provider: providerEnum("provider").notNull(),
 		providerId: text("provider_id").notNull(),
-		email: text("email"),
+		email: text("email").unique(),
 		passwordHash: text("password_hash"),
 		role: roleEnum("role").notNull().default("user"),
 		status: userStatusEnum("status").notNull().default("active"),
