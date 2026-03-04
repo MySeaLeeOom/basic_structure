@@ -32,6 +32,7 @@
     "vue": "^3.5.27",
     "vue-router": "^4.6.4",
     "y-protocols": "^1.0.7",
+    "y-websocket": "^3.0.0",
     "yjs": "^13.6.29"
   },
   "devDependencies": {

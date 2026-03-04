@@ -61,7 +61,7 @@ export const useNoteStore = defineStore("notes", () => {
 			const response = await fetch("/api/notes", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({}),
+				body: JSON.stringify({ title: "Untitled" }),
 			});
 
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
