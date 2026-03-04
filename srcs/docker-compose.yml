@@ -20,7 +20,7 @@ services:
   
   notes:
     build:
-      context: ./requirements/notes-rs
+      context: ./requirements/notes
       dockerfile: Dockerfile
     image: notes
     container_name: notes
