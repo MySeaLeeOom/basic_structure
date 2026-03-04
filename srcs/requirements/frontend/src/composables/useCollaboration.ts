@@ -1,64 +1,87 @@
-import { ref, onUnmounted, type Ref } from "vue";
+import { ref, shallowRef, watch, onUnmounted, type Ref, type ShallowRef } from "vue";
 import * as Y from "yjs";
-import { Awareness } from "y-protocols/awareness";
-import { WebSocketProvider } from "@/collaboration/WebSocketProvider";
+import { WebsocketProvider } from "y-websocket";
 
 interface UseCollaborationReturn {
-  ydoc: Y.Doc;
-  yTitle: Y.Text;
-  awareness: Awareness;
-  provider: WebSocketProvider;
+  ydoc: ShallowRef<Y.Doc | null>;
+  provider: ShallowRef<WebsocketProvider | null>;
   titleText: Ref<string>;
-  isConnected: Ref<boolean>;
   connectedUsers: Ref<number>;
   updateTitle: (value: string) => void;
 }
 
-export function useCollaboration(noteId: string): UseCollaborationReturn {
-  const ydoc = new Y.Doc();
-  const yTitle = ydoc.getText("title");
-  const awareness = new Awareness(ydoc);
-
+export function useCollaboration(noteId: () => string): UseCollaborationReturn {
+  const currentYdoc = shallowRef<Y.Doc | null>(null);
+  const currentProvider = shallowRef<WebsocketProvider | null>(null);
   const titleText = ref("");
-  const isConnected = ref(false);
   const connectedUsers = ref(0);
 
-  // --- Title sync: remote → local ---
-  yTitle.observe(() => {
-    titleText.value = yTitle.toString();
+  // Pending connection that hasn't synced yet
+  let pendingYdoc: Y.Doc | null = null;
+  let pendingProvider: WebsocketProvider | null = null;
+
+  function setup(id: string) {
+    // Cancel any pending (not yet synced) setup
+    pendingProvider?.destroy();
+    pendingYdoc?.destroy();
+
+    const newYdoc = new Y.Doc();
+    const yTitle = newYdoc.getText("title");
+
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${location.host}/ws`;
+    const newProvider = new WebsocketProvider(wsUrl, id, newYdoc);
+
+    pendingYdoc = newYdoc;
+    pendingProvider = newProvider;
+
+    // Wait for first sync before swapping — keeps old editor visible
+    newProvider.on("sync", (isSynced: boolean) => {
+      if (!isSynced) return;
+
+      // If another setup started since, this one was cancelled
+      if (pendingYdoc !== newYdoc) return;
+
+      // Tear down old
+      currentProvider.value?.destroy();
+      currentYdoc.value?.destroy();
+
+      // Activate new
+      titleText.value = yTitle.toString();
+      connectedUsers.value = newProvider.awareness.getStates().size;
+      yTitle.observe(() => { titleText.value = yTitle.toString(); });
+      newProvider.awareness.on("change", () => { connectedUsers.value = newProvider.awareness.getStates().size; });
+
+      currentProvider.value = newProvider;
+      currentYdoc.value = newYdoc;
+      pendingYdoc = null;
+      pendingProvider = null;
+    });
+  }
+
+  watch(noteId, (id) => setup(id), { immediate: true });
+
+  onUnmounted(() => {
+    pendingProvider?.destroy();
+    pendingYdoc?.destroy();
+    currentProvider.value?.destroy();
+    currentYdoc.value?.destroy();
   });
 
-  // --- Title sync: local → remote ---
   function updateTitle(value: string): void {
+    const ydoc = currentYdoc.value;
+    if (!ydoc) return;
+    const yTitle = ydoc.getText("title");
     ydoc.transact(() => {
       yTitle.delete(0, yTitle.length);
       yTitle.insert(0, value);
     });
   }
 
-  // --- Awareness tracking ---
-  awareness.on("change", () => {
-    connectedUsers.value = awareness.getStates().size;
-  });
-
-  // --- Connect immediately ---
-  const provider = new WebSocketProvider({ noteId, doc: ydoc, awareness });
-  provider.connect();
-  isConnected.value = true;
-
-  // --- Cleanup on unmount ---
-  onUnmounted(() => {
-    provider.disconnect();
-    ydoc.destroy();
-  });
-
   return {
-    ydoc,
-    yTitle,
-    awareness,
-    provider,
+    ydoc: currentYdoc,
+    provider: currentProvider,
     titleText,
-    isConnected,
     connectedUsers,
     updateTitle,
   };

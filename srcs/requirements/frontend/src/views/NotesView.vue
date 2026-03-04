@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onServerPrefetch } from "vue";
+import { ref, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
@@ -15,16 +15,8 @@ const confirm = useConfirm();
 const mounted = ref(false);
 onMounted(() => { mounted.value = true; });
 
-const editMode = ref(false);
-
-// Switching notes resets to view mode
-watch(() => noteStore.selectedNote, () => {
-	editMode.value = false;
-});
-
 async function handleCreate() {
 	await noteStore.createNote();
-	editMode.value = true;
 }
 
 function confirmDelete(id: string) {
@@ -68,10 +60,10 @@ onServerPrefetch(async () => {
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title_preview" dataKey="id">
+			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item">
-						<span>{{ slotProps.option.title_preview || "Untitled" }}</span>
+						<span>{{ slotProps.option.title || "Untitled" }}</span>
 						<Button severity="danger" text rounded size="small"
 							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
 							@click.stop="confirmDelete(slotProps.option.id)">
@@ -84,11 +76,7 @@ onServerPrefetch(async () => {
 
 		<NoteEditor
 			v-if="mounted && noteStore.selectedNote"
-			:key="noteStore.selectedNote.id"
 			:note-id="noteStore.selectedNote.id"
-			:editable="editMode"
-			@close="editMode = false"
-			@edit="editMode = true"
 		/>
 		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
 	</SidebarLayout>
