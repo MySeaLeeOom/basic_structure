@@ -1,5 +1,8 @@
 mod state;
 mod ws_handler;
+mod db;
+mod sync;
+mod models;
 
 use axum::{
 	routing::get,
