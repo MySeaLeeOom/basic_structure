@@ -6,23 +6,24 @@ Quick-reference guide. For detailed design docs, see the [collab/](collab/) dire
 
 ## Architecture Overview
 
-Three files make up the collaboration system on the frontend:
+Two files make up the collaboration system on the frontend:
 
 | File | Role |
 |---|---|
 | `src/components/notes/NoteEditor.vue` | UI — Tiptap editor + title input, consumes the composable |
-| `src/composables/useCollaboration.ts` | Glue — accepts a noteId getter; creates Y.Doc, Awareness, and Provider; watches for note changes and seamlessly swaps connections after first sync |
-| `src/collaboration/WebSocketProvider.ts` | Transport — sends/receives binary Yjs updates and awareness over WebSocket |
+| `src/composables/useCollaboration.ts` | Glue + Transport — accepts a noteId getter; creates Y.Doc and WebsocketProvider (from `y-websocket`); watches for note changes and seamlessly swaps connections after first sync |
 
 ### How they connect
 
-Three-tier separation — each layer only talks to its immediate neighbour:
+Two-tier separation — the composable handles both CRDT logic and transport:
 
 ```
-UI (NoteEditor)  ←→  Glue (useCollaboration)  ←→  Transport (WebSocketProvider)
-   Vue refs              Y.Doc + Awareness              WebSocket + binary protocol
-   template bindings     observe/transact                send/receive Uint8Arrays
+UI (NoteEditor)  ←→  Glue + Transport (useCollaboration)  ←→  Server (editor service)
+   Vue refs              Y.Doc + WebsocketProvider              y-sync v1 protocol
+   template bindings     observe/transact                       standard sync + awareness
 ```
+
+The `y-websocket` library handles all WebSocket communication internally using the **y-sync v1 standard protocol** — the same protocol our Rust editor service speaks. No custom binary protocol needed.
 
 #### NoteEditor.vue — the UI layer
 
@@ -56,7 +57,7 @@ flowchart TD
     subgraph script["Script — what runs when the component loads"]
         subgraph composable_call["Composable call"]
             call["useCollaboration#40;#40;#41; => props.noteId#41;"]
-            destructure["Destructures:<br/>ydoc — shallowRef&lt;Y.Doc&gt;<br/>provider — shallowRef&lt;WebSocketProvider&gt;<br/>titleText — ref&lt;string&gt;<br/>connectedUsers — ref&lt;number&gt;<br/>updateTitle — #40;text: string#41; => void"]
+            destructure["Destructures:<br/>ydoc — shallowRef&lt;Y.Doc&gt;<br/>provider — shallowRef&lt;WebsocketProvider&gt;<br/>titleText — ref&lt;string&gt;<br/>connectedUsers — ref&lt;number&gt;<br/>updateTitle — #40;text: string#41; => void"]
         end
 
         subgraph editor_setup["Editor setup"]
@@ -131,8 +132,8 @@ flowchart TD
     subgraph when_remote_types["When another user types"]
         remote["Other user types on their machine"]
         remote_collab["Their Collaboration plugin writes to their Y.Doc"]
-        transport["WebSocketProvider relays update"]
-        apply["Y.applyUpdate#40;doc, payload, 'remote'#41;<br/>— 'remote' origin prevents echo loop"]
+        transport["y-websocket relays update via y-sync v1"]
+        apply["Remote update applied to local Y.Doc<br/>— CRDT merge, no conflicts"]
     end
 
     remote --> remote_collab --> transport --> apply --> ydoc
@@ -145,7 +146,7 @@ flowchart TD
 
     ydoc --> detect --> transaction --> render
 
-    ydoc --> ws_out["WebSocketProvider sends update to server<br/>— only for non-'remote' origins #40;echo guard#41;"]
+    ydoc --> ws_out["y-websocket sends update to server<br/>— echo prevention handled internally"]
 
     subgraph cursors["Live cursors #40;CollaborationCaret#41;"]
         caret["CollaborationCaret plugin writes cursor position<br/>to Awareness #40;separate from Y.Doc#41;"]
@@ -180,8 +181,8 @@ flowchart TD
     subgraph when_remote_types["When another user types"]
         remote["Other user types on their machine"]
         remote_transact["Their updateTitle → ydoc.transact"]
-        transport["WebSocketProvider relays update"]
-        apply["Y.applyUpdate#40;doc, payload, 'remote'#41;<br/>— CRDT merge, no conflicts"]
+        transport["y-websocket relays update via y-sync v1"]
+        apply["CRDT merge applied to local Y.Doc"]
     end
 
     remote --> remote_transact --> transport --> apply --> ydoc
@@ -195,7 +196,7 @@ flowchart TD
 
     ydoc --> observer --> ref --> vue --> render
 
-    ydoc --> ws_out["WebSocketProvider sends update to server"]
+    ydoc --> ws_out["y-websocket sends update to server"]
 ```
 
 Both paths converge at the Y.Doc. The screen always updates the same way — through the observer, never directly. This is why we don't use `v-model`: it would set `titleText` directly, skipping the Y.Doc entirely, so the change would show on your screen but never reach other users.
@@ -206,20 +207,20 @@ Both paths converge at the Y.Doc. The screen always updates the same way — thr
 flowchart TD
     subgraph someone_opens["When someone opens the note"]
         open["User opens the note"]
-        create_awareness["useCollaboration creates new Awareness#40;ydoc#41;"]
-        announce["WebSocketProvider sends presence on connect<br/>— sendLocalAwareness#40;#41; called in onopen"]
+        create_provider["useCollaboration creates WebsocketProvider<br/>which creates Awareness internally"]
+        announce["y-websocket sends presence automatically on connect"]
     end
 
     subgraph someone_leaves["When someone closes the note"]
         close["User closes note or disconnects"]
         remove["Their Awareness entry is removed"]
-        notify["Other clients notified via WebSocket"]
+        notify["Other clients notified via y-websocket"]
     end
 
-    open --> create_awareness --> announce --> awareness
+    open --> create_provider --> announce --> awareness
     close --> remove --> notify --> awareness
 
-    awareness["Awareness — tracks who is connected<br/>separate from Y.Doc content"]
+    awareness["Awareness — tracks who is connected<br/>separate from Y.Doc content<br/>managed by y-websocket internally"]
 
     subgraph screen_updates["How the indicator updates"]
         change["awareness.on#40;'change'#41; fires<br/>— registered after first sync in useCollaboration"]
@@ -301,21 +302,21 @@ The template has `<EditorContent :editor="editor" />`. Vue needs to know when `e
 **Lifecycle — what happens when a user interacts:**
 
 1. Parent renders `<NoteEditor :note-id="selectedNote.id" />` (no `:key` — stays mounted)
-2. `useCollaboration(() => noteId)` calls `setup(noteId)` — creates Y.Doc, Provider, connects via WebSocket
-3. Server sends initial state → composable receives first sync → activates `ydoc`/`provider` refs
+2. `useCollaboration(() => noteId)` calls `setup(noteId)` — creates Y.Doc, WebsocketProvider, connects via WebSocket
+3. y-websocket performs y-sync v1 handshake → composable receives `"sync"` event → activates `ydoc`/`provider` refs
 4. `watchEffect` in NoteEditor detects new refs → creates Tiptap editor → content displayed
-5. User types → keystrokes go into the Y.Doc → WebSocket sends them to server → server sends them to everyone else → their editors update in real time
+5. User types → keystrokes go into the Y.Doc → y-websocket sends them to server → server sends them to everyone else → their editors update in real time
 6. User clicks a different note → `noteId` prop changes → composable's `watch` fires → new connection created, waits for sync → old connection torn down, new editor swapped in seamlessly
 
 #### useCollaboration(() => noteId) — the glue layer
 
-Accepts a reactive getter for the noteId. Creates and owns all CRDT objects, wires Yjs events to Vue refs, and manages lifecycle — including seamless note switching. Never touches WebSocket directly; hands the Y.Doc to the provider and lets it handle transport.
+Accepts a reactive getter for the noteId. Creates and owns all CRDT objects, wires Yjs events to Vue refs, and manages lifecycle — including seamless note switching. Uses `y-websocket`'s `WebsocketProvider` for transport.
 
 **Reactive note switching — the pending/current pattern:**
 
 When the noteId changes, the composable doesn't tear down immediately. Instead it:
-1. Creates a **pending** Y.Doc + Provider and connects
-2. Waits for the **first remote sync** (the server's initial state)
+1. Creates a **pending** Y.Doc + WebsocketProvider and connects
+2. Waits for the **`"sync"` event** from y-websocket (server's initial state received)
 3. Only then tears down the **old** connection and activates the new one
 
 This keeps the old editor visible during the transition — no blank flash while the new note loads.
@@ -327,13 +328,13 @@ flowchart TB
 
         subgraph setup["setup#40;id#41;"]
             cancel["Cancel any pending connection"]
-            create["new Y.Doc + Y.Text#40;'title'#41; + Awareness"]
-            connect["new WebSocketProvider → connect#40;#41;"]
-            listen["doc.on 'update': wait for origin='remote'"]
+            create["new Y.Doc + Y.Text#40;'title'#41;"]
+            connect["new WebsocketProvider#40;wsUrl, id, doc#41;<br/>— connects automatically"]
+            listen["provider.on#40;'sync'#41;: wait for isSynced=true"]
         end
 
-        subgraph onFirstSync["On first remote sync"]
-            teardown["Tear down old: disconnect + destroy"]
+        subgraph onFirstSync["On first sync event"]
+            teardown["Tear down old: destroy provider + doc"]
             activate["Activate new: set currentYdoc, currentProvider"]
             observe["Wire observers:<br/>yTitle.observe → titleText<br/>awareness.on change → connectedUsers"]
         end
@@ -344,44 +345,53 @@ flowchart TB
 
     watchNode --> cancel
     cancel --> create --> connect --> listen
-    listen -- "first remote update arrives" --> teardown --> activate --> observe
+    listen -- "sync event fires with isSynced=true" --> teardown --> activate --> observe
     observe --> titleBridge
     observe --> usersBridge
 ```
 
 - `watch → setup`: Fires immediately and whenever `noteId()` returns a different value. Replaces the old `:key` remount pattern.
 - `cancel`: If the user clicks three notes quickly (A→B→C), the pending B connection is torn down before it ever reaches the editor.
-- `listen → onFirstSync`: The composable hooks `doc.on("update")` and waits for an update with `origin === "remote"` — that's the server's initial state. Only after receiving it does it proceed.
-- `teardown → activate`: The old `currentProvider` is disconnected and old `currentYdoc` is destroyed. Then the new ones are assigned to the exposed `shallowRef`s, which triggers the `watchEffect` in NoteEditor to create a new Tiptap editor.
+- `listen → onFirstSync`: The composable listens for y-websocket's `"sync"` event, which fires when the y-sync v1 handshake completes and the server's full document state has been applied.
+- `teardown → activate`: The old `currentProvider` is destroyed and old `currentYdoc` is destroyed. Then the new ones are assigned to the exposed `shallowRef`s, which triggers the `watchEffect` in NoteEditor to create a new Tiptap editor.
 - `observe → bridges`: Title and connected-users observers are wired only after sync, ensuring `titleText` shows the real title (not empty string).
 
-#### WebSocketProvider — the transport layer
+#### WebSocket Protocol — y-sync v1 (standard)
 
-Sends and receives binary Yjs updates over WebSocket. Never touches Vue — only listens to Y.Doc/Awareness events and shuttles `Uint8Array` bytes.
+The frontend uses `y-websocket`'s `WebsocketProvider` which speaks the **y-sync v1 standard protocol**. The backend editor service uses the Rust `y-sync` crate which speaks the same protocol. No custom binary framing needed.
+
+**Connection flow (handled by y-websocket internally):**
 
 ```mermaid
-flowchart TB
-    subgraph WSProvider["WebSocketProvider"]
-        listeners["Constructor registers once<br/>doc.on 'update'<br/>awareness.on 'update'"]
-        outgoing["Outgoing: local → server<br/>0x00 + update for edits<br/>0x01 + encoded for cursors<br/>skips origin === 'remote'"]
-        incoming["Incoming: server → local<br/>First msg: raw Yjs V1<br/>0x00: Y.applyUpdate<br/>0x01: applyAwarenessUpdate"]
-        reconnect["Auto-reconnect<br/>1s initial, 2x backoff, 30s max"]
+sequenceDiagram
+    participant C as Client (y-websocket)
+    participant S as Server (editor service)
+
+    C->>S: WebSocket opens at /ws/{noteId}
+    S->>C: SyncStep1 or SyncStep2 (initial state)
+    C->>S: SyncStep1 (request state)
+    S->>C: SyncStep2 (full document state)
+    C->>S: SyncStep2 (client state for reconciliation)
+
+    Note over C,S: y-websocket emits "sync" event
+
+    loop Editing
+        C->>S: Update messages (edits)
+        S->>C: Update messages (remote edits)
+        C->>S: Awareness updates (cursor position)
+        S->>C: Awareness updates (remote cursors)
     end
-
-    backend["Backend #40;notes-rs#41;<br/>yrs Doc + PostgreSQL"]
-
-    listeners --> outgoing
-    outgoing -- "WS /api/notes/id/sync" --> backend
-    backend -- "WS" --> incoming
-    incoming -. "re-enters listeners but<br/>origin='remote' guard returns early" .-> listeners
 ```
 
-- `listeners → outgoing`: The constructor-registered handlers fire whenever the Y.Doc or Awareness changes locally, producing outgoing messages.
-- `outgoing → backend`: Binary messages sent over the WebSocket at `/api/notes/{id}/sync`. The `send()` helper guards on `ws.readyState === OPEN`, making handlers no-ops when disconnected.
-- `backend → incoming`: The `onmessage` handler parses incoming bytes. The `"remote"` origin string passed to `Y.applyUpdate` is what the outgoing handler checks — this is how echo loops are prevented.
-- `incoming -.-> listeners` (dotted): Applying a remote update fires the doc's `"update"` event, which re-enters `handleDocUpdate` — but the `origin === "remote"` guard returns early, so nothing is sent back.
+**Key differences from the old custom protocol:**
+- No manual tag bytes (0x00/0x01) — y-sync v1 handles message framing
+- No raw first-message detection — y-websocket manages the sync handshake
+- No manual echo prevention — y-websocket tracks origins internally
+- Reconnection with exponential backoff is built into y-websocket
 
-#### Full wiring — all three layers together
+**WebSocket URL:** `ws://host/ws/{noteId}` (routed by nginx to the editor service on port 3004)
+
+#### Full wiring — both layers together
 
 ```mermaid
 flowchart TB
@@ -395,37 +405,26 @@ flowchart TB
     subgraph useCollab["useCollaboration#40;#40;#41; => noteId#41;"]
         ydoc["Y.Doc"]
         ytext["Y.Text 'title'"]
-        awareness["Awareness"]
-        provider_create["new WebSocketProvider"]
+        provider_create["WebsocketProvider#40;wsUrl, id, doc#41;<br/>— manages Awareness internally"]
         titleBridge["titleText ref"]
         usersBridge["connectedUsers ref"]
     end
 
-    subgraph WSProvider["WebSocketProvider"]
-        listeners["doc.on 'update'<br/>awareness.on 'update'"]
-        outgoing["Outgoing: local → server"]
-        incoming["Incoming: server → local"]
-        reconnect["Auto-reconnect"]
-    end
-
-    backend["Backend #40;notes-rs#41;<br/>yrs Doc + PostgreSQL"]
+    backend["Backend #40;editor service#41;<br/>yrs Doc + PostgreSQL<br/>y-sync v1 protocol"]
 
     call --> ydoc
     ydoc --> ytext
-    ydoc --> awareness
     ydoc --> provider_create
-    awareness --> provider_create
-    provider_create --> listeners
 
     ydoc -- "ydoc" --> tiptap
     provider_create -- "provider" --> tiptap
     ytext --> titleBridge
-    awareness --> usersBridge
+    provider_create -- "awareness" --> usersBridge
     titleBridge -- "titleText" --> title
     usersBridge -- "connectedUsers" --> indicator
 
-    outgoing -- "WS /api/notes/id/sync" --> backend
-    backend -- "WS" --> incoming
+    provider_create -- "WS /ws/{noteId}" --> backend
+    backend -- "WS y-sync v1" --> provider_create
 ```
 
 ### Lifecycle
@@ -435,20 +434,20 @@ sequenceDiagram
     participant Vue as NotesView
     participant NE as NoteEditor
     participant Collab as useCollaboration
-    participant WSP as WebSocketProvider
-    participant Server as Backend
+    participant YWS as y-websocket
+    participant Server as Editor Service
 
     Note over Vue: user selects first note
 
     Vue->>NE: mount (no :key — stays mounted)
     NE->>Collab: useCollaboration(() => noteId)
     Collab->>Collab: watch fires → setup(noteId)
-    Collab->>Collab: new Y.Doc + Y.Text("title") + Awareness
-    Collab->>WSP: new WebSocketProvider({ noteId, doc, awareness })
-    Collab->>WSP: provider.connect()
-    WSP->>Server: WebSocket opens
-    Server->>WSP: raw Yjs V1 update (full state, no tag)
-    Collab->>Collab: first sync received → activate refs
+    Collab->>Collab: new Y.Doc + Y.Text("title")
+    Collab->>YWS: new WebsocketProvider(wsUrl, noteId, doc)
+    YWS->>Server: WebSocket opens, y-sync v1 handshake
+    Server->>YWS: SyncStep2 (full document state)
+    YWS->>Collab: "sync" event fires
+    Collab->>Collab: activate refs
     Collab->>NE: ydoc + provider refs populated
     NE->>NE: watchEffect → new Editor created
 
@@ -456,87 +455,14 @@ sequenceDiagram
 
     Vue->>NE: noteId prop changes (no remount)
     NE->>Collab: watch fires → setup(newNoteId)
-    Collab->>WSP: new WebSocketProvider for new note
-    WSP->>Server: new WebSocket opens
-    Server->>WSP: raw Yjs V1 update (new note state)
-    Collab->>Collab: first sync → tear down old, activate new refs
+    Collab->>YWS: new WebsocketProvider for new note
+    YWS->>Server: new WebSocket opens, y-sync v1 handshake
+    Server->>YWS: SyncStep2 (new note state)
+    YWS->>Collab: "sync" event fires
+    Collab->>Collab: tear down old, activate new refs
     Collab->>NE: ydoc + provider refs updated
     NE->>NE: watchEffect → onCleanup destroys old editor, new editor created
 ```
-
----
-
-## WebSocket Protocol (Custom — NOT y-websocket)
-
-### Why custom?
-
-Our backend uses a simplified binary protocol incompatible with y-websocket. Using the standard library would corrupt data.
-
-### Binary Protocol
-
-```
-Tag bytes:
-  MSG_SYNC      = 0x00
-  MSG_AWARENESS = 0x01
-```
-
-### Connection Sequence
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant S as Server
-
-    S->>C: raw Yjs V1 update (NO tag byte) — initial state
-    S->>C: [0x01][awareness entries] — other clients' cursors (if any)
-    C->>S: [0x01][local awareness] — announce presence
-    C->>S: [0x00][local state] — push offline edits
-
-    loop Editing
-        C->>S: [0x00][update] — local edits
-        S->>C: [0x00][update] — remote edits (relayed)
-        C->>S: [0x01][awareness] — cursor moves
-        S->>C: [0x01][awareness] — remote cursors
-    end
-```
-
-### First-Message Detection (`synced` flag)
-
-The initial state message has **no tag byte** — distinguished from subsequent tagged messages using a `synced` boolean:
-
-```
-synced = false  →  treat entire payload as raw Yjs update
-                   Y.applyUpdate(doc, data, "remote")
-                   synced = true
-
-synced = true   →  read data[0] as tag byte
-                   0x00 → Y.applyUpdate(doc, data.slice(1), "remote")
-                   0x01 → applyAwarenessUpdate(awareness, data.slice(1))
-```
-
-### Origin Tracking (prevents echo loops)
-
-```typescript
-// Incoming: mark as "remote"
-Y.applyUpdate(this.doc, payload, "remote");
-
-// Outgoing: skip "remote" origin (don't echo back)
-handleDocUpdate = (update, origin) => {
-  if (origin === "remote") return;
-  this.send(MSG_SYNC, update);
-};
-```
-
-### Reconnection
-
-| Parameter | Value |
-|-----------|-------|
-| Initial delay | 1000 ms |
-| Backoff | 2x per failure |
-| Max delay | 30,000 ms |
-| Reset | On successful `onopen` |
-
-After reconnect: server sends full state → client applies it → client sends its full local state back (reconciles offline edits via CRDT merge).
 
 ---
 
@@ -549,15 +475,15 @@ sequenceDiagram
     participant User
     participant Tiptap as Tiptap / ProseMirror
     participant YDoc as Y.Doc
-    participant WSP as WebSocketProvider
-    participant Server as Backend
+    participant YWS as y-websocket
+    participant Server as Editor Service
     participant Remote as Other Clients
 
     User->>Tiptap: keystroke
     Tiptap->>YDoc: y-prosemirror → Y.Doc update
     Note over Tiptap: editor re-renders<br/>immediately (optimistic)
-    YDoc->>WSP: doc "update" event fires
-    WSP->>Server: [0x00][update bytes]
+    YDoc->>YWS: doc update event fires
+    YWS->>Server: y-sync v1 update message
     Server->>Server: persist to PostgreSQL
     Server->>Remote: broadcast to other clients
     Remote->>Remote: Y.applyUpdate → Tiptap re-renders
@@ -568,15 +494,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Remote as Other Client
-    participant Server as Backend
-    participant WSP as WebSocketProvider
+    participant Server as Editor Service
+    participant YWS as y-websocket
     participant YDoc as Y.Doc
     participant Collab as useCollaboration
     participant Tiptap as Tiptap / ProseMirror
 
-    Remote->>Server: [0x00][update bytes]
-    Server->>WSP: [0x00][update] via WebSocket
-    WSP->>YDoc: Y.applyUpdate(doc, payload, "remote")
+    Remote->>Server: y-sync v1 update message
+    Server->>YWS: update via WebSocket
+    YWS->>YDoc: applies update to local Y.Doc
     YDoc->>Tiptap: XmlFragment updated → editor re-renders
     YDoc->>Collab: yTitle.observe() fires
     Collab->>Collab: titleText ref updates
@@ -587,13 +513,13 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A["User clicks '+'"] --> B["noteStore.createNote()"]
-    B --> C["POST /api/notes → returns id: uuid"]
-    B --> D["notes.push(newNote)"]
-    B --> E["selectedNote = newNote"]
+    B --> C["POST /api/notes with { title: 'Untitled' }"]
+    C --> D["notes.push(newNote)"]
+    D --> E["selectedNote = newNote"]
     E --> F["NoteEditor receives new noteId"]
     F --> G["useCollaboration watch fires → setup(uuid)"]
-    G --> H["new Y.Doc + WebSocketProvider"]
-    H --> I["provider.connect() → WS opens → first sync → editor ready"]
+    G --> H["new Y.Doc + WebsocketProvider"]
+    H --> I["WS connects → y-sync handshake → sync event → editor ready"]
 ```
 
 ### Open Existing Note
@@ -603,8 +529,8 @@ flowchart TD
     A["Click note in sidebar"] --> B["selectedNote = note"]
     B --> C["NoteEditor receives noteId"]
     C --> D["useCollaboration watch fires → setup(uuid)"]
-    D --> E["new Y.Doc + WS → server sends doc state"]
-    E --> F["First sync received → refs activated"]
+    D --> E["new Y.Doc + WebsocketProvider → y-sync handshake"]
+    E --> F["Sync event received → refs activated"]
     F --> G["yTitle observe → titleText = 'Meeting Notes'"]
     F --> H["XmlFragment populated → editor renders rich content"]
 ```
@@ -615,9 +541,9 @@ flowchart TD
 flowchart TD
     A["Click different note"] --> B["noteId prop changes"]
     B --> C["useCollaboration watch fires → setup(newId)"]
-    C --> D["New Y.Doc + Provider created, connects to server"]
-    D --> E["First sync received"]
-    E --> F["Old provider.disconnect() → old WS closes"]
+    C --> D["New Y.Doc + WebsocketProvider created, connects to server"]
+    D --> E["Sync event received"]
+    E --> F["Old provider.destroy() → old WS closes"]
     E --> G["Old ydoc.destroy() → shared types freed"]
     E --> H["New refs activated → watchEffect creates new editor"]
     H --> I["Old editor destroyed by onCleanup"]
@@ -625,9 +551,28 @@ flowchart TD
 
 ---
 
+## Backend Architecture (hybrid-notes)
+
+The backend is split into two services:
+
+| Service | Port | Role |
+|---|---|---|
+| **notes** | 3003 | REST API — CRUD for note metadata (title, owner_id, timestamps) |
+| **editor** | 3004 | WebSocket — real-time collaborative editing via y-sync v1 |
+
+Nginx routes:
+- `/api/notes/*` → notes service (REST)
+- `/ws/*` → editor service (WebSocket)
+
+Both services share the same PostgreSQL database:
+- `notes` table — metadata (managed by notes service)
+- `note_states` table — CRDT document state (managed by editor service)
+
+---
+
 ## Known Limitations
 
-1. **Sidebar title staleness** — sidebar reads `title_preview` from REST; live Y.Text title changes don't update it until page refresh
+1. **Sidebar title staleness** — sidebar reads `title` from REST; live Y.Text title changes don't update it until page refresh
 2. **Content seeding mismatch** — POST body goes to `Y.Text("content")`, Tiptap uses `XmlFragment("default")`. Moot since we create blank notes.
 3. **Anonymous users** — all carets show "Anonymous" with same color. Needs auth integration.
 4. **No offline persistence** — local edits survive reconnect (in-memory) but are lost if tab closes while disconnected. Fix: add `y-indexeddb`.
