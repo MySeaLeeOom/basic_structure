@@ -13,7 +13,7 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 	.fetch_optional(pool)
 	.await
 	.map_err(|e| {
-		eprintln!("DB Error loading note {}: {}", note_id, e);
+		tracing::error!("DB Error loading note {}: {}", note_id, e);
 		()
 	})?;
 
@@ -26,9 +26,10 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 			match Update::decode_v1(&saved_state.state_vector) {
 				Ok(update) => {
 					txn.apply_update(update);
+					tracing::debug!("Successfully applied saved state to note {}", note_id);
 				}
 				Err(e) => {
-					eprintln!("CRDT Decode Error for {}: {}", note_id, e);
+					tracing::error!("CRDT Decode Error for {}: {}", note_id, e);
 					return Err(());
 				}
 			}
@@ -54,9 +55,10 @@ pub async fn save_note(pool: &PgPool, note_id: Uuid, doc: &Doc) -> Result<(), ()
 	.execute(pool)
 	.await
 	.map_err(|e| {
-		eprintln!("DB Error saving note {}: {}", note_id, e);
+		tracing::error!("DB Error saving note {}: {}", note_id, e);
 		()
 	})?;
 
+	tracing::info!("Successfully saved note {} to database", note_id);
 	Ok(())
 }

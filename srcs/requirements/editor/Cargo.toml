@@ -10,6 +10,8 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "uui
 uuid = { version = "1.12.1", features = ["serde", "v4"] }
 serde = { version = "1.0.228", features = ["derive"] }
 dashmap = "6.1.0"
-yrs = "0.21.0"
+yrs = "0.17.4"
 y-sync = { version = "0.4.0", features = ["net"] }
 futures-util = "0.3.30"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
