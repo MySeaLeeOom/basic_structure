@@ -1,5 +1,8 @@
+mod state;
+mod ws_handler;
+mod db;
+mod sync;
 mod models;
-mod handlers;
 
 use axum::{
 	routing::get,
@@ -7,6 +10,8 @@ use axum::{
 };
 use sqlx::PgPool;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use state::AppState;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -14,18 +19,18 @@ async fn main() {
 	// Initialize tracing
 	tracing_subscriber::registry()
 		.with(tracing_subscriber::EnvFilter::try_from_default_env()
-			.unwrap_or_else(|_| "notes=debug,tower_http=debug,axum::rejection=trace".into()))
+			.unwrap_or_else(|_| "editor=debug,tower_http=debug,axum::rejection=trace".into()))
 		.with(tracing_subscriber::fmt::layer())
 		.init();
 
 	let db_pool = setup_database().await;
+	let app_state = Arc::new(AppState::new(db_pool));
 
 	let app = Router::new()
-		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
-		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
-		.with_state(db_pool);
+		.route("/ws/{id}", get(ws_handler::ws_route))
+		.with_state(app_state);
 
-	let port = std::env::var("PORT").unwrap_or_else(|_| "3003".to_string());
+	let port = std::env::var("PORT").unwrap_or_else(|_| "3004".to_string());
 	let addr: SocketAddr = format!("0.0.0.0:{}", port).parse().expect("Invalid address");
 	
 	tracing::info!("Listening on {}", addr);
