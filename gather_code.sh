@@ -14,6 +14,7 @@ fi
 find "$TARGET_DIR" -type f \
 	-not -path "*/frontend_42/*" \
 	-not -path "*/.DS_Store" \
+	
     -not -path "*/node_modules/*" \
     -not -path "*/secrets/*" \
     -not -path "*/DOCS/*" \
@@ -22,6 +23,8 @@ find "$TARGET_DIR" -type f \
     -not -path "*/dist/*" \
     -not -path "*/.astro/*" \
     -not -name "*.db" \
+    -not -name "*.md" \
+	-not -name "pnpm-lock.yaml" \
     -not -name ".env" \
     -not -name "*.png" \
     -not -name "*.jpg" \

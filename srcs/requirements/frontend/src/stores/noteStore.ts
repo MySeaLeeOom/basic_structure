@@ -56,7 +56,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 	async function createNote(title: string, content: string) {
 		error.value = null;
-		isLoading.value = true;
+		// isLoading.value = true;
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
@@ -85,7 +85,7 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 
 		error.value = null;
-		isLoading.value = true;
+		// isLoading.value = true;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "PUT",
@@ -113,7 +113,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 	async function deleteNote(id: number) {
 		error.value = null;
-		isLoading.value = true;
+		// isLoading.value = true;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "DELETE",
