@@ -10,6 +10,8 @@ CLAUDE.md
 copilot-instructions.md
 masha*.*
 temp
-
+masha*.*
+crdt-migration-plan.md
 dist
-# .vite
+
+target

@@ -1,5 +1,7 @@
 export interface Note {
-  id: number;        // Matches PostgreSQL SERIAL type
+  id: string;
   title: string;
-  content: string;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
 }

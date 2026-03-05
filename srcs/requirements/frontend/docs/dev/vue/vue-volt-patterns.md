@@ -442,10 +442,9 @@ onMounted(() => {
 </script>
 ```
 
-For components that can't run on the server, create a `ClientOnly` wrapper:
+For components that can't run on the server (e.g., they use `WebSocket`, `document`, or browser-only libraries in `<script setup>`), gate them with a `mounted` ref in the parent:
 
 ```vue
-<!-- components/ClientOnly.vue -->
 <script setup>
 import { ref, onMounted } from 'vue'
 
@@ -454,12 +453,12 @@ onMounted(() => { mounted.value = true })
 </script>
 
 <template>
-  <slot v-if="mounted" />
-  <slot v-else name="placeholder">
-    <div class="skeleton" />
-  </slot>
+  <BrowserOnlyComponent v-if="mounted" />
+  <div v-else class="skeleton" />
 </template>
 ```
+
+`onMounted()` only fires in the browser, so the component is never instantiated during SSR. For a single usage, this is simpler than a dedicated `<ClientOnly>` wrapper component.
 
 ---
 
