@@ -1,7 +1,7 @@
 import type { FastifyRequest } from "fastify";
 
 // path we want the user to go to by default
-const fallback = "/notes";
+export const fallback = "/notes";
 
 /**
  * A 'Pure helper' to reconstruct the absolute Origin of the request.
@@ -27,7 +27,7 @@ export function getOrigin(request: FastifyRequest): string {
 export function getHomeURL(request: FastifyRequest): string {
 	const protocol = (request.headers["x-forwarded-proto"] as string) || "http";
 	const host = request.headers["host"];
-	const url = `${protocol}://${host}`;
+	const url = `${protocol}://${host}${fallback}`;
 
 	console.log("Redirect after login to: ", url);
 	return url;
