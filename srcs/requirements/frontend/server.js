@@ -76,6 +76,6 @@ createServer().then(app => {
       console.error(err)
       process.exit(1)
     }
-    console.log(`Server listening at ${address}`)
+    console.log(`Frontend Server listening at ${address}`)
   })
 })
