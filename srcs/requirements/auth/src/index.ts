@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { buildServer, type AppConfig } from "./app";
 import { databaseUrl } from "./db/connections";
-
+import { getBaseURI } from "./lib/auth_utils";
 // Function to load configuration from environment and secrets
 const loadConfig = (): AppConfig => {
 	// 1. GITHUB CLIENT ID
@@ -9,6 +9,12 @@ const loadConfig = (): AppConfig => {
 	if (!clientIdGit) {
 		throw new Error("CRITICAL: GITHUB_CLIENT_ID is missing from the environment!");
 	}
+
+	const githubCallbackURL = process.env.GITHUB_CALLBACK_URL;
+	if (!githubCallbackURL) {
+		throw new Error("CRITICAL: GITHUB_CALLBACK_URL is missing from the environment!");
+	}
+	
 
 	// 2. GITHUB CLIENT SECRET
 	const gitSecretPath = "/run/secrets/github_client_secret";
@@ -34,7 +40,7 @@ const loadConfig = (): AppConfig => {
 		githubClientId: clientIdGit,
 		githubClientSecret: clientSecretGit,
 		sessionSecret: sessionSecret,
-		callbackUri: "http://localhost:8080/api/auth/login/github/callback", // Ideally from ENV too
+		callbackUri: `${githubCallbackURL}`, // THIS NEEDS TO MATCH GITHUB APP SETUP
 		runMigrations: true,
 	};
 };

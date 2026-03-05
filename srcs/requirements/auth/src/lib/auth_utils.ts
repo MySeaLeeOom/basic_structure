@@ -32,3 +32,12 @@ export function getHomeURL(request: FastifyRequest): string {
 	console.log("Redirect after login to: ", url);
 	return url;
 }
+
+export function getBaseURI(request: FastifyRequest): string {
+	const protocol = (request.headers["x-forwarded-proto"] as string) || "http";
+	const host = request.headers["host"];
+	const url = `${protocol}://${host}`;
+
+	console.log("The base URI is: ", url);
+	return url;
+}
