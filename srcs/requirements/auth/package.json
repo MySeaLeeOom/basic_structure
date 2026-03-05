@@ -9,7 +9,8 @@
 		"start": "node dist/index.js",
 		"db:generate": "drizzle-kit generate",
 		"db:push": "drizzle-kit push",
-		"dev": "tsx watch src/index.ts"
+		"dev": "tsx watch src/index.ts",
+		"test": "vitest"
 	},
 	"keywords": [],
 	"author": "",
