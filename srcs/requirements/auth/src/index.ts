@@ -20,7 +20,6 @@ const loadConfig = (): AppConfig => {
 	let clientSecretGit = "";
 	if (existsSync(gitSecretPath)) {
 		clientSecretGit = readFileSync(gitSecretPath, "utf8").trim();
-		// console.log(clientSecretGit);
 	} else {
 		throw new Error("CRITICAL: GITHUB_CLIENT_SECRET is missing from secrets!");
 	}
