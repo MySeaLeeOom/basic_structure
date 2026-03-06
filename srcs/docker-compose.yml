@@ -67,11 +67,13 @@ services:
     volumes:
       - ./requirements/auth:/app:z
       - /app/node_modules
-      # SE Linux compatible secret mounts (Private, Read-Only)
       - ./secrets/auth_db_password:/run/secrets/auth_db_password:ro,Z
       - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro,Z
       - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro,Z
     restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
     environment:
@@ -121,6 +123,12 @@ services:
       - auth_db_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h localhost -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     networks:
       - transcendence
     
