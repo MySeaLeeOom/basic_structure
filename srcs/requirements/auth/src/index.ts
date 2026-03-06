@@ -20,6 +20,7 @@ const loadConfig = (): AppConfig => {
 	let clientSecretGit = "";
 	if (existsSync(gitSecretPath)) {
 		clientSecretGit = readFileSync(gitSecretPath, "utf8").trim();
+		// console.log(clientSecretGit);
 	} else {
 		throw new Error("CRITICAL: GITHUB_CLIENT_SECRET is missing from secrets!");
 	}
@@ -40,7 +41,7 @@ const loadConfig = (): AppConfig => {
 		githubClientSecret: clientSecretGit,
 		sessionSecret: sessionSecret,
 		callbackUri: `${githubCallbackURL}`, // THIS NEEDS TO MATCH GITHUB APP SETUP
-		runMigrations: false,
+		runMigrations: true,
 	};
 };
 
