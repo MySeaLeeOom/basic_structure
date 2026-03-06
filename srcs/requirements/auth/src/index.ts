@@ -14,7 +14,6 @@ const loadConfig = (): AppConfig => {
 	if (!githubCallbackURL) {
 		throw new Error("CRITICAL: GITHUB_CALLBACK_URL is missing from the environment!");
 	}
-	
 
 	// 2. GITHUB CLIENT SECRET
 	const gitSecretPath = "/run/secrets/github_client_secret";
@@ -41,7 +40,7 @@ const loadConfig = (): AppConfig => {
 		githubClientSecret: clientSecretGit,
 		sessionSecret: sessionSecret,
 		callbackUri: `${githubCallbackURL}`, // THIS NEEDS TO MATCH GITHUB APP SETUP
-		runMigrations: true,
+		runMigrations: false,
 	};
 };
 
