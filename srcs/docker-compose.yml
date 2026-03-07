@@ -71,6 +71,9 @@ services:
       - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro,Z
       - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro,Z
     restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
     environment:
@@ -180,6 +183,11 @@ services:
     build: ./requirements/postgres-exporter
     container_name: postgres-exporter
     restart: always
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
 volumes:
