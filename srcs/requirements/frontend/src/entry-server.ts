@@ -1,8 +1,16 @@
 import { renderToString } from "vue/server-renderer";
 import { createApp } from "./main";
+import { useAuthStore } from "./stores/authStore";
 
-export async function render(url: string) {
+export async function render(url: string, cookie: string) {
 	const { app, router, pinia } = createApp("server");
+
+	// SSR AUTH CHECK
+	// We manually initialize the store and pass the cookie from the request headers
+	const authStore = useAuthStore(pinia);
+	if (cookie) {
+		await authStore.checkAuth(cookie);
+	}
 
 	// Push the requested URL to the router
 	await router.push(url);

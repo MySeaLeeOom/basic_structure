@@ -22,6 +22,7 @@ export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance)
 				id: user.id,
 				email: user.email,
 				role: user.role,
+				loginName: user.loginName,
 			},
 		};
 	});

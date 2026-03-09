@@ -14,7 +14,6 @@ fi
 find "$TARGET_DIR" -type f \
 	-not -path "*/frontend_42/*" \
 	-not -path "*/.DS_Store" \
-	
     -not -path "*/node_modules/*" \
     -not -path "*/secrets/*" \
     -not -path "*/DOCS/*" \
