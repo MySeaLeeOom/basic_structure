@@ -1,9 +1,10 @@
 import { createApp } from "./main";
+// import { useAuthStore } from "./stores/authStore";
 
 declare global {
-  interface Window {
-    __INITIAL_STATE__?: any;
-  }
+	interface Window {
+		__INITIAL_STATE__?: any;
+	}
 }
 
 const { app, router, pinia } = createApp("client");
@@ -17,6 +18,12 @@ const { app, router, pinia } = createApp("client");
 if (window.__INITIAL_STATE__) {
 	pinia.state.value = window.__INITIAL_STATE__;
 }
+
+// const authStore = useAuthStore(pinia);
+// // Force an auth check on client-side mount to ensure state is fresh
+// if (!authStore.user) {
+// 	authStore.checkAuth();
+// }
 
 // Wait for router to be ready (resolve async components) before mounting
 router.isReady().then(() => {
