@@ -10,7 +10,7 @@ export const userStatusEnum = pgEnum("status", ["active", "blocked", "suspended"
 export const users = pgTable(
 	"users",
 	{
-		id: serial("id").primaryKey(),
+		id: uuid("id").defaultRandom().primaryKey(),
 		loginName: text("login_name").unique().notNull(),
 		provider: providerEnum("provider").notNull(),
 		providerId: text("provider_id").notNull(),
@@ -29,7 +29,7 @@ export const users = pgTable(
 export const sessions = pgTable("sessions", {
 	id: serial("id").primaryKey(),
 	token: uuid("token").defaultRandom().notNull().unique(),
-	user_id: integer("user_id")
+	user_id: uuid("user_id")
 		.references(() => users.id, { onDelete: "cascade" })
 		.notNull(),
 	role: roleEnum("user_role").notNull(),

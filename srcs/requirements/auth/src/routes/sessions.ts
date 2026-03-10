@@ -8,7 +8,6 @@ import { getHomeURL, getOrigin } from "../lib/auth_utils";
 export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
 	// A simple endpoint to check "Who am I?"
 	server.get("/verify", async (request, reply) => {
-
 		const user = await verifySession(request, server.db); // HELPER: Verify Session
 		if (!user) {
 			console.log("Session invalid or expired.");
@@ -16,6 +15,8 @@ export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance)
 		}
 
 		// SUCCESS: The Identity is Verified
+
+		reply.header("X-User-Id", user.id); // <--- BROADCAST ID TO NGINX otherwise need lua in nginx
 		return {
 			authenticated: true,
 			user: {
@@ -29,9 +30,8 @@ export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance)
 
 	// LOGOUT: The Revocation
 	server.post("/logout", async (request, reply) => {
-		await revokeSession(request, reply, server.db);		// HELPER: Revoke Session
-		return reply.redirect(getHomeURL(request));		// ACTION: Redirect to home/login
-
+		await revokeSession(request, reply, server.db); // HELPER: Revoke Session
+		return reply.redirect(getHomeURL(request)); // ACTION: Redirect to home/login
 	});
 };
 

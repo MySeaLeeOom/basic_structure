@@ -13,6 +13,7 @@ export const useAuthStore = defineStore("auth", () => {
 	const user = ref<User | null>(null);
 	const loading = ref(false);
 	const error = ref<string | null>(null);
+	const sessionCookie = ref<string | null>(null); // Store cookie for SSR requests
 
 	const isAuthenticated = computed(() => !!user.value);
 
@@ -23,6 +24,9 @@ export const useAuthStore = defineStore("auth", () => {
 
 		loading.value = true;
 		error.value = null;
+		// we must not do this when running on the browser
+		if (serverCookie) sessionCookie.value = serverCookie;
+
 		try {
 			// Determine URL based on environment (Server vs Client)
 			const isServer = typeof window === "undefined";
@@ -123,6 +127,7 @@ export const useAuthStore = defineStore("auth", () => {
 		loading,
 		error,
 		checkAuth,
+		sessionCookie,
 		logout,
 		loginLocal,
 		registerLocal,
