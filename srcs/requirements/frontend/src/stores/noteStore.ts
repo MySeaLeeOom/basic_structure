@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { Note } from "@/types";
+import { useAuthStore } from "@/stores/authStore";
 
 export const useNoteStore = defineStore("notes", () => {
+	const authStore = useAuthStore();
 	const notes = ref<Note[]>([]);
 	const selectedNote = ref<Note | null>(null);
 	const error = ref<string | null>(null);
@@ -12,9 +14,11 @@ export const useNoteStore = defineStore("notes", () => {
 	const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 	const lastFetchTimestamp = ref(0);
 
-	async function fetchNotes() {
+	async function fetchNotes(serverCookie?: string) {
 		// Prevent redundant fetches
 		const currentTime = Date.now();
+		// If serverCookie is provided (SSR), we might want to force fetch or double check.
+		// But generally cache logic applies.
 		if (notes.value.length && currentTime - lastFetchTimestamp.value < CACHE_DURATION) {
 			return;
 		}
@@ -25,10 +29,22 @@ export const useNoteStore = defineStore("notes", () => {
 		try {
 			// On the server, we MUST use the full internal Docker URL.
 			// On the client, we use a relative URL (which goes through the Nginx).
+			// We point to nginx so that the auth_request is triggered and X-User-Id is set.
 			const isServer = typeof window === "undefined";
-			const url = isServer ? "http://notes:3003/api/notes" : "/api/notes";
+			const url = isServer ? "http://nginx:80/api/notes" : "/api/notes";
+
+			const headers: HeadersInit = {};
+			if (isServer) {
+				if (serverCookie) {
+					headers["Cookie"] = serverCookie;
+				} else if (authStore.sessionCookie) {
+					headers["Cookie"] = authStore.sessionCookie;
+				}
+			}
 
 			const response = await fetch(url, {
+				method: "GET",
+				headers,
 				signal: AbortSignal.timeout(5000), // Prevent hanging
 			});
 

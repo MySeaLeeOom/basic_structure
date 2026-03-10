@@ -11,7 +11,7 @@ export async function createSession(
 	request: FastifyRequest,
 	reply: FastifyReply,
 	db: NodePgDatabase<typeof schema>,
-	userId: number,
+	userId: string,
 	role: "admin" | "user"
 ) {
 	const expiresAt = new Date(); //creates current date
