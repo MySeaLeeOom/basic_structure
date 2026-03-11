@@ -1,6 +1,10 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
 FLAGS   := --remove-orphans
-MODULE_VOLUMES := srcs_frontend_node_modules_nuxt srcs_frontend_nuxt_build srcs_frontend_nuxt_output
+MODULE_VOLUMES := srcs_auth_node_modules
+srcs_frontend_manual_node_modules \
+srcs_frontend_node_modules \
+srcs_frontend_nuxt_hidden \
+srcs_frontend_output_hidden 
 # srcs_frontend_node_modules srcs_auth_node_modules
 
 all: up
@@ -28,6 +32,7 @@ fclean: getuser
 
 # In case of dependency changes! Adjust MODULE_VOLUMES. Run Manually after clean
 clean_volumes:
+# 	docker volume ls -q | grep -v 'srcs_postgres_data' | xargs docker volume rm || true
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
 cleanv: clean clean_volumes

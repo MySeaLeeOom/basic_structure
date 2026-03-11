@@ -1,7 +1,7 @@
 services:
   frontend_manual:
     build:
-      context: ./requirements/frontend
+      context: ./requirements/frontend_manual
       dockerfile: Dockerfile.dev
       args:
         - UID=${UID:-1000}
@@ -13,7 +13,6 @@ services:
     volumes:
       - ./requirements/frontend_manual:/app:z      # Mount for live updates (:z is for SELinux)
       - frontend_manual_node_modules:/app/node_modules # Protect container-specific libs
-
     networks:
       - transcendence                       # Connect to 'notes' and 'postgres' [cite: 21]
     environment:
