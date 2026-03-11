@@ -90,9 +90,9 @@ These are the routes exposed by the container on port `3000`.
 | Method | Endpoint | Purpose | Wiring Context |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/verify` | **Checks session cookie.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, user: { id, loginName, role } }`. <br> **Headers:** Sets `X-User-Id` for Nginx. | Used by Nginx `auth_request` directive. Used by Frontend to fetch User information. |
+| **POST** | `/logout` | **Clears session cookie.** | Called by frontend button. |
 | **POST** | `/login` | Accepts `{ identifier, password }`. Sets cookie. | Public form submission. |
 | **POST** | `/register` | Accepts `{ loginName, email, password }`. Sets cookie. | Public form submission. |
-| **POST** | `/logout` | Clears session cookie. | Called by frontend button. |
 | **GET** | `/login/github` | Redirects browser to GitHub. | link from "Login with GitHub" button. |
 | **GET** | `/` | Health check / Redirect logic. | default route. |
 
@@ -119,7 +119,7 @@ Tests use a dedicated integration setup.
 # Inside the container
 pnpm test
 
-# From the host
+# From the host (USE THIS WHILE RUNNING ENTIRE APPLICATION)
 docker compose exec auth pnpm test
 ```
 
