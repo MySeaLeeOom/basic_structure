@@ -137,6 +137,11 @@ services:
       - "0.0.0.0:8081:81"
       - "0.0.0.0:8082:82"
       - "0.0.0.0:8083:83"
+    depends_on:
+      - frontend_nuxt
+      - auth
+      - notes
+      - editor
 
 
   postgres:
@@ -181,6 +186,8 @@ services:
 volumes:
   postgres_data:
   frontend_node_modules:  # Persistent volume for frontend dependencies
+  frontend_node_modules_nuxt:  # Persistent volume for frontend dependencies
+
   auth_node_modules:      # Persistent volume for auth dependencies
 
 secrets:

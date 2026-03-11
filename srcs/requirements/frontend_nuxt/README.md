@@ -57,13 +57,15 @@ pnpm dev
 2. Move contents of src/ into app/
 3. Move Dockerfiles into the new folder
 4. Dependencies
-```
+```bash
 pnpm add primevue @primevue/nuxt
 pnpm add -D @nuxtjs/tailwindcss tailwindcss postcss autoprefixer
 pnpm add -D typescript vue-tsc @types/node
 
 pnpm exec npx tailwindcss init -p
 pnpm exec nuxi prepare
+
+pnpm add @tiptap/vue-3 @tiptap/starter-kit @tiptap/extension-placeholder @tiptap/extension-collaboration @tiptap/extension-collaboration-caret yjs y-websocket y-protocols markdown-it tailwindcss-primeui @primevue/icons
 ```
 ### Dependencies Explanation
 When we build a modern web application, we are managing three distinct layers: **Logic**, **Structure**, and **Presentation**. These commands set up the tools to manage those layers safely and efficiently.

@@ -1,5 +1,7 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
 FLAGS   := --remove-orphans
+MODULE_VOLUMES := srcs_frontend_node_modules_nuxt 
+# srcs_frontend_node_modules srcs_auth_node_modules
 
 all: up
 
@@ -17,19 +19,25 @@ live: getuser
 down: getuser
 	$(COMPOSE) down $(FLAGS)
 
-clean: getuser
+clean: getuser 
 	$(COMPOSE) down --rmi all $(FLAGS)
 
 fclean: getuser
 	@echo "Removing all volumes..."
 	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
+# In case of dependency changes! Adjust MODULE_VOLUMES. Run Manually after clean
+clean_volumes:
+	@echo "Removing only node_modules volumes..."
+	-docker volume rm $(MODULE_VOLUMES)
+cleanv: clean clean_volumes
+
 re: clean all
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
-.PHONY: all up down clean re logs
+.PHONY: all up down clean cleanv fclean clean_volumes re logs
 
 # Docker commands
 # docker volume rm $(docker volume ls -q)

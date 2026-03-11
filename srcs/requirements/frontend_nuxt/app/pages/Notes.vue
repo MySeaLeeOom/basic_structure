@@ -39,13 +39,25 @@ function confirmDelete(id: string) {
 }
 
 onMounted(() => {
-	if (noteStore.notesCount === 0)
-		noteStore.fetchNotes();
+	if (noteStore.notesCount === 0) {
+		noteStore.fetchNotes().then(() => {
+			if (noteStore.error === 'HTTP 401') {
+				navigateTo('/login');
+			}
+		});
+	}
 });
 
 onServerPrefetch(async () => {
-	if (noteStore.notesCount === 0)
-		await noteStore.fetchNotes();
+	const headers = useRequestHeaders(['cookie']);
+	const serverCookie = headers.cookie;
+
+	if (noteStore.notesCount === 0) {
+		await noteStore.fetchNotes(serverCookie);
+		if (noteStore.error === 'HTTP 401') {
+			await navigateTo('/login');
+		}
+	}
 });
 </script>
 
