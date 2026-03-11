@@ -10,8 +10,23 @@ server {
 	# without this nginx will look for the ip address of a container only once, at startup 
 	# 127.0.0.11 is Docker network address with DNS lookup
 
-    # API routes (specific)
+    # API routes (secure)
     location /api/notes {
+        # 1. THE BOUNCER: Intercept request and ask Auth Service if user is okay
+        auth_request /api/auth/verify;
+        error_page 401 = @login;
+
+        # 2. THE EXTRACTION: Catch identity from Auth Service's response headers
+        # 'upstream_http_' is how Nginx reads headers from internal sub-requests
+        auth_request_set $auth_user_id $upstream_http_x_user_id;
+        auth_request_set $auth_user_role $upstream_http_x_user_role;
+
+        # 3. THE INJECTOR: Overwrite headers sent to the Notes Service
+        # Even if a user tries to spoof these in their browser, Nginx 
+        # overwrites them here with our internal, VERIFIED data.
+        proxy_set_header X-User-Id $auth_user_id;
+        proxy_set_header X-User-Role $auth_user_role;
+
         proxy_pass http://notes:3003;
     }
 
@@ -54,7 +69,7 @@ server {
 }
 ```
 
-### Resolver purpose
+## Resolver purpose
 
 1. The Startup Crash (Static Mode)
 If you use proxy_pass http://auth:3000; (no variables):
@@ -79,3 +94,4 @@ Nginx depends on Auth.
 Auth depends on Postgres.
 Postgres takes 20 seconds to boot up.
 Without the resolver, Nginx will crash-restart 10 times while waiting for Postgres to be ready for Auth. In a large system, this "Thundering Herd" of restarting containers can overwhelm your CPU and memory, sometimes preventing anything from ever successfully starting.
+

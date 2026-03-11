@@ -35,7 +35,7 @@ async function handleLogout() {
 
     <template #end>
       <div class="flex items-center gap-2">
-        
+
         <template v-if="authStore.isAuthenticated">
           <span class="text-sm mr-2 hidden sm:inline" v-if="authStore.user?.loginName">
             {{ authStore.user.loginName }}
