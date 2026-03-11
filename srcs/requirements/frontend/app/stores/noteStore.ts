@@ -25,17 +25,27 @@ export const useNoteStore = defineStore("notes", () => {
 		isLoading.value = true;
 
 		try {
+			// Gatekeeper: If we are not logged in, we cannot have notes.
+			if (!authStore.user) {
+				isLoading.value = false;
+				return;
+			}
 			// On the server, we MUST use the full internal Docker URL.
 			// checking type of window is a robust, dependency-free way to check environment
 			const isServer = typeof window === "undefined";
 			const url = isServer ? "http://nginx:80/api/notes" : "/api/notes";
 
 			const headers: HeadersInit = {};
+			// If in SSR, check that we actually have a cookie - if not, don't fetch - extra work
 			if (isServer) {
 				// Nuxt 3 Magic: Automatically grab the cookie from the incoming request
 				const reqHeaders = useRequestHeaders(["cookie"]);
-				if (reqHeaders.cookie) {
+				if (reqHeaders && reqHeaders.cookie) {
 					headers["Cookie"] = reqHeaders.cookie;
+				}
+				if (!headers["Cookie"]) {
+					isLoading.value = false;
+					return;
 				}
 			}
 
@@ -101,7 +111,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-			notes.value = notes.value.filter((n) => n.id !== id);
+			notes.value = notes.value.filter((n: Note) => n.id !== id);
 			if (selectedNote.value?.id === id) {
 				selectedNote.value = null;
 			}

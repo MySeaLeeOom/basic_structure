@@ -1,4 +1,31 @@
 services:
+  frontend_manual:
+    build:
+      context: ./requirements/frontend
+      dockerfile: Dockerfile.dev
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"       # The Linux/Mac Fix for development 
+    image: frontend_manual
+    container_name: frontend_manual
+    restart: always
+    volumes:
+      - ./requirements/frontend_manual:/app:z      # Mount for live updates (:z is for SELinux)
+      - frontend_manual_node_modules:/app/node_modules # Protect container-specific libs
+
+    networks:
+      - transcendence                       # Connect to 'notes' and 'postgres' [cite: 21]
+    environment:
+      - NOTES_ADDR=${NOTES_ADDR}     # Internal SSR communication 
+      - NODE_ENV=development
+      - HOME=/tmp      # Fix for Corepack/pnpm permission issues
+      - HOST=0.0.0.0  # For nuxt, so it knows
+      - PORT=${AUTH_PORT}   # For nuxt, so it knows          
+    depends_on:
+      - auth
+
+
   frontend:
     build:
       context: ./requirements/frontend
@@ -13,33 +40,6 @@ services:
     volumes:
       - ./requirements/frontend:/app:z      # Mount for live updates (:z is for SELinux)
       - frontend_node_modules:/app/node_modules # Protect container-specific libs
-
-    networks:
-      - transcendence                       # Connect to 'notes' and 'postgres' [cite: 21]
-    environment:
-      - NOTES_ADDR=${NOTES_ADDR}     # Internal SSR communication 
-      - NODE_ENV=development
-      - HOME=/tmp      # Fix for Corepack/pnpm permission issues
-      - HOST=0.0.0.0  # For nuxt, so it knows
-      - PORT=${AUTH_PORT}   # For nuxt, so it knows          
-    depends_on:
-      - auth
-
-
-  frontend_nuxt:
-    build:
-      context: ./requirements/frontend_nuxt
-      dockerfile: Dockerfile.dev
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    user: "${UID:-1000}:${GID:-1000}"       # The Linux/Mac Fix for development 
-    image: frontend_nuxt
-    container_name: frontend_nuxt
-    restart: always
-    volumes:
-      - ./requirements/frontend_nuxt:/app:z      # Mount for live updates (:z is for SELinux)
-      - frontend_node_modules_nuxt:/app/node_modules # Protect container-specific libs
       - /app/.nuxt
       - /app/.output
 
@@ -140,7 +140,7 @@ services:
       - "0.0.0.0:8082:82"
       - "0.0.0.0:8083:83"
     depends_on:
-      - frontend_nuxt
+      - frontend
       - auth
       - notes
       - editor
@@ -187,8 +187,8 @@ services:
 
 volumes:
   postgres_data:
+  frontend_manual_node_modules:  # Persistent volume for frontend dependencies
   frontend_node_modules:  # Persistent volume for frontend dependencies
-  frontend_node_modules_nuxt:  # Persistent volume for frontend dependencies
 
   auth_node_modules:      # Persistent volume for auth dependencies
 
