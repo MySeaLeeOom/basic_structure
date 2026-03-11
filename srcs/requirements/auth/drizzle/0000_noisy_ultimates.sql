@@ -4,7 +4,7 @@ CREATE TYPE "public"."status" AS ENUM('active', 'blocked', 'suspended');--> stat
 CREATE TABLE "sessions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"token" uuid DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" integer NOT NULL,
+	"user_id" uuid NOT NULL,
 	"user_role" "role" NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"user_agent" text,
@@ -13,7 +13,7 @@ CREATE TABLE "sessions" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"login_name" text NOT NULL,
 	"provider" "provider_type" NOT NULL,
 	"provider_id" text NOT NULL,

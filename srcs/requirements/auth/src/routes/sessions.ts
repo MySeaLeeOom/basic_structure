@@ -8,6 +8,12 @@ import { getHomeURL, getOrigin } from "../lib/auth_utils";
 export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
 	// A simple endpoint to check "Who am I?"
 	server.get("/verify", async (request, reply) => {
+		request.log.info({
+			hasCookieHeader: Boolean(request.headers.cookie),
+			hasSessionCookie: Boolean(request.cookies.session_id),
+			url: request.url,
+		}, "verify request cookie diagnostics");
+
 		const user = await verifySession(request, server.db); // HELPER: Verify Session
 		if (!user) {
 			console.log("Session invalid or expired.");
