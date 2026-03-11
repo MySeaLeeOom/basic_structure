@@ -1,29 +1,4 @@
 services:
-  frontend_manual:
-    build:
-      context: ./requirements/frontend_manual
-      dockerfile: Dockerfile.dev
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    user: "${UID:-1000}:${GID:-1000}"       # The Linux/Mac Fix for development 
-    image: frontend_manual
-    container_name: frontend_manual
-    restart: always
-    volumes:
-      - ./requirements/frontend_manual:/app:z      # Mount for live updates (:z is for SELinux)
-      - frontend_manual_node_modules:/app/node_modules # Protect container-specific libs
-    networks:
-      - transcendence                       # Connect to 'notes' and 'postgres' [cite: 21]
-    environment:
-      - NOTES_ADDR=${NOTES_ADDR}     # Internal SSR communication 
-      - NODE_ENV=development
-      - HOME=/tmp      # Fix for Corepack/pnpm permission issues
-      - HOST=0.0.0.0  # For nuxt, so it knows
-      - PORT=${AUTH_PORT}   # For nuxt, so it knows          
-    depends_on:
-      - auth
-
 
   frontend:
     build:
@@ -39,8 +14,8 @@ services:
     volumes:
       - ./requirements/frontend:/app:z      # Mount for live updates (:z is for SELinux)
       - frontend_node_modules:/app/node_modules # Protect container-specific libs
-      - /app/.nuxt
-      - /app/.output
+      - frontend_nuxt_hidden:/app/.nuxt
+      - frontend_output_hidden:/app/.output
 
     networks:
       - transcendence   # Connect to 'notes' and 'postgres' [cite: 21]
@@ -185,11 +160,13 @@ services:
   #     SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
 
 volumes:
-  postgres_data:
-  frontend_manual_node_modules:  # Persistent volume for frontend dependencies
   frontend_node_modules:  # Persistent volume for frontend dependencies
-
+  frontend_nuxt_hidden:   # Persistent volume for frontend nuxt build
+  frontend_output_hidden: # Persistent volume for frontend output
+  frontend_manual_node_modules:  # Persistent volume for frontend dependencies
   auth_node_modules:      # Persistent volume for auth dependencies
+  postgres_data:
+
 
 secrets:
   auth_db_password:

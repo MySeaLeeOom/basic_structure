@@ -7,6 +7,16 @@ srcs_frontend_nuxt_hidden \
 srcs_frontend_output_hidden 
 # srcs_frontend_node_modules srcs_auth_node_modules
 
+# All named volumes we want to purge on fclean or specific command
+PROJECT_NAME   := srcs
+VOLUMES_LIST   := \
+	$(PROJECT_NAME)_frontend_nuxt_hidden \
+	$(PROJECT_NAME)_frontend_output_hidden \
+	$(PROJECT_NAME)_frontend_node_modules \
+	$(PROJECT_NAME)_frontend_manual_node_modules \
+	$(PROJECT_NAME)_auth_node_modules \
+	$(PROJECT_NAME)_postgres_data
+
 all: up
 
 getuser:
@@ -26,8 +36,20 @@ down: getuser
 clean: getuser 
 	$(COMPOSE) down --rmi all $(FLAGS)
 
-fclean: getuser
-	@echo "Removing all volumes..."
+re: fclean all
+
+# Removes all compiled data, node_modules, and database
+fclean: clean
+	@echo "Removing all data volumes..."
+	@docker volume rm $(VOLUMES_LIST) 2>/dev/null || true
+	# Alternatively: $(COMPOSE) down -v
+
+# Only removes the frontend cache/build volumes (safe for DB)
+clean-frontend:
+	@echo "Cleaning frontend build artifacts..."
+	@docker volume rm $(PROJECT_NAME)_frontend_nuxt_hidden $(PROJECT_NAME)_frontend_output_hidden 2>/dev/null || true
+	@echo "Done."
+
 	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
 # In case of dependency changes! Adjust MODULE_VOLUMES. Run Manually after clean

@@ -68,7 +68,6 @@ export const useAuthStore = defineStore("auth", () => {
 			console.error("Logout failed", e);
 		} finally {
 			resetStore();
-
 			// Clear Note Store
 			// Dynamic import to avoid circular dependency since noteStore uses authStore
 			try {
