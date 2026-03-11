@@ -159,6 +159,50 @@ services:
   #     OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
   #     SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
 
+  grafana:
+    build: 
+      context: ./requirements/grafana
+      dockerfile: Dockerfile
+    image: grafana
+    container_name: grafana
+    restart: always
+    networks:
+      - transcendence
+    ports:
+      - "0.0.0.0:3000:3000"
+    environment:
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/overview.json
+      - GF_NEWS_NEWS_FEED_ENABLED=false
+  prometheus:
+    build:
+      context: ./requirements/prometheus
+      dockerfile: Dockerfile
+    image: prometheus
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+    command: 
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - transcendence
+  nginx-exporter:
+    build: ./requirements/nginx-exporter
+    container_name: nginx-exporter
+    restart: always
+    networks:
+      - transcendence
+  postgres-exporter:
+    build: ./requirements/postgres-exporter
+    container_name: postgres-exporter
+    restart: always
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - transcendence
 volumes:
   frontend_node_modules:  # Persistent volume for frontend dependencies
   frontend_nuxt_hidden:   # Persistent volume for frontend nuxt build
