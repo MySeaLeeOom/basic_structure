@@ -21,27 +21,8 @@ EOSQL
     # Note: After this script runs, auth-js will connect using:
     # postgres://auth_user:auth_pass@postgres:5432/auth_db
 
-    # -- 2. Create Notes Silo
+
+    # -- 2. Create Notes Silo (THIS IS ALREADY transcendence DB)
     # CREATE DATABASE notes_db;
     # CREATE USER notes_user WITH ENCRYPTED PASSWORD 'notes_pass';
     # GRANT ALL PRIVILEGES ON DATABASE notes_db TO notes_user;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
