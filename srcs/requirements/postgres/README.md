@@ -1,4 +1,5 @@
-# CHEAT SHEET
+
+## CHEAT SHEET
 
 A formal reference, organized from the most fundamental (system-level) to the most specific (data-level).
 
@@ -31,7 +32,7 @@ In the world of `psql`, commands starting with `\` are **Meta-commands** (proces
 
 ---
 
-### Professor's Tip for the SQL Apprentice:
+### Tip for the SQL User:
 If you find yourself lost in a long query output, remember that `psql` uses `less` as its pager.
 - **`q`**: Exit the viewer and return to the prompt.
 - **`/`**: Search for a string within the results.
