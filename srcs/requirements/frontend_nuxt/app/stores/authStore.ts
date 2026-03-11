@@ -54,17 +54,33 @@ export const useAuthStore = defineStore("auth", () => {
 		}
 	}
 
+	function resetStore() {
+		user.value = null;
+		error.value = null;
+		sessionCookie.value = null;
+	}
+
 	async function logout() {
 		loading.value = true;
 		try {
 			await fetch("/api/auth/logout", { method: "POST" });
-			user.value = null;
-			// Redirect to login or home?
-			window.location.href = "/";
 		} catch (e) {
 			console.error("Logout failed", e);
 		} finally {
+			resetStore();
+
+			// Clear Note Store
+			// Dynamic import to avoid circular dependency since noteStore uses authStore
+			try {
+				const { useNoteStore } = await import("@/stores/noteStore");
+				const noteStore = useNoteStore();
+				noteStore.resetStore();
+			} catch (err) {
+				console.error("Failed to reset note store", err);
+			}
+
 			loading.value = false;
+			window.location.href = "/";
 		}
 	}
 
@@ -129,6 +145,7 @@ export const useAuthStore = defineStore("auth", () => {
 		checkAuth,
 		sessionCookie,
 		logout,
+		resetStore: resetStore,
 		loginLocal,
 		registerLocal,
 	};

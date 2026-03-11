@@ -40,6 +40,8 @@ services:
     volumes:
       - ./requirements/frontend_nuxt:/app:z      # Mount for live updates (:z is for SELinux)
       - frontend_node_modules_nuxt:/app/node_modules # Protect container-specific libs
+      - /app/.nuxt
+      - /app/.output
 
     networks:
       - transcendence   # Connect to 'notes' and 'postgres' [cite: 21]
