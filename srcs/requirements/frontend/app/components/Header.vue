@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { RouterLink } from 'vue-router';
 import Toolbar from '@/volt/Toolbar.vue';
 import Button from '@/volt/Button.vue';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,16 +20,16 @@ async function handleLogout() {
 <template>
   <Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
-      <RouterLink to="/" class="text-xl font-bold text-primary-500 no-underline mr-4">Mycelium</RouterLink>
+      <NuxtLink to="/" class="text-xl font-bold text-primary-500 no-underline mr-4">Mycelium</NuxtLink>
     </template>
 
     <template #center>
       <nav class="flex gap-1">
-        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to"
+        <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to"
           class="px-4 py-2 rounded-md text-sm font-medium text-muted-color hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
           active-class="!text-primary-500 bg-surface-100 dark:bg-surface-700">
           {{ item.label }}
-        </RouterLink>
+        </NuxtLink>
       </nav>
     </template>
 
@@ -44,9 +43,9 @@ async function handleLogout() {
           <Button label="Logout" size="small" severity="secondary" @click="handleLogout" />
         </template>
         <template v-else>
-          <RouterLink to="/login">
+          <NuxtLink to="/login">
             <Button label="Login" size="small" />
-          </RouterLink>
+          </NuxtLink>
         </template>
       </div>
     </template>

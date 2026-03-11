@@ -16,10 +16,6 @@ RUN pnpm install
 
 ARG UID=1000
 ARG GID=1000
-# Create the build directories ahead of time and open permissions
-# This ensures that when these folders are mounted as volumes, the non-root user can still write to them. Added with nuxt. 
-RUN mkdir -p /app/.nuxt /app/.output && chmod -R 777 /app/.nuxt /app/.output
-
 RUN chown -R ${UID}:${GID} /app/node_modules 
 # make the user own node modules (permissions on Linux)
 
