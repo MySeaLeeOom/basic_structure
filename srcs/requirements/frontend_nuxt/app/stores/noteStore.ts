@@ -14,11 +14,9 @@ export const useNoteStore = defineStore("notes", () => {
 	const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 	const lastFetchTimestamp = ref(0);
 
-	async function fetchNotes(serverCookie?: string) {
+	async function fetchNotes() {
 		// Prevent redundant fetches
 		const currentTime = Date.now();
-		// If serverCookie is provided (SSR), we might want to force fetch or double check.
-		// But generally cache logic applies.
 		if (notes.value.length && currentTime - lastFetchTimestamp.value < CACHE_DURATION) {
 			return;
 		}
@@ -28,17 +26,16 @@ export const useNoteStore = defineStore("notes", () => {
 
 		try {
 			// On the server, we MUST use the full internal Docker URL.
-			// On the client, we use a relative URL (which goes through the Nginx).
-			// We point to nginx so that the auth_request is triggered and X-User-Id is set.
+			// checking type of window is a robust, dependency-free way to check environment
 			const isServer = typeof window === "undefined";
 			const url = isServer ? "http://nginx:80/api/notes" : "/api/notes";
 
 			const headers: HeadersInit = {};
 			if (isServer) {
-				if (serverCookie) {
-					headers["Cookie"] = serverCookie;
-				} else if (authStore.sessionCookie) {
-					headers["Cookie"] = authStore.sessionCookie;
+				// Nuxt 3 Magic: Automatically grab the cookie from the incoming request
+				const reqHeaders = useRequestHeaders(["cookie"]);
+				if (reqHeaders.cookie) {
+					headers["Cookie"] = reqHeaders.cookie;
 				}
 			}
 
@@ -53,7 +50,7 @@ export const useNoteStore = defineStore("notes", () => {
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
 
-			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load)
+			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load?)
 			// if (!selectedNote.value && notes.value.length) {
 			// 	selectedNote.value = notes.value[0]!;
 			// }
@@ -123,6 +120,14 @@ export const useNoteStore = defineStore("notes", () => {
 		selectedNote.value = null;
 	}
 
+	function resetStore() {
+		notes.value = [];
+		selectedNote.value = null;
+		error.value = null;
+		isLoading.value = false;
+		lastFetchTimestamp.value = 0;
+	}
+
 	return {
 		notes,
 		selectedNote,
@@ -133,5 +138,6 @@ export const useNoteStore = defineStore("notes", () => {
 		createNote,
 		deleteNote,
 		resetSelected,
+		resetStore,
 	};
 });

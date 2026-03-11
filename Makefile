@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
 FLAGS   := --remove-orphans
-MODULE_VOLUMES := srcs_frontend_node_modules_nuxt 
+MODULE_VOLUMES := srcs_frontend_node_modules_nuxt srcs_frontend_nuxt_build srcs_frontend_nuxt_output
 # srcs_frontend_node_modules srcs_auth_node_modules
 
 all: up
