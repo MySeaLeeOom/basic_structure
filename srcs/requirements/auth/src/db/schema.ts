@@ -40,59 +40,47 @@ export const accounts = pgTable("accounts", {
 	userId: uuid("user_id")
 		.references(() => users.id, { onDelete: "cascade" })
 		.notNull(),
-	provider: providerEnum
-});
+	provider: providerEnum("provider").notNull(),
+	providerAccountId: text("provider_account_id"),
+	passwordHash: text("password_hash")
+},(table) => [
+// 		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
+		unique("user_provider_id_unique").on(table.provider, table.providerAccountId),
+	],
+);
+
 /*
 sessions:
 	id: UUID
 	userId:  UUID
-	token: 
+	token: UUID
 	expiresAt: timestamp
 	userAgent: text // For device tracking
 	ipAddress: text
 */
 
-// 1. Tables
-
-// export const users = pgTable(
-// 	"users",
-// 	{
-// 		id: uuid("id").defaultRandom().primaryKey(),
-// 		loginName: text("login_name").unique().notNull(),
-// 		provider: providerEnum("provider").notNull(),
-// 		providerId: text("provider_id").notNull(),
-// 		email: text("email").unique(),
-// 		passwordHash: text("password_hash"),
-// 		role: roleEnum("role").notNull().default("user"),
-// 		status: userStatusEnum("status").notNull().default("active"),
-// 		created_at: timestamp().defaultNow(),
-// 	},
-// 	(table) => [
-// 		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
-// 		unique("user_provider_id_unique").on(table.provider, table.providerId),
-// 	],
-// );
-
 export const sessions = pgTable("sessions", {
-	id: serial("id").primaryKey(),
-	token: uuid("token").defaultRandom().notNull().unique(),
-	user_id: uuid("user_id")
+	id: uuid("id").defaultRandom().primaryKey(),
+	userId: uuid("user_id")
 		.references(() => users.id, { onDelete: "cascade" })
 		.notNull(),
-	role: roleEnum("user_role").notNull(),
+	token: uuid("token").defaultRandom().unique().notNull(),
 	expiresAt: timestamp("expires_at").notNull(),
-	userAgent: text("user_agent"), // For device tracking
-	ipAddress: text("ip_address"),
-});
+	userAgent: text("user_agent"),
+	ipAddress: text("ip_address")
+}
+)
 
 // 2. Export the Types
 
 // Type for READING form the DB (includes all fields like ID and createdAt)
 export type User = InferSelectModel<typeof users>;
+export type Account = InferSelectModel<typeof accounts>;
 export type Session = InferSelectModel<typeof sessions>;
 
 // Type for INSERTING into the DB (ID and createdAt are optional b/c they have defaults)
 export type NewUser = InferInsertModel<typeof users>;
+export type NewAccount = InferInsertModel<typeof accounts>;
 export type NewSession = InferInsertModel<typeof sessions>;
 
 // // 1. Define the Table

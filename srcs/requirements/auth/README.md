@@ -3,7 +3,27 @@
 An ultra-efficient Authentication service built with Fastify, TypeScript, and Drizzle ORM. It handles multi-strategy authentication (Local + GitHub OAuth2) and session management.
 
 ---
+## Database Migration Commands
 
+When you change the [schema.ts](src/db/schema.ts), you must synchronize the database. We use a two-step "Generate & Push" workflow.
+
+### 1. Generate Migration Files
+This looks at your TypeScript schema and creates the SQL equivalent in `src/db/migrations/`.
+This must be done if this is the first time we run the program (if we dont have initial file yet)
+
+```bash
+pnpm db:generate
+```
+
+### 2. Push to Database
+This executes the SQL against your running Postgres container.
+```bash
+pnpm db:push
+```
+
+> **Note:** For development, `db:push` is the fastest way to sync. In a production environment, you would typically use `db:migrate` to run the versioned SQL files sequentially.
+
+---
 ## Routes & Auth Flow Diagrams
 *Scroll all the way to the end*
 
@@ -59,7 +79,7 @@ graph TD
 ```
 ### SSR Data Fetching Flow (Server-Side)
 
-When the user first loads the page (Hard Refresh), Nuxt needs to know if they are logged in *before* sending the HTML.
+When the user first loads the page (Hard Refresh), Nuxt needs to know who they are *before* rendering the HTML.
 
 ```mermaid
 graph TD
@@ -75,21 +95,36 @@ graph TD
     %% 2. The Server-Side Fetch
     subgraph "Internal Docker Network"
         direction LR
-        Nuxt -- "3. GET http://auth:3000/verify" --> Auth
-        Auth -- "4. JSON: { user: ... }" --> Nuxt
+        Nuxt -- "3. GET http://auth:3000/me (Fetch Profile)" --> Auth
+        Auth -- "4. JSON: { user: { id, email, role... } }" --> Nuxt
     end
 
     %% 3. The Reply
     Nuxt -- "5. Return Rendered HTML" --> Nginx
     Nginx -- "6. HTML" --> User
 ```
+
+---
+
+## The "Thin Gate" Protocol 🛡️
+
+We distinguish between **Access** (is the door open?) and **Identity** (who is walking through?).
+
+| Endpoint | Logic Type | Returns | Use Case |
+| :--- | :--- | :--- | :--- |
+| `GET /verify` | **Thin Gate** | `userId`, `sessionId` | Nginx `auth_request` / Fast Auth Checks. No DB Joins. |
+| `GET /me` | **Thick Check** | Full `User` Object | Frontend Profile rendering / Admin Role checks. |
+
+---
+
 ### Endpoint Reference
 
 These are the routes exposed by the container on port `3000`.
 
 | Method | Endpoint | Purpose | Wiring Context |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/verify` | **Checks session cookie.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, user: { id, loginName, role } }`. <br> **Headers:** Sets `X-User-Id` for Nginx. | Used by Nginx `auth_request` directive. Used by Frontend to fetch User information. |
+| **GET** | `/verify` | **Checks session cookie.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, session }`. <br> **Headers:** Sets `X-User-Id` for Nginx. | Used by Nginx `auth_request` directive. Fast session lookup. |
+| **GET** | `/me` | **The Profile Identity.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, user: { id, loginName, email, role, ... } }`. | Used by Frontend (SSR & Client) to fetch full User information. |
 | **POST** | `/logout` | **Clears session cookie.** | Called by frontend button. |
 | **POST** | `/login` | Accepts `{ identifier, password }`. Sets cookie. | Public form submission. |
 | **POST** | `/register` | Accepts `{ loginName, email, password }`. Sets cookie. | Public form submission. |

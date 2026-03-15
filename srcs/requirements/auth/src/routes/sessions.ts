@@ -14,23 +14,20 @@ export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance)
 			url: request.url,
 		}, "verify request cookie diagnostics");
 
-		const user = await verifySession(request, server.db); // HELPER: Verify Session
-		if (!user) {
+		const session = await verifySession(request, server.db); // HELPER: Verify Session
+		if (!session) {
 			console.log("Session invalid or expired.");
 			return reply.status(401).send({ error: "No active session." });
 		}
 
 		// SUCCESS: The Identity is Verified
+		// We return the minimum required for internal verification (the userId/token).
+		// Frontend should call /me for full profile details.
 
-		reply.header("X-User-Id", user.id); // <--- BROADCAST ID TO NGINX otherwise need lua in nginx
+		reply.header("X-User-Id", session.userId);
 		return {
 			authenticated: true,
-			user: {
-				id: user.id,
-				email: user.email,
-				role: user.role,
-				loginName: user.loginName,
-			},
+			userId: session.userId,
 		};
 	});
 
