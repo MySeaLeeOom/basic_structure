@@ -1,30 +1,77 @@
 import { pgTable, pgEnum, serial, text, boolean, timestamp, integer, unique, uuid } from "drizzle-orm/pg-core";
 import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
+import { time } from "node:console";
 
 export const providerEnum = pgEnum("provider_type", ["github", "local", "google", "42"]);
 export const roleEnum = pgEnum("role", ["user", "admin"]);
 export const userStatusEnum = pgEnum("status", ["active", "blocked", "suspended"]);
 
+/*
+users:
+	id: UUID
+	email: text
+	loginName: text
+	image: text
+	role: text
+	status: text
+	createsAt: timestamp
+*/
+export const users = pgTable("users", {
+	id: uuid("id").defaultRandom().primaryKey(), // primaryKey is unique
+	email: text("email").unique(), //unique
+	loginName: text("login_name").unique().notNull(),
+	imageURL: text("image_url"),
+	role: roleEnum("role").notNull().default("user"), // we created a new enum for the role
+	status: userStatusEnum("status").notNull().default("active"),
+	createdAt: timestamp("created_at").defaultNow(),
+});
+
+/*
+accounts:
+	id: UUID
+	userId: UUID
+	provider: 'github', 'google', '42' or 'local'
+	providerAccountId: text (number or email)
+	passwordHash: null || text
+*/
+
+export const accounts = pgTable("accounts", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	userId: uuid("user_id")
+		.references(() => users.id, { onDelete: "cascade" })
+		.notNull(),
+	provider: providerEnum
+});
+/*
+sessions:
+	id: UUID
+	userId:  UUID
+	token: 
+	expiresAt: timestamp
+	userAgent: text // For device tracking
+	ipAddress: text
+*/
+
 // 1. Tables
 
-export const users = pgTable(
-	"users",
-	{
-		id: uuid("id").defaultRandom().primaryKey(),
-		loginName: text("login_name").unique().notNull(),
-		provider: providerEnum("provider").notNull(),
-		providerId: text("provider_id").notNull(),
-		email: text("email").unique(),
-		passwordHash: text("password_hash"),
-		role: roleEnum("role").notNull().default("user"),
-		status: userStatusEnum("status").notNull().default("active"),
-		created_at: timestamp().defaultNow(),
-	},
-	(table) => [
-		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
-		unique("user_provider_id_unique").on(table.provider, table.providerId),
-	],
-);
+// export const users = pgTable(
+// 	"users",
+// 	{
+// 		id: uuid("id").defaultRandom().primaryKey(),
+// 		loginName: text("login_name").unique().notNull(),
+// 		provider: providerEnum("provider").notNull(),
+// 		providerId: text("provider_id").notNull(),
+// 		email: text("email").unique(),
+// 		passwordHash: text("password_hash"),
+// 		role: roleEnum("role").notNull().default("user"),
+// 		status: userStatusEnum("status").notNull().default("active"),
+// 		created_at: timestamp().defaultNow(),
+// 	},
+// 	(table) => [
+// 		// RIGOROUS IDENTITY: A user is unique by their (provider + provider_id) pair.
+// 		unique("user_provider_id_unique").on(table.provider, table.providerId),
+// 	],
+// );
 
 export const sessions = pgTable("sessions", {
 	id: serial("id").primaryKey(),
