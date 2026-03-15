@@ -19,32 +19,35 @@ export const useAuthStore = defineStore("auth", () => {
 
 	// Check if session cookie is valid
 	async function checkAuth(serverCookie?: string) {
-		// If user is already set (by hydration or previous fetch), skip.
+		// Capture headers at the very start (Magic must happen before any await)
+		const isServer = typeof window === "undefined";
+		const capturedCookie = serverCookie || (isServer ? useRequestHeaders(["cookie"]).cookie : undefined);
+
+		// If user is already set, skip.
 		if (user.value) return;
 
 		loading.value = true;
 		error.value = null;
-		// we must not do this when running on the browser
-		if (serverCookie) sessionCookie.value = serverCookie;
+		if (capturedCookie) sessionCookie.value = capturedCookie;
 
 		try {
-			// Determine URL based on environment (Server vs Client)
-			const isServer = typeof window === "undefined";
+			// Headers setup
+			const headers: HeadersInit = {};
+			if (isServer && capturedCookie) {
+				headers["Cookie"] = capturedCookie;
+			}
+
+			// Thick Check: Fetch Profile (This internally verifies the session)
 			// If server, we MUST use the internal docker network URL
 			// If client, we use the relative URL (proxied by Nginx)
-			const url = isServer ? "http://auth:3000/verify" : "/api/auth/verify";
-
-			const headers: HeadersInit = {};
-			if (isServer && serverCookie) {
-				headers["Cookie"] = serverCookie;
-			}
+			const url = isServer ? "http://auth:3000/me" : "/api/auth/me";
 
 			const res = await fetch(url, { headers });
 			if (res.ok) {
 				const data = await res.json();
 				user.value = data.user;
 			} else {
-				user.value = null; // Session invalid/expired
+				user.value = null; // Session invalid or profile not found
 			}
 		} catch (e) {
 			console.error("Auth check failed", e);

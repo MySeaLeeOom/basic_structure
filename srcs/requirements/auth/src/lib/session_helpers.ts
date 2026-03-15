@@ -7,28 +7,18 @@ import * as schema from "../db/schema";
  * 1. Generates a session in the DB
  * 2. Sets the signed cookie on the response
  */
-export async function createSession(
-	request: FastifyRequest,
-	reply: FastifyReply,
-	db: NodePgDatabase<typeof schema>,
-	userId: string,
-	role: "admin" | "user"
-) {
+export async function createSession(request: FastifyRequest, reply: FastifyReply, db: NodePgDatabase<typeof schema>, userId: string) {
 	const expiresAt = new Date(); //creates current date
 	expiresAt.setHours(expiresAt.getHours() + 24 * 7); // Valid for 1 week
 
-	const sessionBuild:schema.NewSession = {
-			user_id: userId,
-			role: role as "user" | "admin",
-			expiresAt: expiresAt,
-			userAgent: request.headers["user-agent"], //information about device
-			ipAddress: request.ip,
-	}
+	const sessionBuild: schema.NewSession = {
+		userId: userId,
+		expiresAt: expiresAt,
+		userAgent: request.headers["user-agent"], //information about device
+		ipAddress: request.ip,
+	};
 	// Create session in DB
-	const [session] = await db
-		.insert(schema.sessions)
-		.values(sessionBuild)
-		.returning();
+	const [session] = await db.insert(schema.sessions).values(sessionBuild).returning();
 
 	// Set the cookie
 	reply.setCookie("session_id", session.token, {
@@ -44,8 +34,8 @@ export async function createSession(
 }
 
 /**
- * Verifies a session cookie and retrieves the associated user.
- * @returns the User object if valid, or null if invalid/expired.
+ * Verifies a session cookie and retrieves the associated session data.
+ * @returns the Session object if valid, or null if invalid/expired.
  */
 export async function verifySession(request: FastifyRequest, db: NodePgDatabase<typeof schema>) {
 	const cookie = request.cookies.session_id;
@@ -56,7 +46,7 @@ export async function verifySession(request: FastifyRequest, db: NodePgDatabase<
 
 	const sessionUUID = decodedCookie.value;
 
-	// Database Lookup
+	// Database Lookup - FAST primary key check
 	const [session] = await db.select().from(schema.sessions).where(eq(schema.sessions.token, sessionUUID)).limit(1);
 	if (!session) return null;
 
@@ -65,10 +55,8 @@ export async function verifySession(request: FastifyRequest, db: NodePgDatabase<
 		return null;
 	}
 
-	// Fetch User
-	const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.user_id)).limit(1);
-
-	return user || null;
+	// We return the raw session (contains userId) to keep this check lightweight.
+	return session;
 }
 
 /**

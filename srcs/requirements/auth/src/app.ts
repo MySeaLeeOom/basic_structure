@@ -7,6 +7,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import * as schema from "./db/schema"; // DB tables
 import { authRoutes } from "./routes/auth"; // all routes
 import { sessionRoutes } from "./routes/sessions"; // verification logic
+import { userManagementRoutes } from "./routes/user"; // profile logic
 
 /**
  * Declaration Merging (Module Augmentation): typescript
@@ -98,6 +99,7 @@ export const buildServer = async (config: AppConfig): Promise<FastifyInstance> =
 
     await server.register(authRoutes);
     await server.register(sessionRoutes);
+    await server.register(userManagementRoutes);
 
     server.get("/ping", async (request, reply) => {
         return "pong\n";

@@ -11,7 +11,7 @@ export const useNoteStore = defineStore("notes", () => {
 	const isLoading = ref(false);
 
 	// Cache to prevent unnecessary refetches
-	const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+	const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 	const lastFetchTimestamp = ref(0);
 
 	async function fetchNotes() {
@@ -25,28 +25,25 @@ export const useNoteStore = defineStore("notes", () => {
 		isLoading.value = true;
 
 		try {
-			// Gatekeeper: If we are not logged in, we cannot have notes.
+			// Ensure we have user profile before fetching notes.
+			// The Auth store handles internal magic to capture the cookie
 			if (!authStore.user) {
-				isLoading.value = false;
-				return;
+				await authStore.checkAuth();
+				if (!authStore.user) {
+					isLoading.value = false;
+					return;
+				}
 			}
+
 			// On the server, we MUST use the full internal Docker URL.
-			// checking type of window is a robust, dependency-free way to check environment
 			const isServer = typeof window === "undefined";
 			const url = isServer ? "http://nginx:80/api/notes" : "/api/notes";
 
 			const headers: HeadersInit = {};
-			// If in SSR, check that we actually have a cookie - if not, don't fetch - extra work
-			if (isServer) {
-				// Nuxt 3 Magic: Automatically grab the cookie from the incoming request
-				const reqHeaders = useRequestHeaders(["cookie"]);
-				if (reqHeaders && reqHeaders.cookie) {
-					headers["Cookie"] = reqHeaders.cookie;
-				}
-				if (!headers["Cookie"]) {
-					isLoading.value = false;
-					return;
-				}
+			const userCookie = authStore.sessionCookie;
+
+			if (isServer && userCookie) {
+				headers["Cookie"] = userCookie;
 			}
 
 			const response = await fetch(url, {
