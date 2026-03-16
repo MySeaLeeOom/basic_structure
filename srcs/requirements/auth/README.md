@@ -181,3 +181,10 @@ In a production environment, use the production Dockerfile (rather than Dockerfi
 - [src/routes/](src/routes/): Route handlers split by domain (Auth, Sessions).
 - [src/lib/](src/lib/): Pure helpers and utility logic (URL construction, session helpers).
 - [src/tests/](src/tests/): Integration and unit tests.
+
+
+## Database
+
+Sessions
+Users
+Accounts
