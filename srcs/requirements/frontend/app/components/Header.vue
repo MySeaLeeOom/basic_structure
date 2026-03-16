@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 const authStore = useAuthStore();
 
 const navItems = [
-  { to: '/', label: 'Home' },
+  { to: '/home', label: 'Home' },
   { to: '/notes', label: 'Notes' },
   { to: '/mindmap', label: 'Mindmap' },
 ];
@@ -20,7 +20,9 @@ async function handleLogout() {
 <template>
   <Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
-      <NuxtLink to="/" class="text-xl font-bold text-primary-500 no-underline mr-4">Mycelium</NuxtLink>
+      <div class="sm:min-w-[180px]">
+        <NuxtLink to="/" class="text-xl font-bold text-primary-500 no-underline mr-4">Mycelium</NuxtLink>
+      </div>
     </template>
 
     <template #center>
@@ -34,10 +36,9 @@ async function handleLogout() {
     </template>
 
     <template #end>
-      <div class="flex items-center gap-2">
-
+      <div class="flex items-center justify-end gap-2 sm:min-w-[180px]">
         <template v-if="authStore.isAuthenticated">
-          <span class="text-sm mr-2 hidden sm:inline" v-if="authStore.user?.loginName">
+          <span class="text-sm mr-2 hidden sm:inline whitespace-nowrap" v-if="authStore.user?.loginName">
             {{ authStore.user.loginName }}
           </span>
           <Button label="Logout" size="small" severity="secondary" @click="handleLogout" />
