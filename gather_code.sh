@@ -22,6 +22,8 @@ find "$TARGET_DIR" -type f \
     -not -path "*/dist/*" \
     -not -path "*/.astro/*" \
     -not -name "*.db" \
+    -not -name "*.md" \
+	-not -name "pnpm-lock.yaml" \
     -not -name ".env" \
     -not -name "*.png" \
     -not -name "*.jpg" \

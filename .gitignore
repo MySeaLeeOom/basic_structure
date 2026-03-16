@@ -8,8 +8,11 @@ Claude Code config
 CLAUDE.md
 
 copilot-instructions.md
+masha*.*
 temp
 masha*.*
 crdt-migration-plan.md
+dist
 
 target
+.DS_Store
