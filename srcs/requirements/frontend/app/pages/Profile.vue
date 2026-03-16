@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import Card from '../volt/Card.vue';
 import Divider from '../volt/Divider.vue';
 import InputText from '../volt/InputText.vue';
+import Password from '../volt/Password.vue';
 import Button from '../volt/Button.vue';
 
 const auth = useAuthStore();
@@ -102,62 +103,61 @@ async function handleChangePassword() {
 
 
 <template>
-	<Card>
-		<template #title>
-			Profile Settings
-			<p v-if="successMessage" class="text-sm text-green-500 font-normal mt-1">{{ successMessage }}</p>
-		</template>
-		<template #content>
-			<h3>Login Name</h3>
-			<p v-if="auth.user?.loginName">Current Username: <strong>{{ auth.user.loginName }}</strong></p>
-			<form @submit.prevent="handleUpdateLogin">
-				<label>Update Username</label>
-				<InputText v-model="formLogin" placeholder="Enter new username" />
-				<Button label="Update" type="submit"
-					:disabled="isSubmitting || !formLogin || formLogin === (auth.user?.loginName || '')" />
-				<small v-if="errors.login">{{ errors.login }}</small>
-			</form>
+	<div class="flex items-center justify-center min-h-screen p-4">
+		<Card class="w-full max-w-sm">
+			<template #title>
+				<h2 class="text-xl font-bold text-center">Settings</h2>
+				<p v-if="successMessage" class="text-sm text-green-500 font-normal mt-2 text-center text-wrap">{{
+					successMessage }}</p>
+			</template>
+			<template #content>
+				<div class="flex flex-col gap-6">
 
-			<Divider />
+					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">Identity</h3>
+						<p v-if="auth.user?.loginName">Current: <strong>{{ auth.user.loginName }}</strong></p>
+						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
+							<InputText v-model="formLogin" placeholder="New username" fluid />
+							<Button label="Update Username" type="submit"
+								:disabled="isSubmitting || !formLogin || formLogin === (auth.user?.loginName || '')"
+								fluid />
+							<small v-if="errors.login" class="text-red-500">{{ errors.login }}</small>
+						</form>
+					</div>
 
-			<h3>Email Address</h3>
-			<p>Current Email: <strong>{{ auth.user?.email || 'none' }}</strong></p>
-			<form @submit.prevent="handleUpdateEmail">
-				<label>Update Email Address</label>
-				<InputText v-model="formEmail" />
-				<Button label="Update" type="submit"
-					:disabled="isSubmitting || formEmail === (auth.user?.email || '')" />
-				<small v-if="errors.email">{{ errors.email }}</small>
-			</form>
+					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">Contact</h3>
+						<p>Current: <strong>{{ auth.user?.email || 'none' }}</strong></p>
+						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
+							<InputText v-model="formEmail" placeholder="New email address" fluid />
+							<Button label="Update Email" type="submit"
+								:disabled="isSubmitting || formEmail === (auth.user?.email || '')" fluid />
+							<small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
+						</form>
+					</div>
 
-			<Divider />
+					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">Security</h3>
+						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
+							<Password v-model="oldPassword" placeholder="Current Password" :feedback="false" toggleMask
+								fluid />
+							<Password v-model="newPassword" placeholder="New Password" toggleMask fluid />
+							<Password v-model="confirmPassword" placeholder="Confirm New Password" :feedback="false"
+								toggleMask fluid />
+							<Button label="Change Password" type="submit"
+								:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+								fluid />
+							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
+						</form>
+					</div>
 
-			<h3>Change Password</h3>
-			<form @submit.prevent="handleChangePassword">
-				<div>
-					<label>Current Password</label>
-					<InputText v-model="oldPassword" type="password" />
+					<div class="flex flex-col gap-2 pt-4">
+						<h3 class="font-bold text-red-500">Danger Zone</h3>
+						<Button label="Delete Account" severity="danger" fluid />
+					</div>
+
 				</div>
-				<div>
-					<label>New Password</label>
-					<InputText v-model="newPassword" type="password" />
-				</div>
-				<div>
-					<label>Confirm New Password</label>
-					<InputText v-model="confirmPassword" type="password" />
-				</div>
-				<Button label="Change Password" type="submit"
-					:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword" />
-				<small v-if="errors.password">{{ errors.password }}</small>
-			</form>
-
-			<Divider />
-
-			<h3>Danger Zone</h3>
-			<div>
-				<p>Delete Account</p>
-				<Button label="Delete" severity="danger" />
-			</div>
-		</template>
-	</Card>
+			</template>
+		</Card>
+	</div>
 </template>
