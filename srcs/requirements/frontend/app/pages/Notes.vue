@@ -53,7 +53,7 @@ onServerPrefetch(async () => {
 	const serverCookie = headers.cookie;
 
 	if (noteStore.notesCount === 0) {
-		await noteStore.fetchNotes(serverCookie);
+		await noteStore.fetchNotes();
 		if (noteStore.error === 'HTTP 401') {
 			await navigateTo('/login');
 		}

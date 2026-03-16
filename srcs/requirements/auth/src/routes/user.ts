@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import { verifySession } from "../lib/session_helpers";
+import { upsertAccount } from "../lib/account_helpers";
 import * as argon2 from "argon2";
 
 /* Schemas for Inputs */
@@ -53,10 +54,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		};
 	});
 
-	/**
-	 * PATCH /change-login
-	 * Updates the public identity (loginName).
-	 */
+	/* PATCH /change-login: Updates the public identity (loginName). */
 	server.patch<{ Body: ChangeLoginType }>("/change-login", { schema: { body: ChangeLoginSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
@@ -74,16 +72,12 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		}
 	});
 
-	/**
-	 * PATCH /change-email
-	 * Updates the private identity (email).
-	 */
+	/* PATCH /change-email: Updates the private identity (email).*/
 	server.patch<{ Body: ChangeEmailType }>("/change-email", { schema: { body: ChangeEmailSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
 		const { email } = request.body;
-
 		try {
 			await server.db.update(schema.users).set({ email }).where(eq(schema.users.id, session.userId));
 			return { message: "Email updated successfully.", user: { email } };
@@ -96,8 +90,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	});
 
 	/**
-	 * POST /change-password
-	 * Updates the password for the current user.
+	 * POST /change-password: Updates the password for the current user.
 	 * Look for a 'local' provider account in the accounts table.
 	 */
 	server.post<{ Body: ChangePasswordType }>("/change-password", { schema: { body: ChangePasswordSchema } }, async (request, reply) => {
@@ -106,6 +99,14 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 
 		const { oldPassword, newPassword } = request.body;
 
+		// Get User Profile to check for email
+		const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
+
+		if (!user) return reply.status(404).send({ error: "User not found." });
+		if (!user.email) {
+			return reply.status(400).send({ error: "Please add an email before adding a login password." });
+		}
+
 		// Find the 'local' account for this user
 		const [account] = await server.db
 			.select()
@@ -113,18 +114,31 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			.where(and(eq(schema.accounts.userId, session.userId), eq(schema.accounts.provider, "local")))
 			.limit(1);
 
+		// Handle Identity Upgrading (No local account yet)
 		if (!account || !account.passwordHash) {
-			return reply.status(404).send({ error: "Local account not found for this user." });
+			const newHash = await argon2.hash(newPassword);
+			await upsertAccount(server, {
+				userId: session.userId,
+				provider: "local",
+				providerAccountId: user.email,
+				passwordHash: newHash,
+			});
+			return { message: "Local account created and password set." };
 		}
 
+		// Standard Password Change (Verify current password)
 		const isMatch = await argon2.verify(account.passwordHash, oldPassword);
 		if (!isMatch) {
 			return reply.status(401).send({ error: "Incorrect current password." });
 		}
 
 		const newHash = await argon2.hash(newPassword);
-
-		await server.db.update(schema.accounts).set({ passwordHash: newHash }).where(eq(schema.accounts.id, account.id));
+		await upsertAccount(server, {
+			userId: session.userId,
+			provider: "local",
+			providerAccountId: user.email,
+			passwordHash: newHash,
+		});
 
 		return { message: "Password updated successfully." };
 	});
