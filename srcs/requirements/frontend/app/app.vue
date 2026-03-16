@@ -2,7 +2,6 @@
 import { onMounted } from 'vue';
 import Header from "./components/Header.vue"
 import VoltConfirmDialog from "./volt/ConfirmDialog.vue"
-import VoltToast from "./volt/Toast.vue"
 import { useAuthStore } from './stores/authStore';
 
 const authStore = useAuthStore();
@@ -15,7 +14,6 @@ onMounted(() => {
 <template>
 	<!-- Accessibility -->
 	<NuxtRouteAnnouncer /> 
-	<VoltToast />
 	<Header />
     <NuxtPage />
 	<VoltConfirmDialog />
