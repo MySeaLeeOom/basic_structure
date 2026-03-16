@@ -5,13 +5,14 @@ interface User {
 	id: string;
 	email: string | null;
 	role: string | null;
+	status: string | null;
 	loginName: string | null;
-	// add other fields if verification returns them
+	imageURL: string | null;
+	createdAt: string | null;
 }
 
 export const useAuthStore = defineStore("auth", () => {
 	const user = ref<User | null>(null);
-	const loading = ref(false);
 	const error = ref<string | null>(null);
 	const sessionCookie = ref<string | null>(null); // Store cookie for SSR requests
 
@@ -26,7 +27,6 @@ export const useAuthStore = defineStore("auth", () => {
 		// If user is already set, skip.
 		if (user.value) return;
 
-		loading.value = true;
 		error.value = null;
 		if (capturedCookie) sessionCookie.value = capturedCookie;
 
@@ -52,8 +52,6 @@ export const useAuthStore = defineStore("auth", () => {
 		} catch (e) {
 			console.error("Auth check failed", e);
 			user.value = null;
-		} finally {
-			loading.value = false;
 		}
 	}
 
@@ -64,7 +62,6 @@ export const useAuthStore = defineStore("auth", () => {
 	}
 
 	async function logout() {
-		loading.value = true;
 		try {
 			await fetch("/api/auth/logout", { method: "POST" });
 		} catch (e) {
@@ -81,14 +78,12 @@ export const useAuthStore = defineStore("auth", () => {
 				console.error("Failed to reset note store", err);
 			}
 
-			loading.value = false;
 			window.location.href = "/";
 		}
 	}
 
 	// Helper for manual login (if we build a form)
 	async function loginLocal(identifier: string, password: string) {
-		loading.value = true;
 		error.value = null;
 		try {
 			const res = await fetch("/api/auth/login", {
@@ -108,13 +103,10 @@ export const useAuthStore = defineStore("auth", () => {
 		} catch (e: any) {
 			error.value = e.message;
 			return false;
-		} finally {
-			loading.value = false;
 		}
 	}
 
 	async function registerLocal(loginName: string, email: string, password: string) {
-		loading.value = true;
 		error.value = null;
 		try {
 			const res = await fetch("/api/auth/register", {
@@ -134,15 +126,113 @@ export const useAuthStore = defineStore("auth", () => {
 		} catch (e: any) {
 			error.value = e.message;
 			return false;
-		} finally {
-			loading.value = false;
+		}
+	}
+
+	/**
+	 * Adds a local password to an existing (e.g. OAuth) account.
+	 * Follows the "First Principles": Return the data, let the UI decide how to show it.
+	 */
+	async function addPassword(password: string, email?: string) {
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/add-password", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ password, email }),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				return {
+					success: false,
+					error: data.error || "Failed",
+					message: data.message || "An error occurred",
+					detail: data.detail || "",
+				};
+			}
+
+			return { success: true, ...data };
+		} catch (e: any) {
+			return {
+				success: false,
+				error: "Network Error",
+				message: "Could not reach the authentication service.",
+				detail: e.message,
+			};
+		}
+	}
+
+	async function updateLoginName(loginName: string) {
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-login", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ loginName }),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				return {
+					success: false,
+					error: data.error || "Update Failed",
+					message: data.message || "An error occurred",
+					detail: data.detail || "",
+				};
+			}
+
+			await checkAuth();
+
+			return { success: true, ...data };
+		} catch (e: any) {
+			return {
+				success: false,
+				error: "Network Error",
+				message: "Could not contact the Identity service.",
+				detail: e.message,
+			};
+		}
+	}
+
+	async function updateEmail(email: string) {
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-email", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email }),
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				return {
+					success: false,
+					error: data.error || "Update Failed",
+					message: data.message || "An error occurred",
+					detail: data.detail || "",
+				};
+			}
+
+			await checkAuth();
+
+			return { success: true, ...data };
+		} catch (e: any) {
+			return {
+				success: false,
+				error: "Network Error",
+				message: "Could not contact the Identity service.",
+				detail: e.message,
+			};
 		}
 	}
 
 	return {
 		user,
 		isAuthenticated,
-		loading,
 		error,
 		checkAuth,
 		sessionCookie,
@@ -150,5 +240,8 @@ export const useAuthStore = defineStore("auth", () => {
 		resetStore,
 		loginLocal,
 		registerLocal,
+		addPassword,
+		updateLoginName,
+		updateEmail,
 	};
 });

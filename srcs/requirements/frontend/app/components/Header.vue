@@ -38,9 +38,11 @@ async function handleLogout() {
     <template #end>
       <div class="flex items-center justify-end gap-2 sm:min-w-[180px]">
         <template v-if="authStore.isAuthenticated">
-          <span class="text-sm mr-2 hidden sm:inline whitespace-nowrap" v-if="authStore.user?.loginName">
-            {{ authStore.user.loginName }}
-          </span>
+          <NuxtLink to="/profile" class="flex items-center gap-2 no-underline text-inherit hover:text-primary-500 transition-colors">
+            <span class="text-sm mr-2 hidden sm:inline whitespace-nowrap" v-if="authStore.user?.loginName">
+              {{ authStore.user.loginName }}
+            </span>
+          </NuxtLink>
           <Button label="Logout" size="small" severity="secondary" @click="handleLogout" />
         </template>
         <template v-else>
