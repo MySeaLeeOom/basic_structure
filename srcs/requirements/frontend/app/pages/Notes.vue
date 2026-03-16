@@ -72,12 +72,13 @@ onServerPrefetch(async () => {
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id">
+			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title"
+				dataKey="id">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item">
 						<span>{{ slotProps.option.title || "Untitled" }}</span>
 						<Button severity="danger" text rounded size="small"
-							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
+							class="opacity-0 group-hover/item:opacity-100 transition-opacity !p-0"
 							@click.stop="confirmDelete(slotProps.option.id)">
 							<TimesIcon class="w-2.5 h-2.5" />
 						</Button>
@@ -86,10 +87,7 @@ onServerPrefetch(async () => {
 			</Listbox>
 		</template>
 
-		<NoteEditor
-			v-if="mounted && noteStore.selectedNote"
-			:note-id="noteStore.selectedNote.id"
-		/>
+		<NoteEditor v-if="mounted && noteStore.selectedNote" :note-id="noteStore.selectedNote.id" />
 		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
 	</SidebarLayout>
 </template>
