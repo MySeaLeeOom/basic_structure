@@ -1,6 +1,21 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
 FLAGS   := --remove-orphans
 
+# Project and volume names
+PROJECT_NAME   := srcs
+
+# 1. Frontend Build Artifacts (Safe to delete, just re-builds next time)
+FRONTEND_CACHE_VOLUMES := \
+	$(PROJECT_NAME)_frontend_nuxt_hidden \
+	$(PROJECT_NAME)_frontend_output_hidden
+
+# 2. Dependency Volumes (Safe to delete, just re-installs next time)
+# Note: srcs_frontend_manual_node_modules is kept for backward compat if needed
+MODULE_VOLUMES := \
+	$(PROJECT_NAME)_frontend_node_modules \
+	$(PROJECT_NAME)_frontend_manual_node_modules \
+	$(PROJECT_NAME)_auth_node_modules
+
 all: up
 
 getuser:
@@ -17,15 +32,32 @@ live: getuser
 down: getuser
 	$(COMPOSE) down $(FLAGS)
 
-clean: getuser
+clean: getuser 
 	$(COMPOSE) down --rmi all $(FLAGS)
 
 fclean: getuser
-	$(COMPOSE) down -v --rmi all $(FLAGS)
+	@echo "Removing all volumes..."
+	$(COMPOSE) down -v --rmi all $(FLAGS)	
+
+# In case of dependency changes! Adjust MODULE_VOLUMES. Run Manually after clean
+clean_volumes:
+# 	docker volume ls -q | grep -v 'srcs_postgres_data' | xargs docker volume rm || true
+	@echo "Removing only node_modules volumes..."
+	-docker volume rm $(MODULE_VOLUMES)
+
+# Removes only Nuxt/Vite build artifacts
+clean_frontend:
+	@echo "Cleaning frontend build cache..."
+	-docker volume rm $(FRONTEND_CACHE_VOLUMES)
+
+cleanv: clean clean_volumes clean_frontend
 
 re: clean all
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
-.PHONY: all up down clean re logs
+.PHONY: all up down clean cleanv fclean clean_volumes re logs
+
+# Docker commands
+# docker volume rm $(docker volume ls -q)
