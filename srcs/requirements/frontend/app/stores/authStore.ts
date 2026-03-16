@@ -139,6 +139,70 @@ export const useAuthStore = defineStore("auth", () => {
 		}
 	}
 
+	async function updateLoginName(newLogin: string) {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-login", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ loginName: newLogin }),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
+
+			await checkAuth(); // Refresh profile
+			return { success: true, message: data.message };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
+	async function updateEmail(newEmail: string) {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-email", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: newEmail }),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
+
+			await checkAuth(); // Refresh profile
+			return { success: true, message: data.message };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
+	async function changePassword(oldPassword: string, newPassword: string) {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-password", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ oldPassword, newPassword }),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || data.error || "Password change failed");
+			return { success: true, message: data.message };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
 	return {
 		user,
 		isAuthenticated,
@@ -150,5 +214,8 @@ export const useAuthStore = defineStore("auth", () => {
 		resetStore,
 		loginLocal,
 		registerLocal,
+		updateLoginName,
+		updateEmail,
+		changePassword,
 	};
 });
