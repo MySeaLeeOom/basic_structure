@@ -60,6 +60,7 @@ async function findAccount(db: any, provider: any, providerAccountId: string) {
 		.where(and(eq(schema.accounts.provider, provider), eq(schema.accounts.providerAccountId, providerAccountId)));
 	return account;
 }
+
 export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
 	// This function will receive the token from GitHub (it is called by GitHub)
 	// - Needs to check if there is a user already with this info
