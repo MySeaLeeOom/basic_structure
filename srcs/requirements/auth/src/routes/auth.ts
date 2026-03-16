@@ -62,11 +62,11 @@ async function findAccount(db: any, provider: any, providerAccountId: string) {
 }
 
 export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
-	// This function will receive the token from GitHub (it is called by GitHub)
-	// - Needs to check if there is a user already with this info
-	// - Needs to either create the user or give them a session
+	// this function will receive the token from github (it is called by github)
+	// - needs to check if there is a user already with this info
+	// - needs to either create the user or give them a session
 	server.get("/login/github/callback", async function (request, reply) {
-		// Get the token from GitHub
+		// get the token from github; this == request.server (if properly bound or using the instance)
 		const gitToken = await server.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
 		console.log("GitHub Token:", gitToken.token.access_token);
 
@@ -85,28 +85,8 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 		const githubUser = (await response.json()) as GithubUser;
 		console.log("GitHub User Data:", githubUser);
 
-		// 1. Check if we already have a GitHub account for this external ID
-		const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
-
-		if (existingAccount) {
-			const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, existingAccount.userId));
-			await createSession(request, reply, server.db, user.id);
-			return reply.redirect(getOrigin(request));
-		}
-
-		// 2. CHECK FOR EMAIL CONFLICT (If GitHub gave us an email)
-		// If the user already exists via 'local' login, we refuse to create a duplicate identity.
-		if (githubUser.email) {
-			const emailConflict = await findUserByIdentifier(server.db, githubUser.email);
-
-			if (emailConflict) {
-				const errorMsg = encodeURIComponent("This email is already linked to another login method. Please login with your original method.");
-				return reply.redirect(`${getOrigin(request)}/login?error=${errorMsg}`);
-			}
-		}
-
-		// 3. Find or Create User/Account
-		// If we reached here, no existing account and no email conflict exists.
+		// DATABASE Logic
+		// pull info of the user from githubUser
 		const buildUser: schema.NewUser = {
 			loginName: githubUser.login,
 			imageURL: githubUser.avatar_url,
@@ -114,10 +94,40 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			email: githubUser.email,
 		};
 
-		const user = await createUserAndAccount(server.db, buildUser, {
+		const buildAccount: schema.NewAccount = {
+			userId: "", // Will be set after user is found/created
 			provider: "github",
 			providerAccountId: githubUser.id.toString(),
-		});
+		};
+
+		// CHECK FOR EMAIL CONFLICT (If GitHub gave us an email)
+		if (buildUser.email) {
+			const emailConflict = await findUserByIdentifier(server.db, buildUser.email);
+
+			if (emailConflict) {
+				const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+				
+				if (existingAccount && existingAccount.userId !== emailConflict.id) {
+					return reply.status(409).send({ error: "Email already linked to a different GitHub account." });
+				}
+			}
+		}
+
+		// Find or Create User/Account
+		let user;
+		const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+
+		if (existingAccount) {
+			const [found] = await server.db.select().from(schema.users).where(eq(schema.users.id, existingAccount.userId));
+			user = found;
+			console.log("Found existing user via account:", user.id);
+		} else {
+			user = await createUserAndAccount(server.db, buildUser, {
+				provider: "github",
+				providerAccountId: githubUser.id.toString(),
+			});
+			console.log("Created new user and linked account:", user.id);
+		}
 
 		// CREATE SESSION & COOKIE (using Helper)
 		await createSession(request, reply, server.db, user.id);
