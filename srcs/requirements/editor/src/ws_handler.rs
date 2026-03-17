@@ -1,5 +1,6 @@
 use axum::{
 	extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Path, State},
+	http::{HeaderMap, StatusCode},
 	response::Response,
 };
 use futures_util::{stream::StreamExt, SinkExt};
@@ -19,8 +20,26 @@ pub async fn ws_route(
 	ws: WebSocketUpgrade,
 	Path(note_id): Path<Uuid>,
 	State(state): State<Arc<AppState>>,
+	headers: HeaderMap,
 ) -> Response {
-	tracing::info!("New WebSocket connection request for note: {}", note_id);
+	let user_id = match headers.get("X-User-Id")
+		.and_then(|v| v.to_str().ok())
+		.and_then(|v| Uuid::parse_str(v).ok()) {
+			Some(id) => id,
+			None => {
+				tracing::warn!("Unauthorized WebSocket connection attempt to note {}", note_id);
+				return StatusCode::UNAUTHORIZED.into_response();
+			}
+		};
+
+	tracing::info!("User {} requesting WebSocket for note {}", user_id, note_id);
+
+	// Verify ownership before upgrading
+	if !db::check_ownership(&state.pool, note_id, user_id).await {
+		tracing::warn!("User {} attempted to access note {} without ownership", user_id, note_id);
+		return StatusCode::FORBIDDEN.into_response();
+	}
+
 	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state))
 }
 
