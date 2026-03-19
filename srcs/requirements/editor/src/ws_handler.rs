@@ -22,24 +22,32 @@ pub async fn ws_route(
 	State(state): State<Arc<AppState>>,
 	headers: HeaderMap,
 ) -> Response {
+	// 1. Identity Extraction: Nginx (gateway) verified the session and injected these headers
 	let user_id = match headers.get("X-User-Id")
 		.and_then(|v| v.to_str().ok())
 		.and_then(|v| Uuid::parse_str(v).ok()) {
 			Some(id) => id,
 			None => {
-				tracing::warn!("Unauthorized WebSocket connection attempt to note {}", note_id);
+				tracing::warn!("Unauthorized: Missing or invalid X-User-Id header for note {}", note_id);
 				return StatusCode::UNAUTHORIZED.into_response();
 			}
 		};
 
-	tracing::info!("User {} requesting WebSocket for note {}", user_id, note_id);
+	let role = headers.get("X-User-Role")
+		.and_then(|v| v.to_str().ok())
+		.unwrap_or("user");
 
-	// Verify ownership before upgrading
-	if !db::check_ownership(&state.pool, note_id, user_id).await {
-		tracing::warn!("User {} attempted to access note {} without ownership", user_id, note_id);
-		return StatusCode::FORBIDDEN.into_response();
+	tracing::debug!("WebSocket request: user={} role={} note={}", user_id, role, note_id);
+
+	// 2. Authorization Check: Admins can see anything, users must own the note
+	if role != "admin" {
+		if !db::check_ownership(&state.pool, note_id, user_id).await {
+			tracing::warn!("Forbidden: User {} (role={}) attempted to access note {} without ownership", user_id, role, note_id);
+			return StatusCode::FORBIDDEN.into_response();
+		}
 	}
 
+	// 3. Upgrade Connection: All checks passed, hand over to the real-time handler
 	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state))
 }
 
