@@ -175,6 +175,10 @@ services:
     build: ./requirements/nginx-exporter
     container_name: nginx-exporter
     restart: always
+    command:
+      - "--nginx.scrape-uri=http://nginx:8088/stub_status"
+    depends_on:
+      - nginx
     networks:
       - transcendence
   postgres-exporter:
