@@ -21,7 +21,7 @@
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "definition": "label_values(pg_stat_database_numbackends, datname)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Database",
         "multi": false,
         "name": "datname",
@@ -31,7 +31,6 @@
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "^(?!template).*",
         "sort": 1,
         "type": "query"
       }
@@ -69,7 +68,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 1},
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -115,7 +114,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 1},
       "id": 2,
       "options": {
         "colorMode": "background",
@@ -154,7 +153,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 1},
       "id": 3,
       "options": {
         "colorMode": "value",
@@ -183,128 +182,13 @@
           "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 10},
-              {"color": "red", "value": 25}
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_numbackends{datname=\"$datname\"}",
-          "instant": true,
-          "legendFormat": "connections",
-          "refId": "A"
-        }
-      ],
-      "title": "postgres Active Connections",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "red", "value": null},
-              {"color": "yellow", "value": 0.8},
-              {"color": "green", "value": 0.95}
-            ]
-          },
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 5},
-      "id": 5,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)",
-          "instant": true,
-          "legendFormat": "hit ratio",
-          "refId": "A"
-        }
-      ],
-      "title": "postgres Cache Hit Ratio",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{"color": "blue", "value": null}]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 5},
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_database_size_bytes{datname=\"$datname\"}",
-          "instant": true,
-          "legendFormat": "size",
-          "refId": "A"
-        }
-      ],
-      "title": "Database Size",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
             "steps": [{"color": "blue", "value": null}]
           },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 5},
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 5},
       "id": 7,
       "options": {
         "colorMode": "value",
@@ -484,8 +368,125 @@
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26},
       "id": 102,
-      "title": "PostgreSQL",
+      "repeat": "datname",
+      "repeatDirection": "v",
+      "title": "PostgreSQL — database: $datname",
       "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 10},
+              {"color": "red", "value": 25}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 27},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "pg_stat_database_numbackends{datname=\"$datname\"}",
+          "instant": true,
+          "legendFormat": "connections",
+          "refId": "A"
+        }
+      ],
+      "title": "Active connections",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 0.8},
+              {"color": "green", "value": 0.95}
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 27},
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)",
+          "instant": true,
+          "legendFormat": "hit ratio",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache hit ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "blue", "value": null}]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 27},
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "pg_database_size_bytes{datname=\"$datname\"}",
+          "instant": true,
+          "legendFormat": "size",
+          "refId": "A"
+        }
+      ],
+      "title": "Database size",
+      "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
@@ -513,7 +514,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 27},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 31},
       "id": 20,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -562,7 +563,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 27},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 31},
       "id": 21,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -571,19 +572,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_ins{relname=\"notes\"}[1m])",
+          "expr": "rate(pg_stat_user_tables_n_tup_ins{datname=\"$datname\",relname=\"notes\"}[1m])",
           "legendFormat": "inserts/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_upd{relname=\"notes\"}[1m])",
+          "expr": "rate(pg_stat_user_tables_n_tup_upd{datname=\"$datname\",relname=\"notes\"}[1m])",
           "legendFormat": "updates/s",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_del{relname=\"notes\"}[1m])",
+          "expr": "rate(pg_stat_user_tables_n_tup_del{datname=\"$datname\",relname=\"notes\"}[1m])",
           "legendFormat": "deletes/s",
           "refId": "C"
         }
@@ -617,7 +618,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 39},
       "id": 22,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -626,7 +627,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_user_tables_n_dead_tup{relname=\"notes\"}",
+          "expr": "pg_stat_user_tables_n_dead_tup{datname=\"$datname\",relname=\"notes\"}",
           "legendFormat": "dead tuples",
           "refId": "A"
         }
@@ -660,7 +661,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 39},
       "id": 23,
       "options": {
         "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -669,13 +670,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_seq_scan{relname=\"notes\"}[5m])",
+          "expr": "rate(pg_stat_user_tables_seq_scan{datname=\"$datname\",relname=\"notes\"}[5m])",
           "legendFormat": "seq scans/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_idx_scan{relname=\"notes\"}[5m])",
+          "expr": "rate(pg_stat_user_tables_idx_scan{datname=\"$datname\",relname=\"notes\"}[5m])",
           "legendFormat": "index scans/s",
           "refId": "B"
         }
@@ -709,7 +710,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 39},
       "id": 24,
       "options": {
         "legend": {"calcs": ["lastNotNull", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -752,7 +753,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 43},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 47},
       "id": 25,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -786,7 +787,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 43},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 47},
       "id": 26,
       "options": {
         "colorMode": "background",
@@ -799,7 +800,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "time() - pg_stat_user_tables_last_autovacuum{relname=\"notes\"}",
+          "expr": "time() - pg_stat_user_tables_last_autovacuum{datname=\"$datname\",relname=\"notes\"}",
           "instant": true,
           "legendFormat": "seconds since last autovacuum",
           "refId": "A"
