@@ -1,5 +1,6 @@
 use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use uuid::Uuid;
+use crate::metrics;
 use crate::models::{Note, CreateNote};
 use crate::AppState;
 
@@ -85,6 +86,7 @@ pub async fn post_note(State(state): State<AppState>, headers: HeaderMap, Json(p
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
+	metrics::inc_mutation("create");
 	tracing::info!("Note {} created successfully", note.id);
 	Ok(Json(note))
 }
@@ -107,6 +109,7 @@ pub async fn del_note(State(state): State<AppState>, Path(id): Path<Uuid>, heade
 		return Err(StatusCode::NOT_FOUND);
 	}
 
+	metrics::inc_mutation("delete");
 	tracing::info!("Note {} deleted successfully", id);
 	Ok(StatusCode::NO_CONTENT)
 }
