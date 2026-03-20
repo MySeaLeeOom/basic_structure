@@ -84,6 +84,13 @@ export const useNoteStore = defineStore("notes", () => {
 				body: JSON.stringify({ title: "Untitled" }),
 			});
 
+			if (response.status === 401) {
+				error.value = "Unauthorized: user not logged in.";
+				console.error("Unauthorized:", response.status);
+				return;
+			}
+
+			//for any other errors
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
 			const note: Note = await response.json();
@@ -100,7 +107,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 	async function deleteNote(id: string) {
 		error.value = null;
-		// isLoading.value = true;
+		isLoading.value = true;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "DELETE",

@@ -10,10 +10,8 @@ FRONTEND_CACHE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_output_hidden
 
 # 2. Dependency Volumes (Safe to delete, just re-installs next time)
-# Note: srcs_frontend_manual_node_modules is kept for backward compat if needed
 MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
-	$(PROJECT_NAME)_frontend_manual_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
 
 all: up
@@ -35,29 +33,24 @@ down: getuser
 clean: getuser 
 	$(COMPOSE) down --rmi all $(FLAGS)
 
-fclean: getuser
-	@echo "Removing all volumes..."
-	$(COMPOSE) down -v --rmi all $(FLAGS)	
-
-# In case of dependency changes! Adjust MODULE_VOLUMES. Run Manually after clean
-clean_volumes:
-# 	docker volume ls -q | grep -v 'srcs_postgres_data' | xargs docker volume rm || true
+# Removes all artifacts and dev containers, does not remove the databases
+cleanv: clean 
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
-
-# Removes only Nuxt/Vite build artifacts
-clean_frontend:
 	@echo "Cleaning frontend build cache..."
 	-docker volume rm $(FRONTEND_CACHE_VOLUMES)
 
-cleanv: clean clean_volumes clean_frontend
+# Destructive: will destroy databases, both notes and users
+fclean: getuser
+	@echo "Removing all volumes..."
+	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
 re: clean all
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
-.PHONY: all up down clean cleanv fclean clean_volumes re logs
+.PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
 
 # Docker commands
 # docker volume rm $(docker volume ls -q)
