@@ -5,6 +5,7 @@ import * as schema from "../db/schema";
 import { verifySession } from "../lib/session_helpers";
 import { upsertAccount } from "../lib/account_helpers";
 import * as argon2 from "argon2";
+import { authMeTotal } from "../metrics";
 
 /* Schemas for Inputs */
 const ChangeLoginSchema = Type.Object({
@@ -33,13 +34,16 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	server.get("/me", async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) {
+			authMeTotal.labels("401").inc();
 			return reply.status(401).send({ error: "No active session found." });
 		}
 		// Get User Profile
 		const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
 		if (!user) {
+			authMeTotal.labels("404").inc();
 			return reply.status(404).send({ error: "User profile not found." });
 		}
+		authMeTotal.labels("200").inc();
 		// Return sanitized user data
 		return {
 			authenticated: true,
