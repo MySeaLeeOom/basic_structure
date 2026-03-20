@@ -1,6 +1,7 @@
 use axum::{
 	extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Path, State},
-	response::Response,
+	http::{HeaderMap, StatusCode},
+	response::{IntoResponse, Response},
 };
 use futures_util::{stream::StreamExt, SinkExt};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
@@ -19,8 +20,22 @@ pub async fn ws_route(
 	ws: WebSocketUpgrade,
 	Path(note_id): Path<Uuid>,
 	State(state): State<Arc<AppState>>,
+	headers: HeaderMap,
 ) -> Response {
-	tracing::info!("New WebSocket connection request for note: {}", note_id);
+	// Extract the verified User ID from Nginx headers
+	let user_id = match headers.get("X-User-Id")
+		.and_then(|v| v.to_str().ok())
+		.and_then(|v| Uuid::parse_str(v).ok()) {
+			Some(id) => id,
+			None => return StatusCode::UNAUTHORIZED.into_response(),
+		};
+
+	// Simple ownership check
+	if !db::check_ownership(&state.pool, note_id, user_id).await {
+		return StatusCode::FORBIDDEN.into_response();
+	}
+
+	// Upgrade to WebSocket
 	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state))
 }
 

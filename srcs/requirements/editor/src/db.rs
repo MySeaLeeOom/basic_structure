@@ -39,6 +39,16 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 	Ok(doc)
 }
 
+pub async fn check_ownership(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
+	sqlx::query("SELECT 1 FROM notes WHERE id = $1 AND owner_id = $2")
+		.bind(note_id)
+		.bind(user_id)
+		.fetch_optional(pool)
+		.await
+		.map(|r| r.is_some())
+		.unwrap_or(false)
+}
+
 pub async fn save_note(pool: &PgPool, note_id: Uuid, doc: &Doc) -> Result<(), ()> {
 	// get state vector as blob
 	let state_blob = {
