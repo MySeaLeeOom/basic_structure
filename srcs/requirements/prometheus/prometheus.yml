@@ -14,3 +14,6 @@ scrape_configs:
   - job_name: notes
     static_configs:
       - targets: ["notes:3003"]
+  - job_name: auth
+    static_configs:
+      - targets: ["auth:3000"]
