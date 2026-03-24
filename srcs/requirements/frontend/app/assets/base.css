@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap");
 @import "tailwindcss";
 @import "tailwindcss-primeui";
+@plugin "@tailwindcss/typography";
 
 /* Volt component overrides */
 @layer components {
@@ -36,20 +37,14 @@
 	/* Tiptap editor base styles */
 	.tiptap-editor .tiptap {
 		outline: none;
-		padding: 1rem;
+		padding: 0;
 		min-height: 200px;
 	}
 
-	.tiptap-editor .tiptap p {
-		margin: 0.5em 0;
+	.tiptap-editor .tiptap > :first-child {
+		margin-top: 0;
 	}
 
-	.tiptap-editor .tiptap h1,
-	.tiptap-editor .tiptap h2,
-	.tiptap-editor .tiptap h3 {
-		margin-top: 1em;
-		margin-bottom: 0.5em;
-	}
 
 	/* Placeholder text (@tiptap/extension-placeholder) */
 	.tiptap-editor .tiptap p.is-editor-empty:first-child::before {

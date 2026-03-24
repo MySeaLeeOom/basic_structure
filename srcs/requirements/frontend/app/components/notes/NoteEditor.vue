@@ -50,7 +50,7 @@ watchEffect((onCleanup) => {
             fluid
             class="mb-4"
           />
-          <EditorContent :editor="editor" class="tiptap-editor" />
+          <EditorContent :editor="editor" class="tiptap-editor prose dark:prose-invert max-w-none" />
         </div>
         <span v-if="connectedUsers > 1" class="text-sm text-gray-500 pt-2">
           {{ connectedUsers }} users editing
