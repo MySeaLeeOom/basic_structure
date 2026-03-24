@@ -1,6 +1,7 @@
 use dashmap::DashMap;
 use sqlx::PgPool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use tokio::sync::{RwLock, mpsc::UnboundedSender};
 use uuid::Uuid;
 use yrs::Doc;
@@ -12,6 +13,7 @@ pub struct DocumentRoom {
 	pub doc: Arc<RwLock<Doc>>,
 	pub awareness: Arc<RwLock<Awareness>>,
 	pub clients: DashMap<usize, UnboundedSender<Message>>,
+	pub dirty: AtomicBool,
 }
 
 impl DocumentRoom {
@@ -21,6 +23,7 @@ impl DocumentRoom {
 			doc: Arc::new(RwLock::new(doc)),
 			awareness,
 			clients: DashMap::new(),
+			dirty: AtomicBool::new(false),
 		}
 	}
 }
