@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import { useDebounceFn } from "@vueuse/core";
 import type { Note } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -123,6 +124,30 @@ export const useNoteStore = defineStore("notes", () => {
 
 	const notesCount = computed(() => notes.value.length);
 
+	// Debounced save to Postgres — temporary until WS notification channel
+	const _persistTitle = useDebounceFn(async (id: string, title: string) => {
+		try {
+			await fetch(`/api/notes/${id}`, {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title }),
+			});
+		} catch (e) {
+			console.error("Failed to persist title:", e);
+		}
+	}, 500);
+
+	function updateNoteTitle(id: string, title: string) {
+		const note = notes.value.find((n: Note) => n.id === id);
+		if (note) {
+			note.title = title;
+		}
+		if (selectedNote.value?.id === id) {
+			selectedNote.value = { ...selectedNote.value, title };
+		}
+		_persistTitle(id, title);
+	}
+
 	function resetSelected() {
 		selectedNote.value = null;
 	}
@@ -145,6 +170,7 @@ export const useNoteStore = defineStore("notes", () => {
 		createNote,
 		deleteNote,
 		resetSelected,
+		updateNoteTitle,
 		resetStore,
 	};
 });

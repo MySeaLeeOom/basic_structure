@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, watchEffect } from "vue";
+import { shallowRef, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -7,13 +7,19 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import Card from "@/volt/Card.vue";
 import InputText from "@/volt/InputText.vue";
 import { useCollaboration } from "@/composables/useCollaboration";
+import { useNoteStore } from "@/stores/noteStore";
 
 const props = defineProps<{
   noteId: string;
 }>();
 
+const noteStore = useNoteStore();
 const { ydoc, provider, titleText, connectedUsers, updateTitle } =
   useCollaboration(() => props.noteId);
+
+watch(titleText, (newTitle) => {
+  noteStore.updateNoteTitle(props.noteId, newTitle);
+});
 
 const editor = shallowRef<Editor>();
 
