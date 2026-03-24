@@ -40,18 +40,19 @@ watchEffect((onCleanup) => {
 
 <template>
   <Card pt:root:class="card-document">
-    <template #title>
-      <InputText
-        :model-value="titleText"
-        @update:model-value="updateTitle"
-        placeholder="Title"
-        fluid
-      />
-    </template>
     <template #content>
-      <div class="flex flex-col gap-4 h-full">
-        <EditorContent :editor="editor" class="tiptap-editor" />
-        <span v-if="connectedUsers > 1" class="text-sm text-gray-500">
+      <div class="flex flex-col h-full min-h-0">
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          <InputText
+            :model-value="titleText"
+            @update:model-value="updateTitle"
+            placeholder="Title"
+            fluid
+            class="mb-4"
+          />
+          <EditorContent :editor="editor" class="tiptap-editor" />
+        </div>
+        <span v-if="connectedUsers > 1" class="text-sm text-gray-500 pt-2">
           {{ connectedUsers }} users editing
         </span>
       </div>

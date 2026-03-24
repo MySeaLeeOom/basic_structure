@@ -38,8 +38,6 @@
 		outline: none;
 		padding: 1rem;
 		min-height: 200px;
-		flex: 1;
-		overflow-y: auto;
 	}
 
 	.tiptap-editor .tiptap p {
