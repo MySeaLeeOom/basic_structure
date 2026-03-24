@@ -50,6 +50,31 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
 				tracing::info!("Loaded note {} from database", note_id);
 				let new_room = Arc::new(DocumentRoom::new(doc));
 				state.rooms.insert(note_id, new_room.clone());
+
+				// spawn background task for periodic saving
+				let state_bg = state.clone();
+				let room_bg = new_room.clone();
+				tokio::spawn(async move {
+					loop {
+						tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+
+						// Check if the room still exists in the global state
+						if !state_bg.rooms.contains_key(&note_id) {
+							tracing::debug!("Background task for note {} exiting (room no longer exists)", note_id);
+							break;
+						}
+
+						// If dirty, acquire a read lock and save to DB
+						if room_bg.dirty.load(Ordering::Acquire) {
+							tracing::debug!("Background save for note {}", note_id);
+							let doc_lock = room_bg.doc.read().await;
+							if db::save_note(&state_bg.pool, note_id, &doc_lock).await.is_ok() {
+								room_bg.dirty.store(false, Ordering::Release);
+							}
+						}
+					}
+				});
+
 				new_room
 			}
 			Err(_) => {
@@ -92,7 +117,7 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
 		while let Some(Ok(msg)) = receiver.next().await {
 			if let Message::Binary(bytes) = msg {
 				// give raw bytes to the sync logic. If we get a response (OK + non empty), we broadcast it.
-				match sync::process_binary_message(&bytes, &room_clone.doc, &room_clone.awareness).await {
+				match sync::process_binary_message(&bytes, &room_clone.doc, &room_clone.awareness, &room_clone.dirty).await {
 					Ok(response_bytes) => {
 						if !response_bytes.is_empty() {
 							let broadcast_msg = Message::Binary(response_bytes.into());

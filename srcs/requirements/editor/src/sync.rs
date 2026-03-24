@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use yrs::{Doc, ReadTxn, Transact, Update};
 use yrs::updates::decoder::Decode;
 use yrs::updates::encoder::{Encode, Encoder, EncoderV1};
@@ -9,6 +10,7 @@ pub async fn process_binary_message(
 	msg_bytes: &[u8],
 	doc: &tokio::sync::RwLock<Doc>,
 	awareness: &tokio::sync::RwLock<Awareness>,
+	dirty: &AtomicBool,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
 	// get raw message and tranform it into our internal Message struct (which can be a Sync message or a Awareness message)
@@ -32,6 +34,7 @@ pub async fn process_binary_message(
 				SyncMessage::SyncStep2(update) | SyncMessage::Update(update) => {
 					let update = Update::decode_v1(&update)?;
 					txn.apply_update(update);
+					dirty.store(true, Ordering::Release);
 				}
 			}
 		}
