@@ -8,12 +8,15 @@ import Card from "@/volt/Card.vue";
 import InputText from "@/volt/InputText.vue";
 import { useCollaboration } from "@/composables/useCollaboration";
 import { useNoteStore } from "@/stores/noteStore";
+import { useAuthStore } from "@/stores/authStore";
+import { userColor, createCaretRenderer } from "@/utils/caretRenderer";
 
 const props = defineProps<{
   noteId: string;
 }>();
 
 const noteStore = useNoteStore();
+const authStore = useAuthStore();
 const { ydoc, provider, titleText, connectedUsers, updateTitle } =
   useCollaboration(() => props.noteId);
 
@@ -34,7 +37,11 @@ watchEffect((onCleanup) => {
       Collaboration.configure({ document: doc }),
       CollaborationCaret.configure({
         provider: prov,
-        user: { name: "Anonymous", color: "#958DF1" },
+        user: {
+          name: authStore.user?.loginName ?? "Anonymous",
+          color: userColor(authStore.user?.id),
+        },
+        render: createCaretRenderer(prov.awareness),
       }),
     ],
   });
