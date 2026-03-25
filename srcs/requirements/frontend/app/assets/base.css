@@ -33,28 +33,37 @@
 	.empty-state {
 		@apply p-8 text-center text-muted-color;
 	}
+}
 
-	/* Tiptap editor base styles */
-	.tiptap-editor .tiptap {
-		outline: none;
-		padding: 0;
-		min-height: 200px;
-	}
+/* Tiptap editor styles — outside @layer to override prose/typography */
+.tiptap-editor {
+	display: flex;
+	flex-direction: column;
+}
 
-	.tiptap-editor .tiptap > :first-child {
-		margin-top: 0;
-	}
+.tiptap-editor .tiptap {
+	outline: none;
+	padding: 0;
+	flex: 1;
+	cursor: text;
+	line-height: 1.35;
+}
 
+.tiptap-editor .tiptap > :first-child {
+	margin-top: 0;
+}
 
-	/* Placeholder text (@tiptap/extension-placeholder) */
-	.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
-		color: #adb5bd;
-		content: attr(data-placeholder);
-		float: left;
-		height: 0;
-		pointer-events: none;
-	}
+.tiptap-editor .tiptap > :last-child {
+	margin-bottom: 0;
+}
 
+/* Placeholder text (@tiptap/extension-placeholder) */
+.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+	color: #adb5bd;
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
 }
 
 /* Collaboration caret — subtle glow line + fading label */
