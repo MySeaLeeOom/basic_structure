@@ -4,6 +4,7 @@ import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteEditor from "@/components/notes/NoteEditor.vue";
+import ChatSidebar from "@/components/notes/ChatSidebar.vue";
 import { useConfirm } from "primevue/useconfirm";
 import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
@@ -86,10 +87,13 @@ onServerPrefetch(async () => {
 			</Listbox>
 		</template>
 
-		<NoteEditor
-			v-if="mounted && noteStore.selectedNote"
-			:note-id="noteStore.selectedNote.id"
-		/>
+		<div v-if="mounted && noteStore.selectedNote" class="flex flex-1 w-full h-full gap-4">
+			<NoteEditor
+				:note-id="noteStore.selectedNote.id"
+				class="flex-1"
+			/>
+			<ChatSidebar />
+		</div>
 		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
 	</SidebarLayout>
 </template>

@@ -1,6 +1,12 @@
 # Stage 1: Builder
 FROM rust:1-slim AS builder
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /usr/src/app
 
 COPY Cargo.toml Cargo.lock ./
@@ -20,8 +26,11 @@ FROM debian:stable-slim AS runtime
 
 WORKDIR /usr/src/app
 
-# Install netcat for the entrypoint script
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    netcat-traditional \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/src/app/target/release/notes .
 COPY entrypoint.sh .
