@@ -1,76 +1,78 @@
-# Protokoll: RAG System Implementierung (Stage 1)
+# Implementation Protocol: RAG System (Stage 1)
 
-Dieses Dokument dokumentiert den Entwicklungsprozess und die Architektur des Retrieval-Augmented Generation (RAG) Systems für ft_transcendence – vom Basis-Projekt bis zur funktionierenden lokalen KI-Demo.
+This document records the development process and architecture of the Retrieval-Augmented Generation (RAG) system for ft_transcendence – from the base project to the functioning local AI demo.
 
-## 1. Zielsetzung
-Ziel war die Integration eines intelligenten "Co-Piloten", der Nutzerfragen basierend auf den persönlichen Noten beantwortet.
-*   **Anforderung:** Vollständig lokal lauffähig (Ollama), entkoppelte Architektur (Microservices), Echtzeit-Streaming (SSE).
-*   **Technologie-Stack:** Python (FastAPI), PostgreSQL (pgvector), LangChain, Yjs (CRDT), Ollama (Llama 3).
+## 1. Objectives
+The goal was to integrate an intelligent "Co-Pilot" that answers user questions based on personal notes.
+*   **Requirements:** Fully locally runnable (Ollama), decoupled architecture (microservices), real-time streaming (SSE).
+*   **Technology Stack:** Python (FastAPI), PostgreSQL (pgvector), LangChain, Yjs (CRDT), Ollama (Llama 3).
 
 ---
 
-## 2. Die Architektur (Decoupled Micro-AI Mesh)
+## 2. Architecture (Decoupled Micro-AI Mesh)
 
-Das System wurde in vier spezialisierte Dienste zerlegt, um die Last der KI-Verarbeitung von der Hauptanwendung zu trennen:
+The system was broken down into four specialized services to separate the AI processing load from the main application:
 
 ### A. Vector Database (`vector-db`)
-*   **Basis:** PostgreSQL 16 + `pgvector` Extension.
-*   **Aufgabe:** Speichert Text-Snippets und deren mathematische Repräsentation (Vektoren).
-*   **Wichtige Erkenntnis:** Llama 3 benötigt eine Dimension von **4096**. Das Schema wurde explizit darauf optimiert.
+*   **Base:** PostgreSQL 16 + `pgvector` extension.
+*   **Task:** Stores text snippets and their mathematical representation (vectors).
+*   **Key Insight:** Llama 3 requires a dimension of **4096**. The schema was explicitly optimized for this.
 
-### B. AI Ingest Service (`ai-ingest`) - "Der Archivar"
-*   **Aufgabe:** Horcht auf Updates vom Rust-Editor, extrahiert Text aus binären CRDT-Blobs und speichert Vektoren.
-*   **Herausforderung:** Tiptap speichert Texte als komplexe `YXmlFragment`-Strukturen. Der Dienst nutzt eine rekursive Extraktion, um auch verschachtelte HTML-Inhalte (wie `<p>`-Tags) zu erfassen.
+### B. AI Ingest Service (`ai-ingest`) - "The Archivist"
+*   **Task:** Listens for updates from the Rust editor, extracts text from binary CRDT blobs, and stores vectors.
+*   **Challenge:** Tiptap stores text as complex `YXmlFragment` structures. The service uses recursive extraction to capture even nested HTML content (like `<p>` tags).
 
-### C. AI RAG Service (`ai-rag`) - "Der Bibliothekar"
-*   **Aufgabe:** Orchestrierung der Suche. Empfängt Nutzerfragen, sucht relevanten Kontext in der DB und baut den finalen Prompt für die KI.
-*   **Besonderheit:** Nutzt explizite SQL-Typ-Casts (`::vector`), um Inkompatibilitäten zwischen Python-Arrays und Postgres-Vektoren zu vermeiden.
+### C. AI RAG Service (`ai-rag`) - "The Librarian"
+*   **Task:** Search orchestration. Receives user questions, searches for relevant context in the DB, and builds the final prompt for the AI.
+*   **Special Feature:** Uses explicit SQL type casts (`::vector`) to avoid incompatibilities between Python arrays and Postgres vectors.
 
-### D. LLM Gateway (`llm-gateway`) - "Der Sprecher"
-*   **Aufgabe:** Ein Provider-agnostischer Proxy. Er entscheidet, ob Anfragen an OpenAI (Cloud) oder Ollama (Lokal) gehen.
-*   **Streaming:** Implementiert ein transparentes SSE (Server-Sent Events) Modell, das Token für Token an das Frontend durchreicht.
-
----
-
-## 3. Datenfluss (Der Weg einer Note)
-
-1.  **Eingabe:** Nutzer tippt im Browser ("Ich liebe Katzen").
-2.  **Synchronisation:** Der Rust-Editor empfängt die Änderung via WebSocket.
-3.  **Trigger:** Alle 5 Sekunden (einstellbar) sendet der Editor den aktuellen Stand als Base64-Blob an den `ai-ingest` Dienst.
-4.  **Verarbeitung:** `ai-ingest` wandelt den Blob in Text um, generiert via Ollama einen 4096-dimensionalen Vektor und speichert ihn in `vector-db`.
-5.  **Abfrage:** Nutzer fragt im Chat: "Was mag ich?".
-6.  **Retrieval:** `ai-rag` findet die "Katzen"-Note in der Vektor-Datenbank.
-7.  **Antwort:** Ollama generiert basierend auf diesem Kontext die Antwort und streamt sie live in die Chat-Sidebar.
+### D. LLM Gateway (`llm-gateway`) - "The Speaker"
+*   **Task:** A provider-agnostic proxy. It decides whether requests go to OpenAI (Cloud) or Ollama (Local).
+*   **Streaming:** Implements a transparent SSE (Server-Sent Events) model that passes tokens to the frontend as they arrive.
 
 ---
 
-## 4. Überwundene Hürden (Lessons Learned)
+## 3. Data Flow (The Journey of a Note)
 
-| Problem | Ursache | Lösung |
+1.  **Input:** User types in the browser ("I love cats").
+2.  **Synchronization:** The Rust editor receives the change via WebSocket.
+3.  **Trigger:** Every 5 seconds (configurable), the editor sends the current state as a Base64 blob to the `ai-ingest` service.
+4.  **Processing:** `ai-ingest` converts the blob to text, generates a 4096-dimensional vector via Ollama, and stores it in `vector-db`.
+5.  **Query:** User asks in the chat: "What do I love?".
+6.  **Retrieval:** `ai-rag` finds the "cats" note in the vector database.
+7.  **Response:** Ollama generates an answer based on this context and streams it live to the chat sidebar.
+
+---
+
+## 4. Hurdles Overcome (Lessons Learned)
+
+| Problem | Cause | Solution |
 | :--- | :--- | :--- |
-| **Silent Fail (No Answer)** | Vektor-Dimension mismatch (1536 vs 4096) | DB-Schema auf 4096 korrigiert & `down -v` Reset. |
-| **Operator Error** | Postgres erkannte Python-Arrays nicht als Vektoren | Expliziter Cast `ORDER BY embedding <=> %s::vector` im SQL. |
-| **Empty Context** | Tiptap-Inhalte waren in `YXmlFragment` "unsichtbar" | Rekursive Extraktions-Logik in Python implementiert. |
-| **Connection Refused** | Ollama hörte nur auf `localhost` | `OLLAMA_HOST=0.0.0.0` und Firewall-Regeln für Docker gesetzt. |
-| **Dark Mode Bug** | CSS-Spezifität im Frontend | Nutzung von `!text-white` und Tailwind Dark-Mode Klassen. |
+| **Silent Fail (No Answer)** | Vector dimension mismatch (1536 vs 4096) | Corrected DB schema to 4096 & performed `down -v` reset. |
+| **Operator Error** | Postgres didn't recognize Python arrays as vectors | Added explicit cast `ORDER BY embedding <=> %s::vector` in SQL. |
+| **Empty Context** | Tiptap content was "invisible" in `YXmlFragment` | Implemented recursive extraction logic in Python. |
+| **Connection Refused** | Ollama was only listening on `localhost` | Set `OLLAMA_HOST=0.0.0.0` and added firewall rules for Docker. |
+| **Dark Mode Bug** | CSS specificity in the frontend | Used `!text-white` and Tailwind dark mode classes. |
 
 ---
 
-## 5. Lokales Setup (Quick Start)
+## 5. Local Setup (Quick Start)
 
-Um das System zu starten, sind folgende Schritte notwendig:
+To start the system, the following steps are necessary:
 
-1.  **Ollama vorbereiten:**
+1.	**Install Ollama:**
+	*	Follow instructions for your specific OS.
+2.  **Prepare Ollama:**
     *   `OLLAMA_HOST=0.0.0.0 ollama serve`
     *   `ollama run llama3`
-2.  **Infrastruktur starten:**
-    *   `docker compose -f srcs/docker-compose.yml down -v` (Einmalig für saubere DB)
+3.  **Start Infrastructure:**
+    *   `docker compose -f srcs/docker-compose.yml down -v` (One-time reset for clean DB)
     *   `make`
-3.  **Firewall (falls nötig):**
+4.  **Firewall (if necessary on Fedora):**
     *   `sudo firewall-cmd --add-source=172.18.0.0/16 --zone=public --permanent`
     *   `sudo firewall-cmd --reload`
 
 ---
 
-## 6. Fazit
-Die Stage 1 Demo beweist die Machbarkeit eines vollständig entkoppelten RAG-Systems. Die Architektur ist skalierbar: Die Vektor-DB kann jederzeit durch Qdrant ersetzt oder das LLM durch einen API-Key-basierten Dienst (OpenAI/Gemini) getauscht werden, ohne die Business-Logik anzupassen.
+## 6. Conclusion
+The Stage 1 demo proves the feasibility of a fully decoupled RAG system. The architecture is scalable: the vector DB can be replaced by Qdrant at any time, or the LLM can be swapped for an API-key-based service (OpenAI/Gemini) without touching the business logic.
