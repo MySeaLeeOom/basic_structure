@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Button from '@/volt/Button.vue';
-import InputText from 'primevue/inputtext';
+import InputText from '@/volt/InputText.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
@@ -77,28 +77,49 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full border-l border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 w-80 p-4">
-    <h3 class="text-lg font-bold mb-4 text-surface-900 dark:text-surface-50">AI Co-Pilot (Stage 1)</h3>
+  <div class="w-80 shrink-0 flex flex-col h-[calc(100vh-120px)] bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
+    <h2 class="section-title">MyCelium-AI</h2>
     
-    <div class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2">
+    <div class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 custom-scrollbar">
       <div v-for="(msg, idx) in messages" :key="idx" 
-           :class="['p-3 rounded-lg text-sm', msg.role === 'user' ? 'bg-primary-100 dark:bg-primary-900 text-primary-900 dark:!text-white ml-4' : 'bg-surface-200 dark:bg-surface-800 text-surface-900 dark:!text-white mr-4']">
-        <div class="font-bold mb-1" :class="msg.role === 'user' ? 'text-primary-700 dark:text-primary-300' : 'text-surface-700 dark:text-surface-300'">
+           :class="['p-3 rounded-lg text-sm border', 
+                    msg.role === 'user' 
+                      ? 'bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-surface-700 dark:!text-white ml-6' 
+                      : 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-700 dark:!text-white mr-6']">
+        <div class="text-[10px] font-bold uppercase tracking-tighter mb-1" :class="msg.role === 'user' ? 'text-primary-700 dark:text-primary-300' : 'text-surface-700 dark:text-surface-300'">
           {{ msg.role === 'user' ? 'You' : 'AI' }}
         </div>
-        <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+        <div class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</div>
       </div>
-      <div v-if="isTyping" class="text-xs text-surface-500 dark:text-surface-400 animate-pulse">AI is thinking...</div>
+      <div v-if="isTyping" class="text-[10px] uppercase font-bold text-primary-500 animate-pulse ml-1">
+        AI is thinking...
+      </div>
+      <div v-if="messages.length === 0" class="p-4 text-center text-xs italic text-surface-400">
+        Ask something about your notes...
+      </div>
     </div>
 
-    <div class="flex gap-2">
-      <InputText v-model="query" @keyup.enter="sendMessage" placeholder="Ask about your notes..." class="flex-1" />
-      <Button icon="pi pi-send" @click="sendMessage" :disabled="isTyping" />
+    <div class="flex gap-2 pt-3 border-t border-surface-100 dark:border-surface-800">
+      <InputText 
+        v-model="query" 
+        @keyup.enter="sendMessage" 
+        placeholder="Type a message..." 
+        class="flex-1 min-w-0 dark:!text-white dark:placeholder:text-surface-500" 
+      />
+      <Button label="Send" @click="sendMessage" :disabled="isTyping" severity="primary" size="small" />
     </div>
   </div>
 </template>
 
 <style scoped>
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--p-surface-300);
+  border-radius: 10px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--p-surface-700);
+}
 </style>
