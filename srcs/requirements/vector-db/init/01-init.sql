@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS embeddings (
     embedding vector(4096) -- 4096 is the dimension for Llama 3 embeddings
 );
 
-CREATE INDEX IF NOT EXISTS embedding_idx ON embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS embedding_idx ON embeddings USING hnsw (embedding vector_cosine_ops); -- very efficient algorithm for high-dimensional vector search (O(log n))
