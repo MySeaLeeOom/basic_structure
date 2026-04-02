@@ -47,7 +47,6 @@ def get_context(user_id: str, query: str):
             return "DATABASE STATUS: No notes found for this user."
         
         context_str = "\n---\n".join([r[0] for r in rows])
-        logger.info(f"Retrieved Context: {context_str[:100]}...") # Log first 100 chars
         return context_str
     except Exception as e:
         logger.error(f"Retrieval Error: {str(e)}")
@@ -58,12 +57,19 @@ async def chat(request: ChatRequest):
     try:
         context = get_context(request.user_id, request.query)
         
-        system_prompt = f"""
-        You are a personal project assistant.
-        Answer the question ONLY based on the context below. 
-        Context:
-        {context}
-        """
+        system_prompt = f"""You are a personal project assistant.
+		Answer the question ONLY based on the context below.
+		If the answer is not contained in the context, you MUST reply exactly with "I do not know the answer based on the provided context." Do not use outside knowledge.
+
+		Context:
+		{context}
+		"""
+        # LOGGING FINAL PROMPT
+        print("\n" + "="*50)
+        print("FINAL PROMPT SENT TO LLM")
+        print(f"SYSTEM PROMPT:\n{system_prompt}")
+        print(f"USER QUERY: {request.query}")
+        print("="*50 + "\n")
         
         payload = {"prompt": request.query, "system_prompt": system_prompt}
 

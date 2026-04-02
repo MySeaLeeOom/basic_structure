@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -29,7 +30,6 @@ class CompletionRequest(BaseModel):
 @app.post("/stream")
 async def stream_completion(request: CompletionRequest):
     logger.info(f"Incoming Request for: {MODEL_NAME}")
-    logger.debug(f"Prompt: {request.prompt}")
     
     async def generator():
         try:
@@ -45,15 +45,19 @@ async def stream_completion(request: CompletionRequest):
             async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
-                    # Log tokens to console so user can see it in terminal
+                    # Log tokens to console
                     print(content, end="", flush=True)
-                    yield f"data: {content}\n\n"
+                    
+                    # Wrap in JSON to preserve newlines and special characters
+                    payload = json.dumps({"text": content})
+                    yield f"data: {payload}\n\n"
             
-            print("\n") # New line in console after completion
+            print("\n") 
             yield "data: [DONE]\n\n"
         except Exception as e:
             logger.error(f"LLM Stream Error: {str(e)}")
-            yield f"data: Error: {str(e)}\n\n"
+            error_payload = json.dumps({"error": str(e)})
+            yield f"data: {error_payload}\n\n"
             yield "data: [DONE]\n\n"
 
     return StreamingResponse(generator(), media_type="text/event-stream")

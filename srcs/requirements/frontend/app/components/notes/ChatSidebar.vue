@@ -47,23 +47,25 @@ const sendMessage = async () => {
       partialLine = lines.pop() || '';
 
       for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
+        const trimmedLine = line.trim();
+        if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
 
-        const data = line.slice(6);
-        if (data.includes('[DONE]')) {
+        const rawData = trimmedLine.slice(6).trim();
+        if (rawData === '[DONE]') {
           isTyping.value = false;
           continue;
         }
 
         try {
-          if (data.startsWith('{')) {
-            const parsed = JSON.parse(data);
-            assistantMessage.value.content += parsed.data || parsed.content || '';
-          } else {
-            assistantMessage.value.content += data;
+          const parsed = JSON.parse(rawData);
+          if (parsed.text) {
+            assistantMessage.value.content += parsed.text;
+          } else if (parsed.error) {
+            assistantMessage.value.content += `\nError: ${parsed.error}`;
           }
         } catch (e) {
-          assistantMessage.value.content += data;
+          // Fallback if not valid JSON
+          assistantMessage.value.content += rawData;
         }
       }
     }
