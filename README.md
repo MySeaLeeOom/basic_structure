@@ -1,6 +1,6 @@
 # **Mycelium Notes**
 
-*This project has been created as part of the 42 curriculum by [adiler], [maahof], [myakoven], [pvasilan].* 
+*This project has been created as part of the 42 curriculum by [adiler], [maahof], [myakoven], [pvasilan] and [grmullin].* 
 
 ## **I. Description**
 
