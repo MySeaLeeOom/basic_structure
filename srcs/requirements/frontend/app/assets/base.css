@@ -33,54 +33,64 @@
 	.empty-state {
 		@apply p-8 text-center text-muted-color;
 	}
+}
 
-	/* Tiptap editor base styles */
-	.tiptap-editor .tiptap {
-		outline: none;
-		padding: 0;
-		min-height: 200px;
-	}
+/* Tiptap editor styles — outside @layer to override prose/typography */
+.tiptap-editor {
+	display: flex;
+	flex-direction: column;
+}
 
-	.tiptap-editor .tiptap > :first-child {
-		margin-top: 0;
-	}
+.tiptap-editor .tiptap {
+	outline: none;
+	padding: 0;
+	flex: 1;
+	cursor: text;
+	line-height: 1.35;
+}
 
+.tiptap-editor .tiptap > :first-child {
+	margin-top: 0;
+}
 
-	/* Placeholder text (@tiptap/extension-placeholder) */
-	.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
-		color: #adb5bd;
-		content: attr(data-placeholder);
-		float: left;
-		height: 0;
-		pointer-events: none;
-	}
+.tiptap-editor .tiptap > :last-child {
+	margin-bottom: 0;
+}
 
-	/* Collaboration caret — remote user cursor */
-	.collaboration-cursor__caret {
-		border-left: 1px solid #0d0d0d;
-		border-right: 1px solid #0d0d0d;
-		margin-left: -1px;
-		margin-right: -1px;
-		pointer-events: none;
-		position: relative;
-		word-break: normal;
-	}
+/* Placeholder text (@tiptap/extension-placeholder) */
+.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+	color: #adb5bd;
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
+}
 
-	/* Collaboration caret — username label */
-	.collaboration-cursor__label {
-		border-radius: 3px 3px 3px 0;
-		color: #fff;
-		font-size: 12px;
-		font-style: normal;
-		font-weight: 600;
-		left: -1px;
-		line-height: normal;
-		padding: 0.1rem 0.3rem;
-		position: absolute;
-		top: -1.4em;
-		user-select: none;
-		white-space: nowrap;
-	}
+/* Collaboration caret — subtle glow line + fading label */
+.collaboration-carets__caret {
+	border-left: 2px solid currentColor;
+	margin-left: -1px;
+	pointer-events: none;
+	position: relative;
+	word-break: normal;
+	box-shadow: 0 0 3px currentColor;
+}
+
+.collaboration-carets__label {
+	border-radius: 4px;
+	color: #fff;
+	font-size: 11px;
+	font-style: normal;
+	font-weight: 500;
+	left: -1px;
+	line-height: 1;
+	padding: 2px 6px;
+	position: absolute;
+	top: -1.6em;
+	user-select: none;
+	white-space: nowrap;
+	opacity: 0;
+	transition: opacity 0.4s ease;
 }
 
 :root {
