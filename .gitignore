@@ -14,7 +14,6 @@ dist/
 target/
 
 # OS/Editor artifacts
-.DS_Store
 .vscode/
 .idea/
 *.swp
