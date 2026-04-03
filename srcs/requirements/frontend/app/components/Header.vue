@@ -1,15 +1,47 @@
 <script lang="ts" setup>
+import { computed, ref } from 'vue';
 import Toolbar from '@/volt/Toolbar.vue';
 import Button from '@/volt/Button.vue';
+import Menu from '@/volt/Menu.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
+const { t, locale } = useUiI18n();
 
-const navItems = [
-  { to: '/home', label: 'Home' },
-  { to: '/notes', label: 'Notes' },
-  { to: '/mindmap', label: 'Mindmap' },
-];
+/** Same cookie key / tags as `noteStore` → `Accept-Language` for the notes API */
+function setLocale(tag: 'en-UK' | 'de-DE' | 'es-ES') {
+  locale.value = tag;
+  if (import.meta.client) {
+    window.location.reload();
+  }
+}
+
+const langMenu = ref<InstanceType<typeof Menu> | null>(null);
+
+function toggleLangMenu(event: Event) {
+  langMenu.value?.toggle(event);
+}
+
+const langMenuItems = computed(() => [
+  {
+    label: t('lang.en'),
+    command: () => setLocale('en-UK'),
+  },
+  {
+    label: t('lang.de'),
+    command: () => setLocale('de-DE'),
+  },
+  {
+    label: t('lang.es'),
+    command: () => setLocale('es-ES'),
+  },
+]);
+
+const navItems = computed(() => [
+  { to: '/home', label: t('nav.home') },
+  { to: '/notes', label: t('nav.notes') },
+  { to: '/mindmap', label: t('nav.mindmap') },
+]);
 
 async function handleLogout() {
   await authStore.logout();
@@ -35,6 +67,26 @@ async function handleLogout() {
 
     <template #end>
       <div class="flex items-center gap-2">
+        <div class="relative mr-1">
+          <Button
+            type="button"
+            :label="t('lang.select')"
+            icon="pi pi-globe"
+            icon-pos="left"
+            size="small"
+            severity="secondary"
+            outlined
+            aria-haspopup="true"
+            aria-controls="lang_menu"
+            @click="toggleLangMenu"
+          />
+          <Menu
+            id="lang_menu"
+            ref="langMenu"
+            :model="langMenuItems"
+            :popup="true"
+          />
+        </div>
 
         <template v-if="authStore.isAuthenticated">
           <NuxtLink to="/profile" class="no-underline text-inherit group">
@@ -43,11 +95,11 @@ async function handleLogout() {
               {{ authStore.user.loginName }}
             </span>
           </NuxtLink>
-          <Button label="Logout" size="small" severity="secondary" @click="handleLogout" />
+          <Button :label="t('auth.logout')" size="small" severity="secondary" @click="handleLogout" />
         </template>
         <template v-else>
           <NuxtLink to="/login">
-            <Button label="Login" size="small" />
+            <Button :label="t('auth.login')" size="small" />
           </NuxtLink>
         </template>
       </div>

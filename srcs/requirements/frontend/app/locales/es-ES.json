@@ -1,0 +1,11 @@
+{
+	"nav.home": "Inicio",
+	"nav.notes": "Notas",
+	"nav.mindmap": "Mapa mental",
+	"auth.login": "Entrar",
+	"auth.logout": "Salir",
+	"lang.select": "Idioma",
+	"lang.en": "English (UK)",
+	"lang.de": "Deutsch",
+	"lang.es": "Español"
+}
