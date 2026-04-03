@@ -14,7 +14,7 @@ MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
 
-all: up
+all: cleanv up
 
 getuser:
 	@touch srcs/.env
