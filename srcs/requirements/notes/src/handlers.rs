@@ -6,8 +6,6 @@ use axum::{
 };
 use serde::Serialize;
 use uuid::Uuid;
-use crate::metrics;
-use crate::models::{Note, CreateNote};
 
 use crate::{
     models::{CreateNote, Note},
@@ -111,32 +109,12 @@ fn preferred_locales(headers: &HeaderMap) -> Vec<String> {
 	Ok(Json(note))
 }
 
-// pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<Uuid>) -> Result<StatusCode, StatusCode> {
-// 	tracing::info!("Deleting note {}", id);
-// 	let result = sqlx::query("DELETE FROM notes WHERE id = $1")
-// 		.bind(id)
-pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<Uuid>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
-	let user_id = get_user_id(&headers)?;
-	tracing::info!("Deleting note {} for user {}", id, user_id);
-	let result = sqlx::query("DELETE FROM notes WHERE id = $1 AND owner_id = $2")
-		.bind(id)
-		.bind(user_id)
-		.execute(&pool)
-		.await
-		.map_err(|e| {
-			tracing::error!("Failed to delete note {}: {}", id, e);
-			StatusCode::INTERNAL_SERVER_ERROR
-		})?;
-
-	if result.rows_affected() == 0 {
-		// tracing::warn!("Note {} not found for deletion", id);
-		tracing::warn!("Note {} not found for deletion (or not owned by user)", id);
-		return Err(StatusCode::NOT_FOUND);
-	}
-
-	metrics::inc_mutation("delete");
-	tracing::info!("Note {} deleted successfully", id);
-	Ok(StatusCode::NO_CONTENT)
+fn preferred_locales(headers: &HeaderMap) -> Vec<String> {
+    parse_accept_language(
+        headers
+            .get("Accept-Language")
+            .and_then(|v| v.to_str().ok()),
+    )
 }
 
 fn t(state: &AppState, headers: &HeaderMap, key: &str) -> String {
