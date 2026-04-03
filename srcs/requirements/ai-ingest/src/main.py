@@ -24,9 +24,7 @@ OLLAMA_HOST = BASE_URL.replace("/v1", "")
 EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "llama3")
 
 # --- Global State for Smart Ingest ---
-# Tracks note IDs currently being vectorized to prevent parallel conflicts
 processing_locks = set()
-# Tracks the last processed text hash per note to skip redundant work
 last_processed_hashes = {}
 
 # Chunking Configuration
@@ -69,15 +67,13 @@ def extract_all_text(doc: Y.YDoc) -> str:
     return "\n\n".join(text_parts)
 
 def process_and_save(note_id: str, user_id: str, base64_blob: str):
-    # 1. Immediate Lock Check
     if note_id in processing_locks:
-        logger.info(f"THROTTLE: Note {note_id} is already being processed. Skipping this trigger.")
+        logger.info(f"THROTTLE: Note {note_id} is already being processed.")
         return
 
     try:
         processing_locks.add(note_id)
         
-        # 2. Extract Text
         binary_data = base64.b64decode(base64_blob)
         doc = Y.YDoc()
         Y.apply_update(doc, binary_data)
@@ -86,23 +82,27 @@ def process_and_save(note_id: str, user_id: str, base64_blob: str):
         if not full_content.strip():
             return
 
-        # 3. Hash Check (Content Change Detection)
         content_hash = hashlib.sha256(full_content.encode()).hexdigest()
         if last_processed_hashes.get(note_id) == content_hash:
-            logger.info(f"SKIP: Content for note {note_id} hasn't changed. Vectorization skipped.")
+            logger.info(f"SKIP: Content for note {note_id} hasn't changed.")
             return
 
-        # 4. Split into Chunks
         chunks = TEXT_SPLITTER.split_text(full_content)
         total = len(chunks)
         logger.info(f"START SMART INGEST: User {user_id} - {total} chunks.")
+
+        # AUDIT LOG: Show all chunks being saved
+        print("\n" + "-"*30)
+        print(f"AUDIT: DATA BEING SAVED FOR NOTE {note_id}")
+        for i, c in enumerate(chunks):
+            print(f"CHUNK {i}:\n{c}\n")
+        print("-"*30 + "\n")
 
         embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
         
         conn = psycopg2.connect(DB_URL)
         register_vector(conn)
         with conn.cursor() as cur:
-            # Atomic swap: Delete old and insert new
             cur.execute("DELETE FROM embeddings WHERE note_id = %s", (note_id,))
             for i, chunk in enumerate(chunks):
                 vector = embeddings.embed_query(chunk)
@@ -116,14 +116,12 @@ def process_and_save(note_id: str, user_id: str, base64_blob: str):
         conn.commit()
         conn.close()
         
-        # 5. Update Hash Cache after success
         last_processed_hashes[note_id] = content_hash
         logger.info(f"FINISH SUCCESS: Note {note_id} re-indexed.")
         
     except Exception as e:
         logger.error(f"Ingestion Error for {note_id}: {str(e)}")
     finally:
-        # Always release the lock
         processing_locks.discard(note_id)
 
 @app.post("/ingest")
