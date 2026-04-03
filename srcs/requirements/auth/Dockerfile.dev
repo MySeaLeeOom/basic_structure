@@ -21,11 +21,11 @@ RUN chown -R ${UID}:${GID} /app/node_modules
 RUN chown -R ${UID}:${GID} /app
 # make the user own node modules (permissions on Linux)
 
+COPY docker-entrypoint-dev.sh /usr/local/bin/docker-entrypoint-dev.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint-dev.sh
+
 # Port for the SSR server
 EXPOSE 3000
 
-# 4. The 'Shell' Strategy
-# We don't COPY the source code here because we will mount it via Volumes.
-# This command runs a script defined in your package.json that starts 
-# the Vue/Nuxt dev server with HMR (Hot Module Replacement).
-CMD ["pnpm", "run","dev"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint-dev.sh"]
+CMD ["pnpm", "run", "dev"]
