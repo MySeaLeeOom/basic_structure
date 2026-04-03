@@ -27,10 +27,11 @@ EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "llama3")
 processing_locks = set()
 last_processed_hashes = {}
 
-# Chunking Configuration
+# OPTIMIZED Chunking Configuration
+# Smaller chunks (500) provide much higher precision for specific facts
 TEXT_SPLITTER = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=100,
+    chunk_size=500,
+    chunk_overlap=50,
     length_function=len,
     separators=["\n\n", "\n", ".", " ", ""]
 )
@@ -89,14 +90,7 @@ def process_and_save(note_id: str, user_id: str, base64_blob: str):
 
         chunks = TEXT_SPLITTER.split_text(full_content)
         total = len(chunks)
-        logger.info(f"START SMART INGEST: User {user_id} - {total} chunks.")
-
-        # AUDIT LOG: Show all chunks being saved
-        print("\n" + "-"*30)
-        print(f"AUDIT: DATA BEING SAVED FOR NOTE {note_id}")
-        for i, c in enumerate(chunks):
-            print(f"CHUNK {i}:\n{c}\n")
-        print("-"*30 + "\n")
+        logger.info(f"START SMART INGEST: User {user_id} - {total} chunks (Optimized size).")
 
         embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
         
@@ -117,7 +111,7 @@ def process_and_save(note_id: str, user_id: str, base64_blob: str):
         conn.close()
         
         last_processed_hashes[note_id] = content_hash
-        logger.info(f"FINISH SUCCESS: Note {note_id} re-indexed.")
+        logger.info(f"FINISH SUCCESS: Note {note_id} re-indexed with smaller chunks.")
         
     except Exception as e:
         logger.error(f"Ingestion Error for {note_id}: {str(e)}")

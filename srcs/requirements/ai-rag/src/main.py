@@ -41,9 +41,9 @@ def get_context(user_id: str, query: str):
         query_vector = embeddings.embed_query(query)
         
         with conn.cursor() as cur:
-            # RETRIEVAL AUDIT: Get text and distance
+            # INCREASED LIMIT TO 6: Give the LLM more chance to see the right data
             cur.execute(
-                "SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 5",
+                "SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 6",
                 (query_vector, user_id)
             )
             rows = cur.fetchall()
@@ -52,15 +52,13 @@ def get_context(user_id: str, query: str):
         if not rows:
             return "DATABASE STATUS: No notes found for this user."
         
-        # LOGGING SCORES
         print("\n" + "-"*30)
         print(f"SEARCH RESULTS FOR: {query}")
         for i, (content, dist) in enumerate(rows):
             print(f"RANK {i+1} (Distance: {dist:.4f}):\n{content[:150]}...\n")
         print("-"*30 + "\n")
 
-        # Combine top 3 for the context, but show top 5 in logs
-        context_str = "\n---\n".join([r[0] for r in rows[:3]])
+        context_str = "\n---\n".join([r[0] for r in rows])
         return context_str
     except Exception as e:
         logger.error(f"Retrieval Error: {str(e)}")
@@ -71,15 +69,15 @@ async def chat(request: ChatRequest):
     try:
         context = get_context(request.user_id, request.query)
         
+        # OPTIMIZED PROMPT: More helpful, less "robotic"
         system_prompt = (
-            "You are a personal project assistant.\n"
-            "Answer the question ONLY based on the context below.\n"
-            "If the answer is not contained in the context, you MUST reply exactly with "
-            "\"I do not know the answer based on the provided context.\" Do not use outside knowledge.\n\n"
+            "You are MyCelium-AI, a helpful project assistant.\n"
+            "Analyze the following context carefully to answer the user's question.\n"
+            "Use ONLY the information provided. If the specific fact is missing, "
+            "tell the user clearly what you found and why it doesn't quite answer the question.\n\n"
             f"Context:\n{context}"
         )
         
-        # LOGGING FINAL PROMPT
         print("\n" + "="*50)
         print("FINAL PROMPT SENT TO LLM")
         print(system_prompt)
