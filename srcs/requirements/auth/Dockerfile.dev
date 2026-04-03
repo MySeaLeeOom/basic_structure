@@ -21,11 +21,7 @@ RUN chown -R ${UID}:${GID} /app/node_modules
 RUN chown -R ${UID}:${GID} /app
 # make the user own node modules (permissions on Linux)
 
-COPY docker-entrypoint-dev.sh /usr/local/bin/docker-entrypoint-dev.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint-dev.sh
-
 # Port for the SSR server
 EXPOSE 3000
 
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint-dev.sh"]
 CMD ["pnpm", "run", "dev"]
