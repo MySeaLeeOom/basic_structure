@@ -14,7 +14,6 @@ dist/
 target/
 
 # OS/Editor artifacts
-.DS_Store
 .vscode/
 .idea/
 *.swp
@@ -39,7 +38,5 @@ crdt-migration-plan.md
 dist
 
 target
-.DS_Store
-
 grafana-prometheus-review.md
 .pnpm-store
