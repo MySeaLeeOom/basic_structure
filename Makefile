@@ -45,7 +45,7 @@ fclean: getuser
 	@echo "Removing all volumes..."
 	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
-re: clean all
+re: clean cleanv all
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
