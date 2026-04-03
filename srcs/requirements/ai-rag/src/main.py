@@ -28,12 +28,19 @@ class ChatRequest(BaseModel):
 
 def get_context(user_id: str, query: str):
     try:
+        conn = psycopg2.connect(DB_URL)
+        register_vector(conn)
+        
+        # DIAGNOSTIC: Check total chunks for this user
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM embeddings WHERE user_id = %s", (user_id,))
+            count = cur.fetchone()[0]
+            logger.info(f"User {user_id} has {count} total chunks in database.")
+
         logger.info(f"Searching context for user: {user_id}")
         embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
         query_vector = embeddings.embed_query(query)
         
-        conn = psycopg2.connect(DB_URL)
-        register_vector(conn)
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT content FROM embeddings WHERE user_id = %s ORDER BY embedding <=> %s::vector LIMIT 3",
@@ -43,11 +50,9 @@ def get_context(user_id: str, query: str):
         conn.close()
         
         if not rows:
-            logger.warning(f"No embeddings found for user {user_id}")
             return "DATABASE STATUS: No notes found for this user."
         
-        context_str = "\n---\n".join([r[0] for r in rows])
-        return context_str
+        return "\n---\n".join([r[0] for r in rows])
     except Exception as e:
         logger.error(f"Retrieval Error: {str(e)}")
         return f"ERROR: {str(e)}"
@@ -57,18 +62,18 @@ async def chat(request: ChatRequest):
     try:
         context = get_context(request.user_id, request.query)
         
-        system_prompt = f"""You are a personal project assistant.
-		Answer the question ONLY based on the context below.
-		If the answer is not contained in the context, you MUST reply exactly with "I do not know the answer based on the provided context." Do not use outside knowledge.
-
-		Context:
-		{context}
-		"""
-        # LOGGING FINAL PROMPT
+        system_prompt = (
+            "You are a personal project assistant.\n"
+            "Answer the question ONLY based on the context below.\n"
+            "If the answer is not contained in the context, you MUST reply exactly with "
+            "\"I do not know the answer based on the provided context.\" Do not use outside knowledge.\n\n"
+            f"Context:\n{context}"
+        )
+        
         print("\n" + "="*50)
         print("FINAL PROMPT SENT TO LLM")
-        print(f"SYSTEM PROMPT:\n{system_prompt}")
-        print(f"USER QUERY: {request.query}")
+        print(system_prompt)
+        print(f"\nUSER QUERY: {request.query}")
         print("="*50 + "\n")
         
         payload = {"prompt": request.query, "system_prompt": system_prompt}
