@@ -1,5 +1,6 @@
 mod models;
 mod handlers;
+mod i18n;
 
 use axum::{
 	routing::get,
@@ -8,6 +9,12 @@ use axum::{
 use sqlx::PgPool;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+#[derive(Clone)]
+pub struct AppState {
+    pub db_pool: PgPool,
+    pub i18n: i18n::I18n,
+}
 
 #[tokio::main]
 async fn main() {
@@ -19,11 +26,15 @@ async fn main() {
 		.init();
 
 	let db_pool = setup_database().await;
+	let state = AppState {
+		db_pool,
+		i18n: i18n::I18n::new(),
+	};
 
 	let app = Router::new()
 		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
-		.with_state(db_pool);
+		.with_state(state);
 
 	let port = std::env::var("PORT").unwrap_or_else(|_| "3003".to_string());
 	let addr: SocketAddr = format!("0.0.0.0:{}", port).parse().expect("Invalid address");
