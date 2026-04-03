@@ -49,6 +49,10 @@ async fn main() {
 				.unwrap_or_else(|_| Response::new(Body::empty())),
 		}
 	}
+	let state = AppState {
+		db_pool,
+		i18n: i18n::I18n::new(),
+	};
 
 	let app = Router::new()
 		.route("/metrics", get(metrics_handler))

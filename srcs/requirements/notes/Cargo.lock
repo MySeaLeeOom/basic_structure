@@ -967,6 +967,7 @@ dependencies = [
  "chrono",
  "fluent-bundle",
  "prometheus",
+ "fluent-bundle",
  "serde",
  "sqlx",
  "tokio",

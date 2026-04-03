@@ -16,3 +16,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 fluent-bundle = "0.15"
 unic-langid = "0.9"
 prometheus = "0.13"
+prometheus = "0.13"
+
+fluent-bundle = "0.15"
+unic-langid = "0.9"
