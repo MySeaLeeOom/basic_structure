@@ -81,7 +81,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "up{job=\"nginx_exporter\"}",
+          "expr": "(up{job=\"nginx_exporter\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "nginx",
           "refId": "A"
@@ -127,7 +127,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_up",
+          "expr": "(pg_up) or on() vector(0)",
           "instant": true,
           "legendFormat": "postgres",
           "refId": "A"
@@ -166,7 +166,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_active",
+          "expr": "(nginx_connections_active) or on() vector(0)",
           "instant": true,
           "legendFormat": "active",
           "refId": "A"
@@ -201,7 +201,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_http_requests_total",
+          "expr": "(nginx_http_requests_total) or on() vector(0)",
           "instant": true,
           "legendFormat": "requests",
           "refId": "A"
@@ -252,7 +252,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_http_requests_total[1m])",
+          "expr": "(rate(nginx_http_requests_total[1m])) or on() vector(0)",
           "legendFormat": "req/s",
           "refId": "A"
         }
@@ -295,19 +295,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_reading",
+          "expr": "(nginx_connections_reading) or on() vector(0)",
           "legendFormat": "reading",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_writing",
+          "expr": "(nginx_connections_writing) or on() vector(0)",
           "legendFormat": "writing",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_waiting",
+          "expr": "(nginx_connections_waiting) or on() vector(0)",
           "legendFormat": "waiting (keep-alive)",
           "refId": "C"
         }
@@ -350,13 +350,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_connections_accepted[1m])",
+          "expr": "(rate(nginx_connections_accepted[1m])) or on() vector(0)",
           "legendFormat": "accepted/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_connections_handled[1m])",
+          "expr": "(rate(nginx_connections_handled[1m])) or on() vector(0)",
           "legendFormat": "handled/s",
           "refId": "B"
         }
@@ -403,7 +403,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_numbackends{datname=\"$datname\"}",
+          "expr": "(pg_stat_database_numbackends{datname=\"$datname\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "connections",
           "refId": "A"
@@ -444,7 +444,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)",
+          "expr": "(pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)) or on() vector(0)",
           "instant": true,
           "legendFormat": "hit ratio",
           "refId": "A"
@@ -479,7 +479,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_database_size_bytes{datname=\"$datname\"}",
+          "expr": "(pg_database_size_bytes{datname=\"$datname\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "size",
           "refId": "A"
@@ -523,13 +523,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_xact_commit{datname=\"$datname\"}[1m])",
+          "expr": "(rate(pg_stat_database_xact_commit{datname=\"$datname\"}[1m])) or on() vector(0)",
           "legendFormat": "commits/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_xact_rollback{datname=\"$datname\"}[1m])",
+          "expr": "(rate(pg_stat_database_xact_rollback{datname=\"$datname\"}[1m])) or on() vector(0)",
           "legendFormat": "rollbacks/s",
           "refId": "B"
         }
@@ -572,19 +572,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_ins{datname=\"$datname\",relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_ins{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "inserts/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_upd{datname=\"$datname\",relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_upd{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "updates/s",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_del{datname=\"$datname\",relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_del{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "deletes/s",
           "refId": "C"
         }
@@ -627,7 +627,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_user_tables_n_dead_tup{datname=\"$datname\",relname=\"notes\"}",
+          "expr": "(pg_stat_user_tables_n_dead_tup{datname=\"$datname\",relname=\"notes\"}) or on() vector(0)",
           "legendFormat": "dead tuples",
           "refId": "A"
         }
@@ -670,13 +670,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_seq_scan{datname=\"$datname\",relname=\"notes\"}[5m])",
+          "expr": "(rate(pg_stat_user_tables_seq_scan{datname=\"$datname\",relname=\"notes\"}[5m])) or on() vector(0)",
           "legendFormat": "seq scans/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_idx_scan{datname=\"$datname\",relname=\"notes\"}[5m])",
+          "expr": "(rate(pg_stat_user_tables_idx_scan{datname=\"$datname\",relname=\"notes\"}[5m])) or on() vector(0)",
           "legendFormat": "index scans/s",
           "refId": "B"
         }
@@ -719,7 +719,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_deadlocks{datname=\"$datname\"}[5m])",
+          "expr": "(rate(pg_stat_database_deadlocks{datname=\"$datname\"}[5m])) or on() vector(0)",
           "legendFormat": "deadlocks/s",
           "refId": "A"
         }
@@ -762,7 +762,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_temp_bytes{datname=\"$datname\"}",
+          "expr": "(pg_stat_database_temp_bytes{datname=\"$datname\"}) or on() vector(0)",
           "legendFormat": "temp bytes",
           "refId": "A"
         }
@@ -800,7 +800,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "time() - pg_stat_user_tables_last_autovacuum{datname=\"$datname\",relname=\"notes\"}",
+          "expr": "(time() - pg_stat_user_tables_last_autovacuum{datname=\"$datname\",relname=\"notes\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "seconds since last autovacuum",
           "refId": "A"
