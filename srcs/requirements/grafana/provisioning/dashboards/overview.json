@@ -407,7 +407,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_numbackends{datname=\"$datname\"}",
+          "expr": "(pg_stat_database_numbackends{datname=\"$datname\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "connections",
           "refId": "A"
@@ -448,7 +448,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)",
+          "expr": "(pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)) or on() vector(0)",
           "instant": true,
           "legendFormat": "hit ratio",
           "refId": "A"
@@ -483,7 +483,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_database_size_bytes{datname=\"$datname\"}",
+          "expr": "(pg_database_size_bytes{datname=\"$datname\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "size",
           "refId": "A"
