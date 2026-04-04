@@ -151,6 +151,9 @@ services:
     image: grafana
     container_name: grafana
     restart: always
+    secrets:
+    - grafana_admin_user
+    - grafana_admin_password
     networks:
       - transcendence
     ports:
@@ -158,6 +161,8 @@ services:
     environment:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/overview.json
       - GF_NEWS_NEWS_FEED_ENABLED=false
+      - GF_SECURITY_ADMIN_USER__FILE=/run/secrets/grafana_admin_user
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
   prometheus:
     build:
       context: ./requirements/prometheus
@@ -208,6 +213,10 @@ secrets:
     file: ./secrets/github_client_secret #
   session_secret_key:  
     file: ./secrets/session_secret_key
+  grafana_admin_user:
+    file: ./secrets/grafana_admin_user
+  grafana_admin_password:
+    file: ./secrets/grafana_admin_password
 
 networks:
   transcendence:
