@@ -222,13 +222,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum(rate(notes_mutations_total{job=\"notes\",op=\"create\"}[5m]))",
+          "expr": "(sum(rate(notes_mutations_total{job=\"notes\",op=\"create\"}[5m]))) or on() vector(0)",
           "legendFormat": "create",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum(rate(notes_mutations_total{job=\"notes\",op=\"delete\"}[5m]))",
+          "expr": "(sum(rate(notes_mutations_total{job=\"notes\",op=\"delete\"}[5m]))) or on() vector(0)",
           "legendFormat": "delete",
           "refId": "B"
         }
@@ -259,7 +259,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum by (op) (increase(notes_mutations_total{job=\"notes\"}[1h]))",
+          "expr": "(sum by (op) (increase(notes_mutations_total{job=\"notes\"}[1h]))) or on() vector(0)",
           "legendFormat": "{{op}}",
           "refId": "A"
         }

@@ -57,7 +57,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum by (result) (rate(auth_login_local_total{job=\"auth\"}[5m]))",
+          "expr": "(sum by (result) (rate(auth_login_local_total{job=\"auth\"}[5m]))) or on() vector(0)",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
@@ -107,19 +107,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "histogram_quantile(0.50, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))",
+          "expr": "(histogram_quantile(0.50, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))) or on() vector(0)",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "histogram_quantile(0.95, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))",
+          "expr": "(histogram_quantile(0.95, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))) or on() vector(0)",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "histogram_quantile(0.99, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))",
+          "expr": "(histogram_quantile(0.99, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))) or on() vector(0)",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -150,7 +150,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "histogram_quantile(0.99, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))",
+          "expr": "(histogram_quantile(0.99, sum(rate(auth_password_verify_seconds_bucket{job=\"auth\"}[5m])) by (le))) or on() vector(0)",
           "legendFormat": "p99",
           "refId": "A"
         }
@@ -200,7 +200,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum by (result) (rate(auth_register_total{job=\"auth\"}[5m]))",
+          "expr": "(sum by (result) (rate(auth_register_total{job=\"auth\"}[5m]))) or on() vector(0)",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
@@ -243,7 +243,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum by (result) (rate(auth_github_callback_total{job=\"auth\"}[5m]))",
+          "expr": "(sum by (result) (rate(auth_github_callback_total{job=\"auth\"}[5m]))) or on() vector(0)",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
@@ -293,7 +293,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum by (status) (increase(auth_me_total{job=\"auth\"}[1h]))",
+          "expr": "(sum by (status) (increase(auth_me_total{job=\"auth\"}[1h]))) or on() vector(0)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
