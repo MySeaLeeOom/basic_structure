@@ -124,15 +124,38 @@ Calculate your path to the 14-point minimum.
 
 | Module | Category | Type | Points |
 | --- | --- | --- | --- |
-| Frameworks (Vue + Axum) | Web | Major | 2 |
+| Frameworks (Vue + Axum) | Web | Major | 2 | 
 | Microservices | DevOps | Major | 2 |
+| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
 | RAG System | AI | Major | 2 |
-| User Interaction (Chat/Friends) | Web | Major | 2 |
-| **Total estimated** | | | **14+** |
+| LLM System Interface | AI | Major | 2 |
+| Web-socket communication | Web | Major | 2 |
+| Real-time collaboration | Web | Minor | 1 |
+| Server-Side Rendering | Web | Minor | 1 |
+| Support for multiple languages | Accesibility | Minor | 1 |
+| Support for rtl | Accesibility | Minor | 1 |
+| Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
+| OAuth Authentication | User Management | Minor | 1 |
+| **Total estimated** | | | **18** |
 
+[other possibles - ORM ]
 ## **IX. Individual contributions**
+Frameworks/Microservices: Ahmed, Maarten, Masha
+Web-Sockets: Ahmed, Maarten, Masha, Pavlos
+Authentication: Masha
+Monitoring/Browser Testing: Pavlos
+RAG/LLM: Maarten, Ahmed
+Localization: Grace
 
 ## **X. AI usage**
-Describe exactly how you used AI for coding or brainstorming.
+Pavlos: 
+
+## **Future Features**
+What in-theory would be an obvious next step:
+    user management with accounts
+    extended dashboards
+    sentiment analysis and semantic tagging
+    friends and networks (?)
+    backlinks
 
 ---
