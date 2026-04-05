@@ -4,20 +4,20 @@
 
 ## **I. Description**
 
-A modular open-source personal knowledge management system with built-in real-time collaboration.
-A modular open-source personal knowledge management system with built-in real-time collaboration.
+A modular open source personal knowledge management system with built-in realtime collaboration. 
+
 
 ## **II. Instructions**
 
 ### Prerequisites
 
 * Docker Engine with Compose v2 (`docker compose` subcommand).
-* A GitHub OAuth App for authentication (Client ID and Client Secret).
+* A GitHub OAuth App for authentication (you will need the Client ID and Client Secret).
 * `make` (GNU Make).
 
 ### Setup
 
-1. **Environment variables** — Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
+1. **Environment variables** -- Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
 
 ```
 DB_USER=<postgres superuser>
@@ -37,7 +37,7 @@ FRONTEND_PORT=3000
 WEBSITE_URL=http://localhost:8080
 ```
 
-2. **Secrets** — Copy the example secrets directory and fill in real values (one value per file):
+2. **Secrets** -- Copy the example secrets directory and fill in real values (one value per file):
 
 ```bash
 cp -r srcs/secrets.example srcs/secrets
@@ -60,17 +60,24 @@ make re        # clean + rebuild
 
 The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
 
-## **III. Resources**
 
-* List documentation and tutorials used.
 
-# Part 2: 42 Berlin defense documentation
+## **III. Team Information**
 
-## Team information
+* **[Your Login]**: **Product Owner**. Responsible for feature prioritization, requirement validation, and the product backlog.
 
-*(Team roster, roles, or defense-specific notes.)*
 
-## **IV. Project management**
+* **[Member 2]**: **Technical Lead / Developer**. Responsible for Nginx architecture, SSR logic, and code quality.
+
+
+* **[Member 3]**: **Project Manager / Developer**. Responsible for task tracking and the Axum backend.
+
+
+* **[Member 4]**: **Developer**. Responsible for AI/RAG integration and frontend components.
+
+
+
+## **IV. Project Management**
 
 Explain your workflow.
 
