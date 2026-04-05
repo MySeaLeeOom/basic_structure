@@ -69,29 +69,52 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 
 ## Team information
 
-*(Team roster, roles, or defense-specific notes.)*
+Ahmed Diler - Principal Developer
+Maarten Hoff - Technical Lead
+Masha Mashenkova - Product Owner
+Pavlos Vasilantonakis - Project Manager
+Grace Mullin - Manager of Development
 
 ## **IV. Project management**
 
 Explain your workflow.
 
-* **Organization**: Describe your meeting schedule and how tasks were divided.
-* **Tools**: List GitHub Issues, Trello, or Discord.
+* **Organization**: Features were decided early. The main sync-time was a weekly in-person meeting with additional video calls between subsets of the team. Team members expressed interest in specific subject modules early and were encouraged to take ownership. The product owner was tasked with mantaining a forward momentum, the technical lead was asked to solve any ties in relation to tech and the project lead attempted to partially disengage from the everyday coding in order to keep the rest of the team motivated.
+
+* **Tools**: 
+    Github Issues for matching commits to issues
+    Slack for everyday communication
+    Github projects for the gratification of the Project Manager
 
 ## **V. Technical stack**
 
-Justify your major technical choices.
-
-* **Frontend**: Vue/Nuxt (framework requirement).
-* **Backend**: Axum and FastAPI (microservices architecture).
-* **Database**: PostgreSQL (relational data and schema clarity).
+* **Frontend**: Nuxt 4 / Vue 3 with TailwindCSS, PrimeVue, and Pinia. TipTap provides the rich-text editor; Yjs and y-websocket handle real-time collaborative editing via CRDTs. Framework choice satisfies the 42 curriculum requirement.
+* **Auth service** (TypeScript): Fastify 5 with Drizzle ORM. Handles OAuth (GitHub, Google, 42) and local password auth (Argon2). Session-based authentication with cookie tokens. Exposes Prometheus metrics via `prom-client`.
+* **Notes service** (Rust): Axum + sqlx. CRUD API for note metadata. Chosen for low overhead on a high-frequency path.
+* **Editor service** (Rust): Axum with WebSocket support + Yrs/y-sync. Persists Yjs CRDT document state to PostgreSQL. Handles real-time sync between collaborating clients.
+* **Database**: PostgreSQL 16. Two logical databases in a single instance — one for auth (users, accounts, sessions), one for notes and document state. Relational model fits the structured data; UUID primary keys throughout.
+* **Infrastructure**: Docker Compose orchestrates 10 services behind an Nginx reverse proxy. Nginx gates `/api/notes` and `/ws/` routes through an `auth_request` subrequest to the auth service. Prometheus scrapes all application and infrastructure targets; Grafana provides pre-provisioned dashboards. Exporters for Nginx and PostgreSQL round out observability.
 
 ## **VI. Database schema**
 
-Provide a visual representation or description of your tables and their relationships.
+Two logical databases in a single PostgreSQL 16 instance.
 
-* **Tables**: Users, Notes, Chapters, etc.
-* **Relations**: e.g., one user has many notes; one note belongs to one chapter.
+**Auth database** (Drizzle ORM, migrations in `auth/drizzle/`):
+
+| Table | Columns | Notes |
+| --- | --- | --- |
+| `users` | `id` (UUID PK), `email` (unique), `login_name` (unique, not null), `image_url`, `role` (enum: user/admin), `status` (enum: active/blocked/suspended), `created_at` | Central identity table |
+| `accounts` | `id` (UUID PK), `user_id` (FK → users, cascade), `provider` (enum: github/local/google/42), `provider_account_id`, `password_hash` | Unique on (provider, provider_account_id). One user can have multiple provider accounts |
+| `sessions` | `id` (UUID PK), `user_id` (FK → users, cascade), `token` (UUID, unique), `expires_at`, `user_agent`, `ip_address` | Cookie-based session tracking |
+
+**Main database** (SQL init in `postgres/init/02-init.sql`):
+
+| Table | Columns | Notes |
+| --- | --- | --- |
+| `notes` | `id` (UUID PK), `title` (varchar 255), `owner_id` (UUID), `created_at`, `updated_at` | Note metadata |
+| `note_states` | `note_id` (UUID PK, FK → notes, cascade), `state_vector` (BYTEA), `last_saved_at` | Persisted Yjs CRDT state, 1:1 with `notes` |
+
+**Key relations**: one user → many accounts (multi-provider auth), one user → many sessions, one note → one note_state. All foreign keys cascade on delete.
 
 ## **VII. Features list**
 
