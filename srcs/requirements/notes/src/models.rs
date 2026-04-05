@@ -45,15 +45,6 @@ pub struct ManagedShareItem {
     pub created_at: DateTime<Utc>,
 }
 
-// what we output as response
-#[derive(Serialize, Deserialize, sqlx::FromRow)]
-pub struct ShareNotePath {
-	pub note_id: Uuid,
-    pub guest_id: Uuid,
-    pub role: Role,
-    pub url_path: String,
-}
-
 // what we need in the request
 #[derive(Deserialize)]
 pub struct ShareNotePayload {
