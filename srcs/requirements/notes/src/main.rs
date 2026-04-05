@@ -1,6 +1,7 @@
 mod models;
 mod handlers;
 mod share_handlers;
+mod slug_handlers;
 
 use axum::{
 	routing::get,
@@ -24,8 +25,9 @@ async fn main() {
 	let app = Router::new()
 		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
+		.route("/api/notes/u/{slug}", get(slug_handlers::get_note_by_slug))
 		.route("/api/notes/shared/", get(share_handlers::get_all_shared_notes))
-		.route("/api/notes/shared/{id}", get(share_handlers::get_shared_note).post(share_handlers::share_note).delete(share_handlers::remove_note_share))
+		.route("/api/notes/shared/{share_token}", get(share_handlers::get_shared_note).post(share_handlers::share_note).delete(share_handlers::remove_note_share))
 		.route("/api/shares/managed", get(share_handlers::get_all_managed_shares))
 		.with_state(db_pool);
 

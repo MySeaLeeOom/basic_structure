@@ -27,21 +27,27 @@ pub async fn get_all_shared_notes(State(pool): State<PgPool>, headers: HeaderMap
 }
 
 // Fetch a single note that has been shared with the user
-pub async fn get_shared_note(State(pool): State<PgPool>, Path(id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
+pub async fn get_shared_note(State(pool): State<PgPool>, Path(share_token): Path<String>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
     let user_id = get_user_id(&headers)?;
-    tracing::debug!("Fetching shared note {} for guest {}", id, user_id);
+    tracing::debug!("Fetching shared note via token '{}' for user {}", share_token, user_id);
+    
+    // A note is accessible at a share endpoint if:
+    // The user is the owner of the note.
+    // The user is the designated guest in a share entry.
+    // The share entry is public (guest_id is NULL).
+    // We search by url_path (the secret token) instead of the raw Note ID.
     let note = sqlx::query_as::<_, Note>(
         "SELECT n.id, n.title, n.owner_id, n.owner_url, n.created_at, n.updated_at 
          FROM notes n 
          INNER JOIN share s ON n.id = s.note_id 
-         WHERE n.id = $1 AND (s.guest_id = $2 OR s.guest_id IS NULL)"
+         WHERE s.url_path = $1 AND (n.owner_id = $2 OR s.guest_id = $2 OR s.guest_id IS NULL)"
     )
-    .bind(id)
+    .bind(&share_token)
     .bind(user_id)
     .fetch_optional(&pool)
     .await
     .map_err(|e| {
-        tracing::error!("Failed to fetch shared note {}: {}", id, e);
+        tracing::error!("Failed to fetch shared note via token {}: {}", share_token, e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?; 
 

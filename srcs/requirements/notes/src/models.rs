@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 pub struct Note {
 	pub id: Uuid,
     pub title: String,
-    pub owner_id: Option<Uuid>,
+    pub owner_id: Uuid,
     pub owner_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

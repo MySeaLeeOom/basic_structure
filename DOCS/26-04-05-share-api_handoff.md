@@ -30,7 +30,8 @@ The Notes service handles CRUD for documents and the relational logic for sharin
 | **GET** | `/api/notes` | List all notes owned by the user | N/A |
 | **POST** | `/api/notes` | Create a new empty note | N/A |
 | **GET** | `/api/notes/{id}` | Fetch a specific note (Markdown) | N/A |
-| **PUT** | `/api/notes/{id}` | Update a note's title | `{ "title": "New Title" }` |
+| **GET** | `/api/notes/u/{slug}` | Fetch a note by its owner slug | N/A |
+| **PUT** | `/api/notes/{id}` | Update a note's title (updates slug too) | `{ "title": "New Title" }` |
 | **DELETE**| `/api/notes/{id}` | Permanently delete a note | N/A |
 
 ### Sharing & Collaboration
@@ -39,8 +40,8 @@ The Notes service handles CRUD for documents and the relational logic for sharin
 | **GET** | `/api/notes/shared/` | List notes shared BY OTHERS with me | "Shared with me" view |
 | **GET** | `/api/shares/managed` | **[New]** List all shares I have created | "Manage Shares" view |
 | **POST** | `/api/notes/shared/{id}` | Share a note with a guest user | Payload: `{ "guest_id", "role" }` |
-| **GET** | `/api/notes/shared/{id}` | Access a note via share permissions | For Guest access |
-| **DELETE**| `/api/notes/shared/{id}` | Revoke a share (remove guest access) | Payload: `{ "guest_id" }` |
+| **GET** | `/api/notes/shared/{share_token}` | Access a note via share permissions | For Guest access |
+| **DELETE**| `/api/notes/shared/{share_id}` | Revoke a share (remove guest access) | N/A |
 
 ---
 
