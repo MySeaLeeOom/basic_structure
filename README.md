@@ -4,124 +4,110 @@
 
 ## **I. Description**
 
-Clearly present the goal of your note-taking application.
-
-* **Goal**: Provide a brief overview of why this app exists (e.g., a poetry-focused markdown editor).
-- Excalidraw
-- 
-
-* **Key Features**: List your side-by-side editor, mindmap visualization, and custom organization.
-
-
+A modular open-source personal knowledge management system with built-in real-time collaboration.
 
 ## **II. Instructions**
 
-Provide a step-by-step guide for your peers and evaluators.
+### Prerequisites
 
-* **Prerequisites**: List Docker, Node.js version, etc.
+* Docker Engine with Compose v2 (`docker compose` subcommand).
+* A GitHub OAuth App for authentication (Client ID and Client Secret).
+* `make` (GNU Make).
 
+### Setup
 
-* **Setup**: Explain how to configure the `.env` file (referencing your `env.example`).
+1. **Environment variables** — Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
 
+```
+DB_USER=<postgres superuser>
+DB_PASSWORD=<postgres superuser password>
+DB_NAME=<main database name>
+AUTH_DB_USER=<auth service db user>
+AUTH_DB_NAME=<auth service db name>
+POSTGRES_ADDR=postgres
+POSTGRES_PORT=5432
+GITHUB_CLIENT_ID=<your GitHub OAuth app client ID>
+GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/github/callback
+AUTH_PORT=3000
+NOTES_ADDR=http://notes:3003
+NOTES_PORT=3003
+FRONTEND_ADDR=http://frontend:3000
+FRONTEND_PORT=3000
+WEBSITE_URL=http://localhost:8080
+```
 
-* **Execution**: Provide the single command to run the project (e.g., `docker-compose up --build`).
+2. **Secrets** — Copy the example secrets directory and fill in real values (one value per file):
 
+```bash
+cp -r srcs/secrets.example srcs/secrets
+```
 
+The following secret files must be populated: `auth_db_password`, `github_client_secret`, `session_secret_key`, `grafana_admin_user`, `grafana_admin_password`, `todo_db_password`.
 
-## **III. Team Information**
+### Execution
 
-Detail how the four of you reorganized after the member departure.
+```bash
+make up        # Build all images and start in detached mode
+make live      # Build and start in foreground (logs stream to terminal)
+make down      # Stop all containers
+make logs      # Follow logs (optionally: make logs service=auth)
+make clean     # Stop containers and remove images
+make cleanv    # clean + remove node_modules and frontend build cache volumes
+make fclean    # Destructive: removes everything including database volumes
+make re        # clean + rebuild
+```
 
-* **[Your Login]**: **Product Owner**. Responsible for feature prioritization, requirement validation, and the product backlog.
+The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
 
+## **III. Resources**
 
-* **[Member 2]**: **Technical Lead / Developer**. Responsible for Nginx architecture, SSR logic, and code quality.
+* List documentation and tutorials used.
 
+# Part 2: 42 Berlin defense documentation
 
-* **[Member 3]**: **Project Manager / Developer**. Responsible for task tracking and the Axum backend.
+## Team information
 
+*(Team roster, roles, or defense-specific notes.)*
 
-* **[Member 4]**: **Developer**. Responsible for AI/RAG integration and frontend components.
-
-
-
-## **IV. Project Management**
+## **IV. Project management**
 
 Explain your workflow.
 
 * **Organization**: Describe your meeting schedule and how tasks were divided.
-
-
 * **Tools**: List GitHub Issues, Trello, or Discord.
 
-
-
-## **V. Technical Stack**
+## **V. Technical stack**
 
 Justify your major technical choices.
 
-* **Frontend**: Vue/Nuxt (Framework requirement).
+* **Frontend**: Vue/Nuxt (framework requirement).
+* **Backend**: Axum and FastAPI (microservices architecture).
+* **Database**: PostgreSQL (relational data and schema clarity).
 
-
-* **Backend**: Axum and FastAPI (Microservices architecture).
-
-
-* **Database**: PostgreSQL (Chosen for relational data and schema clarity).
-
-
-
-## **VI. Database Schema**
+## **VI. Database schema**
 
 Provide a visual representation or description of your tables and their relationships.
 
 * **Tables**: Users, Notes, Chapters, etc.
+* **Relations**: e.g., one user has many notes; one note belongs to one chapter.
 
+## **VII.Features list**
 
-* **Relations**: e.g., One User has many Notes; One Note belongs to one Chapter.
-
-
-
-## **VII. Modules & Points**
+## **VIII. Modules & points**
 
 Calculate your path to the 14-point minimum.
 
 | Module | Category | Type | Points |
 | --- | --- | --- | --- |
-| Frameworks (Vue + Axum) | Web | Major | 2 
+| Frameworks (Vue + Axum) | Web | Major | 2 |
+| Microservices | DevOps | Major | 2 |
+| RAG System | AI | Major | 2 |
+| User Interaction (Chat/Friends) | Web | Major | 2 |
+| **Total estimated** | | | **14+** |
 
- |
-| Microservices | Devops | Major | 2 
+## **IX. Individual contributions**
 
- |
-| RAG System | AI | Major | 2 
-
- |
-| User Interaction (Chat/Friends) | Web | Major | 2 
-
- |
-| **Total Estimated** |  |  | <br>**14+** 
-
- |
-
-## **VIII. Individual Contributions**
-
-Be honest and detailed here; it is a critical part of the evaluation.
-
-* **[Your Login]**: Implemented the markdown editor logic and the project management structure.
-
-
-* **Challenge**: Re-distributing roles after a team member quit; resolved by merging PM and Developer roles.
-
-
-
-## **IX. Resources**
-
-* List documentation and tutorials used.
-
-
-* **AI Usage**: Describe exactly how you used AI for coding or brainstorming.
-
-
+## **X. AI usage**
+Describe exactly how you used AI for coding or brainstorming.
 
 ---
-
