@@ -33,6 +33,18 @@ pub struct Share {
     pub updated_at: DateTime<Utc>,
 }
 
+// Combined structure for displaying shared note management
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct ManagedShareItem {
+    pub share_id: Uuid,
+    pub note_id: Uuid,
+    pub note_title: String,
+    pub url_path: String,
+    pub guest_id: Option<Uuid>,
+    pub role: Role,
+    pub created_at: DateTime<Utc>,
+}
+
 // what we output as response
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct ShareNotePath {
