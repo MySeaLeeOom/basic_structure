@@ -93,7 +93,7 @@ Provide a visual representation or description of your tables and their relation
 * **Tables**: Users, Notes, Chapters, etc.
 * **Relations**: e.g., one user has many notes; one note belongs to one chapter.
 
-## **VII.Features list**
+## **VII. Features list**
 
 ## **VIII. Modules & points**
 
