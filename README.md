@@ -5,6 +5,7 @@
 ## **I. Description**
 
 A modular open-source personal knowledge management system with built-in real-time collaboration.
+A modular open-source personal knowledge management system with built-in real-time collaboration.
 
 ## **II. Instructions**
 
@@ -59,27 +60,6 @@ make re        # clean + rebuild
 
 The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
 
-```bash
-cp -r srcs/secrets.example srcs/secrets
-```
-
-The following secret files must be populated: `auth_db_password`, `github_client_secret`, `session_secret_key`, `grafana_admin_user`, `grafana_admin_password`, `todo_db_password`.
-
-### Execution
-
-```bash
-make up        # Build all images and start in detached mode
-make live      # Build and start in foreground (logs stream to terminal)
-make down      # Stop all containers
-make logs      # Follow logs (optionally: make logs service=auth)
-make clean     # Stop containers and remove images
-make cleanv    # clean + remove node_modules and frontend build cache volumes
-make fclean    # Destructive: removes everything including database volumes
-make re        # clean + rebuild
-```
-
-The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
-
 ## **III. Resources**
 
 * List documentation and tutorials used.
@@ -88,15 +68,7 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 
 ## Team information
 
-Ahmed Diler - Principal Developer
-
-Maarten Hoff - Technical Lead
-
-Masha Mashenkova - Product Owner
-
-Pavlos Vasilantonakis - Project Manager
-
-Grace Mullin - Manager of Development
+*(Team roster, roles, or defense-specific notes.)*
 
 ## **IV. Project management**
 
