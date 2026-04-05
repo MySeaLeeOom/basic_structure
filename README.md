@@ -64,20 +64,19 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 
 ## **III. Team Information**
 
-* **[Your Login]**: **Product Owner**. Responsible for feature prioritization, requirement validation, and the product backlog.
+* List documentation and tutorials used.
 
+# Part 2: 42 Berlin defense documentation
 
-* **[Member 2]**: **Technical Lead / Developer**. Responsible for Nginx architecture, SSR logic, and code quality.
+## Team information
 
+Ahmed Diler - Principal Developer
+Maarten Hoff - Technical Lead
+Masha Mashenkova - Product Owner
+Pavlos Vasilantonakis - Project Manager
+Grace Mullin - Manager of Development
 
-* **[Member 3]**: **Project Manager / Developer**. Responsible for task tracking and the Axum backend.
-
-
-* **[Member 4]**: **Developer**. Responsible for AI/RAG integration and frontend components.
-
-
-
-## **IV. Project Management**
+## **IV. Project management**
 
 Explain your workflow.
 
