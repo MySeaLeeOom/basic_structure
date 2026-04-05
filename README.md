@@ -128,6 +128,7 @@ Calculate your path to the 14-point minimum.
 | Frameworks (Vue + Axum) | Web | Major | 2 | 
 | Microservices | DevOps | Major | 2 |
 | Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
+| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
 | RAG System | AI | Major | 2 |
 | LLM System Interface | AI | Major | 2 |
 | Web-socket communication | Web | Major | 2 |
@@ -137,21 +138,15 @@ Calculate your path to the 14-point minimum.
 | Support for rtl | Accesibility | Minor | 1 |
 | Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
 | OAuth Authentication | User Management | Minor | 1 |
-|ORM system | Web | Minor | 1 |
 | **Total estimated** | | | **18** |
 
+[other possibles - ORM ]
 ## **IX. Individual contributions**
-
 Frameworks/Microservices: Ahmed, Maarten, Masha
-
 Web-Sockets: Ahmed, Maarten, Masha, Pavlos
-
 Authentication: Masha
-
 Monitoring/Browser Testing: Pavlos
-
 RAG/LLM: Maarten, Ahmed
-
 Localization: Grace
 
 ## **X. AI usage**
