@@ -11,12 +11,12 @@ import * as argon2 from "argon2";
 export const RegistrationSchema = Type.Object({
 	loginName: Type.String({ minLength: 3 }),
 	email: Type.String({ format: "email" }),
-	password: Type.String({ minLength: 12 }),
+	password: Type.String({ minLength: 8 }),
 });
 
 export const LoginSchema = Type.Object({
 	identifier: Type.String({ minLength: 3 }), // Can't be shorter than the shortest loginName
-	password: Type.String({ minLength: 12 }), // Must match your registration rules
+	password: Type.String({ minLength: 8 }), // Must match your registration rules
 });
 
 // this makes a specific Type for request.body that will
