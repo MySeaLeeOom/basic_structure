@@ -11,13 +11,12 @@ Apply consistent SidebarLayout to all views and add header navigation. Demonstra
 
 ### 1. SidebarLayout Applied to All Views
 
-Previously only NotesView used SidebarLayout. Now all views share the same layout:
+Previously only NotesView used SidebarLayout. Now core views share the same layout:
 
 | View | Sidebar Content |
 |------|-----------------|
 | HomeView | Dashboard placeholder |
 | NotesView | Notes list + create button |
-| MindmapView | Mindmaps placeholder |
 
 **Benefit:** Any enhancement to SidebarLayout (collapse toggle, resize, keyboard shortcuts) now applies to all views automatically.
 
@@ -27,7 +26,7 @@ Added nav links to Header component using RouterLink:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Mycelium          [Home] [Notes] [Mindmap]             │
+│  Mycelium              [Home] [Notes]                   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -41,7 +40,6 @@ Added nav links to Header component using RouterLink:
 | File | Action | Description |
 |------|--------|-------------|
 | `src/views/HomeView.vue` | Modify | Wrap content in SidebarLayout |
-| `src/views/MindmapView.vue` | Modify | Wrap content in SidebarLayout |
 | `src/components/Header.vue` | Modify | Add RouterLink navigation |
 
 ## Layout Wrapper vs @apply Discussion
