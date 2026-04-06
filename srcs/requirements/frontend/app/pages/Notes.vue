@@ -18,6 +18,7 @@ const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
 
 // TODO: fetch from GET /api/users (returns [{ name: string, fullName: string }])
+// TODO: fetch from GET /api/users (returns [{ name: string, fullName: string }])
 const dummyUsers = [
 	{ name: 'aydiler', fullName: 'Ahmet Diler' },
 	{ name: 'catdev42', fullName: 'Masha Yakoven' },
@@ -205,7 +206,7 @@ onServerPrefetch(async () => {
 				</template>
 			</Listbox>
 
-			<!-- Shared documents (placeholder: mirrors own notes until backend is wired) -->
+			<!-- TODO: fetch from GET /api/notes/shared (returns same shape as GET /api/notes) -->
 			<div class="flex items-center justify-between mt-4 mb-1 px-2">
 				<h2 class="section-title !mb-0">Shared with me</h2>
 			</div>
