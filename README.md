@@ -158,7 +158,8 @@ RAG/LLM: Maarten, Ahmed
 Localization: Grace
 
 ## **X. AI usage**
-Pavlos: 
+Pavlos: Used AI to research the pros and cons of different stacks, for detecting code smells, for changes that needed multi-file editing to make sure all contact points were adequately worked on and for the creation of tutorials and learning material for the project
+Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
 
 ## **Future Features**
 What in-theory would be an obvious next step:
