@@ -14,7 +14,7 @@ MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
 
-all: cleanv up
+all: up
 
 getuser:
 	@touch srcs/.env
@@ -27,14 +27,14 @@ up: getuser
 live: getuser
 	$(COMPOSE) up --build
 
-down: getuser
+down: getuser cleanv
 	$(COMPOSE) down $(FLAGS)
 
-clean: getuser 
+clean: getuser cleanv
 	$(COMPOSE) down --rmi all $(FLAGS)
 
 # Removes all artifacts and dev containers, does not remove the databases
-cleanv: clean 
+cleanv: 
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
 	@echo "Cleaning frontend build cache..."
