@@ -42,6 +42,10 @@ const navItems = computed(() => [
   { to: '/notes', label: t('nav.notes') },
   { to: '/mindmap', label: t('nav.mindmap') },
 ]);
+const navItems = [
+  { to: '/home', label: 'Home' },
+  { to: '/notes', label: 'Notes' },
+];
 
 async function handleLogout() {
   await authStore.logout();
