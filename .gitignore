@@ -41,6 +41,3 @@ dist
 target
 .DS_Store
 .pnpm-store
-
-grafana-prometheus-review.md
-.pnpm-store
