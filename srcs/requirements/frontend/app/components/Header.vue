@@ -8,7 +8,6 @@ const authStore = useAuthStore();
 const navItems = [
   { to: '/home', label: 'Home' },
   { to: '/notes', label: 'Notes' },
-  { to: '/mindmap', label: 'Mindmap' },
 ];
 
 async function handleLogout() {

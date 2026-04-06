@@ -56,7 +56,7 @@
 	font-weight: 700;
 	letter-spacing: -0.02em;
 	line-height: 1.2;
-	color: var(--p-surface-0);
+	color: var(--p-text-color);
 	background: transparent;
 	border: none;
 	outline: none;
@@ -101,7 +101,7 @@
 	cursor: text;
 	line-height: 1.7;
 	font-size: 1rem;
-	color: var(--p-surface-200);
+	color: var(--p-text-color);
 }
 
 .tiptap-editor .tiptap h1 {
@@ -109,7 +109,7 @@
 	font-weight: 700;
 	margin-top: 2rem;
 	margin-bottom: 0.5rem;
-	color: var(--p-surface-0);
+	color: var(--p-surface-800);
 }
 
 .tiptap-editor .tiptap h2 {
@@ -117,7 +117,7 @@
 	font-weight: 600;
 	margin-top: 1.5rem;
 	margin-bottom: 0.5rem;
-	color: var(--p-surface-50);
+	color: var(--p-surface-700);
 }
 
 .tiptap-editor .tiptap h3 {
@@ -125,7 +125,7 @@
 	font-weight: 600;
 	margin-top: 1.25rem;
 	margin-bottom: 0.5rem;
-	color: var(--p-surface-100);
+	color: var(--p-surface-600);
 }
 
 .tiptap-editor .tiptap p {
@@ -150,10 +150,35 @@
 }
 
 .tiptap-editor .tiptap blockquote {
-	border-left: 3px solid var(--p-surface-700);
+	border-left: 3px solid var(--p-surface-400);
 	padding-left: 1rem;
-	color: var(--p-surface-400);
+	color: var(--p-text-muted-color);
 	margin: 1rem 0;
+}
+
+.dark .editor-title {
+	color: var(--p-surface-0);
+}
+
+.dark .tiptap-editor .tiptap {
+	color: var(--p-surface-200);
+}
+
+.dark .tiptap-editor .tiptap h1 {
+	color: var(--p-surface-0);
+}
+
+.dark .tiptap-editor .tiptap h2 {
+	color: var(--p-surface-50);
+}
+
+.dark .tiptap-editor .tiptap h3 {
+	color: var(--p-surface-100);
+}
+
+.dark .tiptap-editor .tiptap blockquote {
+	border-left-color: var(--p-surface-700);
+	color: var(--p-surface-400);
 }
 
 .tiptap-editor .tiptap hr {
