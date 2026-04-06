@@ -59,7 +59,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		};
 	});
 
-	/* 
+	/*
 	 * GET /resolve: Look up a user by exact email or loginName.
 	 * Used by the Frontend to verify identity before creating a share.
 	 */
@@ -76,12 +76,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 				imageURL: schema.users.imageURL,
 			})
 			.from(schema.users)
-			.where(
-				or(
-					eq(schema.users.email, identifier),
-					eq(schema.users.loginName, identifier)
-				)
-			)
+			.where(or(eq(schema.users.email, identifier), eq(schema.users.loginName, identifier)))
 			.limit(1);
 
 		if (!user) {
@@ -89,6 +84,24 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		}
 
 		return { user: user };
+	});
+
+	/*
+	 * GET /users: Returns all registered users (id + loginName).
+	 * Used by the frontend share dialog to list/search users.
+	 */
+	server.get("/users", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const users = await server.db
+			.select({
+				id: schema.users.id,
+				loginName: schema.users.loginName,
+			})
+			.from(schema.users);
+
+		return { users };
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
