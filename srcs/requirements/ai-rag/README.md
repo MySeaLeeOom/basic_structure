@@ -1,14 +1,13 @@
 # AI RAG Service
-The orchestrator for Retrieval-Augmented Generation.
+Orchestrator for factual note retrieval.
 
 ## Workflow
-1. Receives user query.
-2. Embeds query and searches Vector DB for top matches.
-3. Injects retrieved notes into a system prompt.
-4. Proxies request to the LLM Gateway.
-5. Streams response back via SSE.
+1. Receives user query and embeds it via Ollama.
+2. **Hybrid Search:** 
+   - Retrieves Top 50 candidates from Vector DB.
+   - Re-ranks results in Python using keyword matching bonus.
+3. **Context Construction:** Injects Top 25 fragments into a specialized technical prompt.
+4. **Proxy:** Forwards orchestrated request to LLM Gateway.
 
 ## Tech
-- FastAPI
-- httpx
-- pgvector-python
+- FastAPI, httpx (Async streaming), pgvector-python

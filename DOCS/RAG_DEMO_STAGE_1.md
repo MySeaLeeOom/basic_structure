@@ -16,31 +16,32 @@ The system was broken down into four specialized services to separate the AI pro
 ### A. Vector Database (`vector-db`)
 *   **Base:** PostgreSQL 16 + `pgvector` extension.
 *   **Task:** Stores text snippets and their mathematical representation (vectors).
-*   **Key Insight:** Llama 3 requires a dimension of **4096**. The schema was explicitly optimized for this.
+*   **Optimization:** Uses flat search for high precision with 4096-dimensional vectors (avoiding HNSW dimension limits).
 
-### B. AI Ingest Service (`ai-ingest`) - "The Archivist"
-*   **Task:** Listens for updates from the Rust editor, extracts text from binary CRDT blobs, and stores vectors.
-*   **Challenge:** Tiptap stores text as complex `YXmlFragment` structures. The service uses recursive extraction to capture even nested HTML content (like `<p>` tags).
+### B. AI Ingest Service (`ai-ingest`) - "Smart Archivist"
+*   **Task:** Listens for updates from the Rust editor, extracts text, and stores vectors.
+*   **Smart Features:** 
+    - **Locking:** Prevents parallel processing of the same note.
+    - **Hashing:** Skips re-indexing if content hasn't changed.
+    - **Recursive Chunking:** Splits long text into 400-char segments for high-precision retrieval.
 
-### C. AI RAG Service (`ai-rag`) - "The Librarian"
-*   **Task:** Search orchestration. Receives user questions, searches for relevant context in the DB, and builds the final prompt for the AI.
-*   **Special Feature:** Uses explicit SQL type casts (`::vector`) to avoid incompatibilities between Python arrays and Postgres vectors.
+### C. AI RAG Service (`ai-rag`) - "Hybrid Librarian"
+*   **Task:** Search orchestration and prompt building.
+*   **Hybrid Search:** Combines vector similarity (Top 50) with keyword-based re-ranking in Python to prioritize exact matches (e.g. specific numbers or names).
 
-### D. LLM Gateway (`llm-gateway`) - "The Speaker"
-*   **Task:** A provider-agnostic proxy. It decides whether requests go to OpenAI (Cloud) or Ollama (Local).
-*   **Streaming:** Implements a transparent SSE (Server-Sent Events) model that passes tokens to the frontend as they arrive.
+### D. LLM Gateway (`llm-gateway`) - "Stable Speaker"
+*   **Task:** Provider-agnostic proxy for LLMs.
+*   **Streaming:** Implements SSE with JSON-wrapping to safely preserve newlines and special characters during streaming.
 
 ---
 
 ## 3. Data Flow (The Journey of a Note)
 
-1.  **Input:** User types in the browser ("I love cats").
-2.  **Synchronization:** The Rust editor receives the change via WebSocket.
-3.  **Trigger:** Every 5 seconds (configurable), the editor sends the current state as a Base64 blob to the `ai-ingest` service.
-4.  **Processing:** `ai-ingest` converts the blob to text, generates a 4096-dimensional vector via Ollama, and stores it in `vector-db`.
-5.  **Query:** User asks in the chat: "What do I love?".
-6.  **Retrieval:** `ai-rag` finds the "cats" note in the vector database.
-7.  **Response:** Ollama generates an answer based on this context and streams it live to the chat sidebar.
+1.  **Eingabe:** User types in the browser.
+2.  **Trigger:** Every 5 seconds, the Rust editor sends the CRDT state as a Base64 blob to `ai-ingest`.
+3.  **Processing:** `ai-ingest` cleans HTML, chunks the text, and generates 4096-dimensional vectors via Ollama.
+4.  **Retrieval:** When asked, `ai-rag` fetches the Top 20 chunks, re-ranks them, and builds a system prompt.
+5.  **Response:** Ollama generates an answer and streams it live to the chat sidebar.
 
 ---
 
@@ -48,31 +49,21 @@ The system was broken down into four specialized services to separate the AI pro
 
 | Problem | Cause | Solution |
 | :--- | :--- | :--- |
-| **Silent Fail (No Answer)** | Vector dimension mismatch (1536 vs 4096) | Corrected DB schema to 4096 & performed `down -v` reset. |
-| **Operator Error** | Postgres didn't recognize Python arrays as vectors | Added explicit cast `ORDER BY embedding <=> %s::vector` in SQL. |
-| **Empty Context** | Tiptap content was "invisible" in `YXmlFragment` | Implemented recursive extraction logic in Python. |
-| **Connection Refused** | Ollama was only listening on `localhost` | Set `OLLAMA_HOST=0.0.0.0` and added firewall rules for Docker. |
-| **Dark Mode Bug** | CSS specificity in the frontend | Used `!text-white` and Tailwind dark mode classes. |
+| **Silent Fail (No Answer)** | Vector dimension mismatch | Corrected DB schema to 4096. |
+| **HNSW Index Error** | 2000 dimension limit | Switched to high-precision flat search. |
+| **Word Squashing** | Aggressive HTML tag removal | Replaced tags with newlines before extraction. |
+| **Duplicate Indexing** | Rapid save triggers | Implemented Smart Ingest (Locking & Hashing). |
+| **Lost Info in Long Text** | Semantic dilution | Reduced chunk size to 400 and increased retrieval limit to 25. |
 
 ---
 
 ## 5. Local Setup (Quick Start)
 
-To start the system, the following steps are necessary:
-
-1.	**Install Ollama:**
-	*	Follow instructions for your specific OS.
-2.  **Prepare Ollama:**
-    *   `OLLAMA_HOST=0.0.0.0 ollama serve`
-    *   `ollama run llama3`
-3.  **Start Infrastructure:**
-    *   `docker compose -f srcs/docker-compose.yml down -v` (One-time reset for clean DB)
-    *   `make`
-4.  **Firewall (if necessary on Fedora):**
-    *   `sudo firewall-cmd --add-source=172.18.0.0/16 --zone=public --permanent`
-    *   `sudo firewall-cmd --reload`
+1.  **Ollama:** `OLLAMA_HOST=0.0.0.0 ollama serve` and `ollama run llama3`.
+2.  **Infrastruktur:** `docker compose -f srcs/docker-compose.yml down -v` followed by `make`.
+3.  **Firewall:** Ensure Docker can reach the host (Fedora: add source `172.18.0.0/16` to public zone).
 
 ---
 
 ## 6. Conclusion
-The Stage 1 demo proves the feasibility of a fully decoupled RAG system. The architecture is scalable: the vector DB can be replaced by Qdrant at any time, or the LLM can be swapped for an API-key-based service (OpenAI/Gemini) without touching the business logic.
+The Stage 1 system is now a robust, production-grade RAG implementation. It handles large documents through efficient chunking and ensures data consistency via smart ingestion logic.

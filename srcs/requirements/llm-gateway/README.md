@@ -1,11 +1,8 @@
 # LLM Gateway
-Provider-agnostic proxy for LLMs.
+High-stability proxy for LLM communication.
 
-## Purpose
-- Standardizes API calls between different providers.
-- Manages connection stability and SSE streaming.
-- Decouples logic from provider-specific SDKs.
-
-## Setup
-- Default: Local Ollama instance.
-- Transparent streaming pass-through.
+## Features
+- **Provider Agnostic:** Easy switching between local (Ollama) and cloud (OpenAI).
+- **Format Stability:** Wraps token stream in JSON to preserve special characters (newlines, quotes).
+- **Diagnostics:** On-startup connectivity check to target host.
+- **Pinned Dependencies:** Fixed versions for `openai` and `httpx` to avoid common library conflicts.
