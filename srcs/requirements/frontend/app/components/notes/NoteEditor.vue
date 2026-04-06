@@ -4,8 +4,6 @@ import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
-import Card from "@/volt/Card.vue";
-import InputText from "@/volt/InputText.vue";
 import { useCollaboration } from "@/composables/useCollaboration";
 import { useNoteStore } from "@/stores/noteStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -52,23 +50,20 @@ watchEffect((onCleanup) => {
 </script>
 
 <template>
-  <Card pt:root:class="card-document">
-    <template #content>
-      <div class="flex flex-col h-full min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto">
-          <InputText
-            :model-value="titleText"
-            @update:model-value="updateTitle"
-            placeholder="Title"
-            fluid
-            class="mb-4"
-          />
-          <EditorContent :editor="editor" class="tiptap-editor prose dark:prose-invert max-w-none" />
-        </div>
-        <span v-if="connectedUsers > 1" class="text-sm text-gray-500 pt-2">
-          {{ connectedUsers }} users editing
-        </span>
-      </div>
-    </template>
-  </Card>
+  <div class="editor-surface">
+    <div class="editor-scroll">
+      <input
+        ref="titleInput"
+        :value="titleText"
+        @input="updateTitle(($event.target as HTMLInputElement).value)"
+        placeholder="Untitled"
+        class="editor-title"
+      />
+      <EditorContent :editor="editor" class="tiptap-editor" />
+    </div>
+    <div v-if="connectedUsers > 1" class="editor-status">
+      <span class="editor-status-dot" />
+      {{ connectedUsers }} collaborators
+    </div>
+  </div>
 </template>
