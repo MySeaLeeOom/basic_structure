@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
@@ -84,6 +85,22 @@ function sendInvite() {
 	showInviteDialog.value = false;
 	inviteNoteId.value = null;
 }
+
+// Shared notes selection (separate from own notes)
+const selectedSharedNote = ref<any>(null);
+
+// When selecting in one list, deselect the other
+function selectOwnNote(note: any) {
+	noteStore.selectedNote = note;
+	selectedSharedNote.value = null;
+}
+
+function selectSharedNote(note: any) {
+	selectedSharedNote.value = note;
+	noteStore.selectedNote = null;
+}
+
+const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
@@ -179,7 +196,7 @@ onServerPrefetch(async () => {
 				</template>
 			</Listbox>
 
-			<!-- TODO: fetch from GET /api/notes/shared (returns same shape as GET /api/notes) -->
+			<!-- Shared documents (placeholder: mirrors own notes until backend is wired) -->
 			<div class="flex items-center justify-between mt-4 mb-1 px-2">
 				<h2 class="section-title !mb-0">Shared with me</h2>
 			</div>
