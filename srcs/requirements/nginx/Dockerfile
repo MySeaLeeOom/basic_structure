@@ -14,5 +14,6 @@ COPY conf/index.html /var/www/html/
 
 EXPOSE 80 443
 EXPOSE 80 81 8088
+EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]
