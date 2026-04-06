@@ -5,6 +5,7 @@ import fastifyOauth2, { type OAuth2Namespace } from "@fastify/oauth2";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import * as schema from "./db/schema"; // DB tables
+import { prometheusRegister } from "./metrics";
 import { authRoutes } from "./routes/auth"; // all routes
 import { sessionRoutes } from "./routes/sessions"; // verification logic
 import { userManagementRoutes } from "./routes/user"; // profile logic
@@ -43,6 +44,11 @@ export const buildServer = async (config: AppConfig): Promise<FastifyInstance> =
             },
         },
         trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
+    });
+
+    server.get("/metrics", async (_request, reply) => {
+        reply.header("Content-Type", prometheusRegister.contentType);
+        return reply.send(await prometheusRegister.metrics());
     });
 
     // POSTGRES
