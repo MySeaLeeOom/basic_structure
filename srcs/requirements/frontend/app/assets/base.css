@@ -6,10 +6,18 @@
 /* Volt component overrides */
 @layer components {
 	.card-document {
-		/* @apply w-full max-w-3xl min-h-[800px]; */
 		@apply w-full max-w-2xl;
-		/* flex flex-col */
 		height: calc(100vh - 120px);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.card-document .p-card-body,
+	.card-document .p-card-content {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.section-title {
@@ -39,17 +47,20 @@
 .tiptap-editor {
 	display: flex;
 	flex-direction: column;
+	flex: 1;
+	min-height: 0;
 }
 
 .tiptap-editor .tiptap {
 	outline: none;
 	padding: 12px;
 	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
 	cursor: text;
 	line-height: 1.35;
 	border: 1px solid var(--p-content-border-color, #d1d5db);
 	border-radius: var(--p-content-border-radius, 6px);
-	min-height: 200px;
 }
 
 .tiptap-editor .tiptap > :first-child {
