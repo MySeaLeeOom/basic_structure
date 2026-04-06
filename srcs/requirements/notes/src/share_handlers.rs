@@ -105,16 +105,16 @@ pub async fn note_collaborators(State(pool): State<PgPool>, Path(note_id): Path<
     Ok(Json(note_shares))
 }
 
-pub async fn create_share(State(pool): State<PgPool>, Path(note_id): Path<Uuid>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
+pub async fn create_share(State(pool): State<PgPool>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
     let requesting_user_id = get_user_id(&headers)?;
-    tracing::debug!("Attempting to create a share for note {} by user {}", note_id, requesting_user_id);
+    tracing::debug!("Attempting to create a share for note {} by user {}", payload.note_id, requesting_user_id);
 
     let note_owner_id = sqlx::query_scalar::<_, Uuid>("SELECT owner_id FROM notes WHERE id = $1")
-        .bind(note_id)
+        .bind(payload.note_id)
         .fetch_optional(&pool)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to query note ownership for note {}: {}", note_id, e);
+            tracing::error!("Failed to query note ownership for note {}: {}", payload.note_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -134,7 +134,7 @@ pub async fn create_share(State(pool): State<PgPool>, Path(note_id): Path<Uuid>,
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, note_id, guest_id, role, created_at, updated_at"
     )
-    .bind(note_id)
+    .bind(payload.note_id)
     .bind(payload.guest_id)
     .bind(payload.role)
     .bind(current_time)
