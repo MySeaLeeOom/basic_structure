@@ -13,8 +13,10 @@ onMounted(() => {
 
 <template>
 	<!-- Accessibility -->
-	<NuxtRouteAnnouncer /> 
-	<Header />
-    <NuxtPage />
+	<NuxtRouteAnnouncer />
+	<div class="flex flex-col h-screen overflow-hidden">
+		<Header />
+		<NuxtPage class="flex-1 min-h-0" />
+	</div>
 	<VoltConfirmDialog />
 </template>
