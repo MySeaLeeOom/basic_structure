@@ -152,10 +152,15 @@ Pavlos:
 
 ## **Future Features**
 What in-theory would be an obvious next step:
+
     user management with accounts
+    
     extended dashboards
+    
     sentiment analysis and semantic tagging
+    
     friends and networks (?)
+    
     backlinks
 
 ---
