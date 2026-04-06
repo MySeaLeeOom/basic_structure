@@ -43,10 +43,13 @@
 
 .tiptap-editor .tiptap {
 	outline: none;
-	padding: 0;
+	padding: 12px;
 	flex: 1;
 	cursor: text;
 	line-height: 1.35;
+	border: 1px solid var(--p-content-border-color, #d1d5db);
+	border-radius: var(--p-content-border-radius, 6px);
+	min-height: 200px;
 }
 
 .tiptap-editor .tiptap > :first-child {
