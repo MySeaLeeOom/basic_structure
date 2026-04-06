@@ -71,9 +71,13 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 ## Team information
 
 Ahmed Diler - Principal Developer
+
 Maarten Hoff - Technical Lead
+
 Masha Mashenkova - Product Owner
+
 Pavlos Vasilantonakis - Project Manager
+
 Grace Mullin - Manager of Development
 
 ## **IV. Project management**
