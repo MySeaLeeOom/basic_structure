@@ -6,7 +6,7 @@
 /* Volt component overrides */
 @layer components {
 	.card-document {
-		@apply w-full max-w-2xl h-full min-h-0;
+		@apply w-full max-w-3xl h-full min-h-0;
 	}
 
 	.section-title {
