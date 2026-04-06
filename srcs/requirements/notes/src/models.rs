@@ -2,14 +2,16 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
+// --- OUTPUT MODELS (The objects you receive from API) ---
+
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct Note {
 	pub id: Uuid,
-    pub title: String,
-    pub owner_id: Uuid,
-    pub owner_url: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+	pub title: String,
+	pub owner_id: Uuid,
+	pub owner_url: Option<String>,
+	pub created_at: DateTime<Utc>,
+	pub updated_at: DateTime<Utc>,
 }
 
 // Role Enum
@@ -21,38 +23,54 @@ pub enum Role {
     Owner,
 }
 
-// table schema
+// Returned when a share is created
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct Share {
-	pub id: Uuid,
-    pub note_id: Uuid,
-    pub url_path: String,
-    pub guest_id: Option<Uuid>,
-    pub role: Role,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+	pub id: Uuid,                    // This is the share_id used for access and revoke
+	pub note_id: Uuid,
+	pub guest_id: Option<Uuid>,      // null = public link
+	pub role: Role,                  // "View" or "Edit"
+	pub created_at: DateTime<Utc>,
+	pub updated_at: DateTime<Utc>,
 }
 
-// Combined structure for displaying shared note management
+// Returned for owner: list of all shares on a note or across all notes
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct ManagedShareItem {
-    pub share_id: Uuid,
-    pub note_id: Uuid,
-    pub note_title: String,
-    pub url_path: String,
-    pub guest_id: Option<Uuid>,
-    pub role: Role,
-    pub created_at: DateTime<Utc>,
+	pub share_id: Uuid,              // OWNER: use for /collab/access/{share_id} and /collab/revoke/{share_id}
+	pub note_id: Uuid,
+	pub note_title: String,
+	pub guest_id: Option<Uuid>,
+	pub role: Role,
+	pub created_at: DateTime<Utc>,
 }
 
-// what we need in the request
+// Returned for guest: list of notes shared with me
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct ReceivedShareItem {
+	pub share_id: Uuid,              // GUEST: use for /collab/access/{share_id}
+	pub note_id: Uuid,
+	pub note_title: String,
+	pub role: Role,
+	pub owner_id: Uuid,              // shows who shared the note with the person
+	pub created_at: DateTime<Utc>,
+}
+
+// --- INPUT PAYLOADS (The objects you send to the api) ---
+
+// Payload for: PUT /api/notes/{id}
+#[derive(Deserialize)]
+pub struct EditTitlePayload {
+	pub title: String,
+}
+
+// Payload for: POST /api/notes/collab/
 #[derive(Deserialize)]
 pub struct ShareNotePayload {
 	pub note_id: Uuid,
-    pub guest_id: Option<Uuid>,
-    pub role: Role,
+	pub guest_id: Option<Uuid>,      // null for public link
+	pub role: Role,                  // "View" or "Edit"
 }
-
 
 #[derive(Deserialize)]
 pub struct CreateNote {

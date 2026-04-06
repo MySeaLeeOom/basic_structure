@@ -4,7 +4,7 @@ mod share_handlers;
 mod slug_handlers;
 
 use axum::{
-	routing::get,
+	routing::{get, post, delete},
 	Router,
 };
 use sqlx::PgPool;
@@ -26,9 +26,12 @@ async fn main() {
 		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
 		.route("/api/notes/u/{slug}", get(slug_handlers::get_note_by_slug))
-		.route("/api/notes/shared/", get(share_handlers::get_all_shared_notes))
-		.route("/api/notes/shared/{share_token}", get(share_handlers::get_shared_note).post(share_handlers::share_note).delete(share_handlers::remove_note_share))
-		.route("/api/shares/managed", get(share_handlers::get_all_managed_shares))
+		.route("/api/notes/collab/received", get(share_handlers::shared_with_me))      // notes others shared with me
+		.route("/api/notes/collab/", post(share_handlers::create_share))               // create a share (note_id in body)
+		.route("/api/notes/collab/access/{share_id}", get(share_handlers::open_share)) // open a note via share link
+		.route("/api/notes/collab/created", get(share_handlers::my_shares))            // all shares I created
+		.route("/api/notes/collab/{note_id}", get(share_handlers::note_collaborators)) // list collaborators on a specific note
+		.route("/api/notes/collab/revoke/{share_id}", delete(share_handlers::revoke_share)) // revoke a share
 		.with_state(db_pool);
 
 	let port = std::env::var("PORT").unwrap_or_else(|_| "3003".to_string());

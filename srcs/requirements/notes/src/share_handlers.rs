@@ -1,20 +1,22 @@
 use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::models::{Note, Share, ShareNotePayload, ManagedShareItem};
+use crate::models::{Note, Share, ShareNotePayload, ManagedShareItem, ReceivedShareItem};
 use chrono::Utc;
 
 // We reuse the get_user_id function from handlers.rs
 use crate::handlers::get_user_id;
 
 // Fetch all notes that are shared with the specific user
-pub async fn get_all_shared_notes(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<Note>>, StatusCode> {
+pub async fn shared_with_me(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<ReceivedShareItem>>, StatusCode> {
 	let user_id = get_user_id(&headers)?;
 	tracing::debug!("Fetching all notes shared with user {}", user_id);
-	let shared_notes = sqlx::query_as::<_, Note>("SELECT notes.id, notes.title, notes.owner_id, notes.owner_url, notes.created_at, notes.updated_at
-		FROM notes
-		INNER JOIN share ON notes.id = share.note_id
-		WHERE share.guest_id = $1")
+	let shared_notes = sqlx::query_as::<_, ReceivedShareItem>(
+		"SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.role, n.owner_id, s.created_at
+		 FROM notes n
+		 INNER JOIN share s ON n.id = s.note_id
+		 WHERE s.guest_id = $1
+		 ORDER BY s.created_at DESC")
 		.bind(user_id)
 		.fetch_all(&pool)
 		.await
@@ -27,27 +29,26 @@ pub async fn get_all_shared_notes(State(pool): State<PgPool>, headers: HeaderMap
 }
 
 // Fetch a single note that has been shared with the user
-pub async fn get_shared_note(State(pool): State<PgPool>, Path(share_token): Path<String>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
+pub async fn open_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
     let user_id = get_user_id(&headers)?;
-    tracing::debug!("Fetching shared note via token '{}' for user {}", share_token, user_id);
+    tracing::debug!("Fetching shared note via share {} for user {}", share_id, user_id);
     
-    // A note is accessible at a share endpoint if:
+    // A note is accessible if:
     // The user is the owner of the note.
     // The user is the designated guest in a share entry.
     // The share entry is public (guest_id is NULL).
-    // We search by url_path (the secret token) instead of the raw Note ID.
     let note = sqlx::query_as::<_, Note>(
         "SELECT n.id, n.title, n.owner_id, n.owner_url, n.created_at, n.updated_at 
          FROM notes n 
          INNER JOIN share s ON n.id = s.note_id 
-         WHERE s.url_path = $1 AND (n.owner_id = $2 OR s.guest_id = $2 OR s.guest_id IS NULL)"
+         WHERE s.id = $1 AND (n.owner_id = $2 OR s.guest_id = $2 OR s.guest_id IS NULL)"
     )
-    .bind(&share_token)
+    .bind(share_id)
     .bind(user_id)
     .fetch_optional(&pool)
     .await
     .map_err(|e| {
-        tracing::error!("Failed to fetch shared note via token {}: {}", share_token, e);
+        tracing::error!("Failed to fetch shared note via share {}: {}", share_id, e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?; 
 
@@ -58,12 +59,12 @@ pub async fn get_shared_note(State(pool): State<PgPool>, Path(share_token): Path
 }
 
 // Fetch every single share linking to any note owned by this user
-pub async fn get_all_managed_shares(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
+pub async fn my_shares(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
     let owner_id = get_user_id(&headers)?;
     tracing::debug!("Fetching all shares managed by user {}", owner_id);
 
     let managed_shares = sqlx::query_as::<_, ManagedShareItem>(
-        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.url_path, s.guest_id, s.role, s.created_at
+        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.role, s.created_at
          FROM share s
          INNER JOIN notes n ON s.note_id = n.id
          WHERE n.owner_id = $1
@@ -80,16 +81,40 @@ pub async fn get_all_managed_shares(State(pool): State<PgPool>, headers: HeaderM
     Ok(Json(managed_shares))
 }
 
-pub async fn share_note(State(pool): State<PgPool>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
+// Fetch all shares associated with a specific note ID
+pub async fn note_collaborators(State(pool): State<PgPool>, Path(note_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
+    let owner_id = get_user_id(&headers)?;
+    tracing::debug!("Fetching all shares for note {} by user {}", note_id, owner_id);
+
+    let note_shares = sqlx::query_as::<_, ManagedShareItem>(
+        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.role, s.created_at
+         FROM share s
+         INNER JOIN notes n ON s.note_id = n.id
+         WHERE n.id = $1 AND n.owner_id = $2
+         ORDER BY s.created_at DESC"
+    )
+    .bind(note_id)
+    .bind(owner_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to fetch shares for note {}: {}", note_id, e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(note_shares))
+}
+
+pub async fn create_share(State(pool): State<PgPool>, Path(note_id): Path<Uuid>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
     let requesting_user_id = get_user_id(&headers)?;
-    tracing::debug!("Attempting to create a share for note {} by user {}", payload.note_id, requesting_user_id);
+    tracing::debug!("Attempting to create a share for note {} by user {}", note_id, requesting_user_id);
 
     let note_owner_id = sqlx::query_scalar::<_, Uuid>("SELECT owner_id FROM notes WHERE id = $1")
-        .bind(payload.note_id)
+        .bind(note_id)
         .fetch_optional(&pool)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to query note ownership for note {}: {}", payload.note_id, e);
+            tracing::error!("Failed to query note ownership for note {}: {}", note_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -102,18 +127,14 @@ pub async fn share_note(State(pool): State<PgPool>, headers: HeaderMap, Json(pay
         return Err(StatusCode::FORBIDDEN);
     }
 
-    let share_id = Uuid::new_v4();
-    let share_token = Uuid::new_v4().to_string();
     let current_time = Utc::now();
 
     let new_share = sqlx::query_as::<_, Share>(
-        "INSERT INTO share (id, note_id, url_path, guest_id, role, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, note_id, url_path, guest_id, role, created_at, updated_at"
+        "INSERT INTO share (note_id, guest_id, role, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, note_id, guest_id, role, created_at, updated_at"
     )
-    .bind(share_id)
-    .bind(payload.note_id)
-    .bind(&share_token)
+    .bind(note_id)
     .bind(payload.guest_id)
     .bind(payload.role)
     .bind(current_time)
@@ -129,17 +150,17 @@ pub async fn share_note(State(pool): State<PgPool>, headers: HeaderMap, Json(pay
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    tracing::info!("Share {} created for note {}. Guest ID: {:?}, Role: {:?}, URL Path: {}",
-                   new_share.id, new_share.note_id, new_share.guest_id, new_share.role, new_share.url_path);
+    tracing::info!("Share {} created for note {}. Guest ID: {:?}, Role: {:?}",
+                   new_share.id, new_share.note_id, new_share.guest_id, new_share.role);
 
     Ok(Json(new_share))
 }
 
-pub async fn remove_note_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
+pub async fn revoke_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
     let requesting_user_id = get_user_id(&headers)?;
-    tracing::info!("Attempting to delete share {} by user {}", share_id, requesting_user_id);
+    tracing::info!("Attempting to revoke share {} by user {}", share_id, requesting_user_id);
 
-    // Ensure the person attempting to delete the share is the structural owner of the note
+    // Ensure the person attempting to revoke the share is the owner of the note
     let result = sqlx::query(
         "DELETE FROM share 
          USING notes 
@@ -150,7 +171,7 @@ pub async fn remove_note_share(State(pool): State<PgPool>, Path(share_id): Path<
     .execute(&pool)
     .await
     .map_err(|e| {
-        tracing::error!("Failed to delete share {}: {}", share_id, e);
+        tracing::error!("Failed to revoke share {}: {}", share_id, e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
@@ -159,6 +180,6 @@ pub async fn remove_note_share(State(pool): State<PgPool>, Path(share_id): Path<
         return Err(StatusCode::NOT_FOUND);
     }
 
-    tracing::info!("Share {} deleted successfully", share_id);
+    tracing::info!("Share {} revoked successfully", share_id);
     Ok(StatusCode::NO_CONTENT)
 }
