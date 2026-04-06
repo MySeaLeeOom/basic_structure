@@ -2,6 +2,8 @@
 import { ref, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
+import Dialog from "@/volt/Dialog.vue";
+import InputText from "@/volt/InputText.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteEditor from "@/components/notes/NoteEditor.vue";
 import { useConfirm } from "primevue/useconfirm";
@@ -10,6 +12,24 @@ import { useNoteStore } from "@/stores/noteStore";
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
+
+const showInviteDialog = ref(false);
+const inviteNoteId = ref<string | null>(null);
+const inviteUsername = ref("");
+
+function openInvite(noteId: string) {
+	inviteNoteId.value = noteId;
+	showInviteDialog.value = true;
+}
+
+function sendInvite() {
+	if (!inviteUsername.value.trim() || !inviteNoteId.value) return;
+	// TODO: call backend invite endpoint
+	console.log(`Invite "${inviteUsername.value}" to note ${inviteNoteId.value}`);
+	inviteUsername.value = "";
+	showInviteDialog.value = false;
+	inviteNoteId.value = null;
+}
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
@@ -64,7 +84,7 @@ onServerPrefetch(async () => {
 <template>
 	<SidebarLayout>
 		<template #sidebar>
-			<div class="flex items-center justify-between mb-4">
+			<div class="flex items-center justify-between mb-1 px-2">
 				<h2 class="section-title !mb-0">Notes</h2>
 				<Button label="+" text rounded @click="handleCreate" />
 			</div>
@@ -72,18 +92,38 @@ onServerPrefetch(async () => {
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id">
+			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id"
+				pt:root:class="!border-0 !shadow-none !bg-transparent"
+				pt:list:class="!p-0 !gap-0.5"
+				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
-					<div class="flex items-center justify-between w-full group/item">
-						<span>{{ slotProps.option.title || "Untitled" }}</span>
-						<Button severity="danger" text rounded size="small"
-							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
-							@click.stop="confirmDelete(slotProps.option.id)">
-							<TimesIcon class="w-2.5 h-2.5" />
-						</Button>
+					<div class="flex items-center justify-between w-full group/item gap-1">
+						<span class="truncate text-sm">{{ slotProps.option.title || "Untitled" }}</span>
+						<div class="flex items-center shrink-0"
+							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+								:class="noteStore.selectedNote?.id === slotProps.option.id
+									? 'text-white hover:bg-white/20'
+									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'"
+								@click.stop="openInvite(slotProps.option.id)">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+									<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
+								</svg>
+							</button>
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+								:class="noteStore.selectedNote?.id === slotProps.option.id
+									? 'text-white hover:text-red-300 hover:bg-white/20'
+									: 'text-surface-400 hover:text-red-400 hover:bg-surface-600'"
+								@click.stop="confirmDelete(slotProps.option.id)">
+								<TimesIcon class="w-2.5 h-2.5" />
+							</button>
+						</div>
 					</div>
 				</template>
 			</Listbox>
+
 		</template>
 
 		<NoteEditor
@@ -91,5 +131,17 @@ onServerPrefetch(async () => {
 			:note-id="noteStore.selectedNote.id"
 		/>
 		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
+
+		<Dialog v-model:visible="showInviteDialog" header="Invite to collaborate" modal
+			pt:root:class="w-full max-w-md">
+			<div class="flex flex-col gap-3">
+				<label class="text-sm text-surface-500">Enter a username to invite</label>
+				<InputText v-model="inviteUsername" placeholder="Username" fluid
+					@keydown.enter="sendInvite" />
+			</div>
+			<template #footer>
+				<Button label="Send Invite" :disabled="!inviteUsername.trim()" @click="sendInvite" />
+			</template>
+		</Dialog>
 	</SidebarLayout>
 </template>
