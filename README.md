@@ -70,9 +70,13 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 ## Team information
 
 Ahmed Diler - Principal Developer
+
 Maarten Hoff - Technical Lead
+
 Masha Mashenkova - Product Owner
+
 Pavlos Vasilantonakis - Project Manager
+
 Grace Mullin - Manager of Development
 
 ## **IV. Project management**
@@ -140,11 +144,17 @@ Calculate your path to the 14-point minimum.
 | **Total estimated** | | | **18** |
 
 ## **IX. Individual contributions**
+
 Frameworks/Microservices: Ahmed, Maarten, Masha
+
 Web-Sockets: Ahmed, Maarten, Masha, Pavlos
+
 Authentication: Masha
+
 Monitoring/Browser Testing: Pavlos
+
 RAG/LLM: Maarten, Ahmed
+
 Localization: Grace
 
 ## **X. AI usage**
@@ -152,10 +162,15 @@ Pavlos:
 
 ## **Future Features**
 What in-theory would be an obvious next step:
+
     user management with accounts
+    
     extended dashboards
+    
     sentiment analysis and semantic tagging
+    
     friends and networks (?)
+    
     backlinks
 
 ---
