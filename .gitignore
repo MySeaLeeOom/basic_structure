@@ -36,3 +36,8 @@ CLAUDE.md
 copilot-instructions.md
 masha*.*
 crdt-migration-plan.md
+dist
+
+target
+.DS_Store
+.pnpm-store
