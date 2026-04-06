@@ -10,6 +10,7 @@ The Auth service manages identity, sessions, and the new User Resolution flow us
 | Method | Endpoint | Description | Payload / Query |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/resolve` | **[New]** Lookup user ID by email/login | `?identifier=masha` |
+| **GET** | `/users` | List all registered users (id + loginName) | N/A |
 
 | **GET** | `/me` | Get current user profile | N/A |
 | **GET**| `/verify` | Internal Nginx session check | N/A |
