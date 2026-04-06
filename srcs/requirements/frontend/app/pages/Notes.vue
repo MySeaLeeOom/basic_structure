@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
@@ -30,6 +30,22 @@ function sendInvite() {
 	showInviteDialog.value = false;
 	inviteNoteId.value = null;
 }
+
+// Shared notes selection (separate from own notes)
+const selectedSharedNote = ref<any>(null);
+
+// When selecting in one list, deselect the other
+function selectOwnNote(note: any) {
+	noteStore.selectedNote = note;
+	selectedSharedNote.value = null;
+}
+
+function selectSharedNote(note: any) {
+	selectedSharedNote.value = note;
+	noteStore.selectedNote = null;
+}
+
+const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
@@ -92,9 +108,10 @@ onServerPrefetch(async () => {
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
 				Loading notes...
 			</div>
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id"
+			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
+				:options="noteStore.notes" optionLabel="title" dataKey="id"
 				pt:root:class="!border-0 !shadow-none !bg-transparent"
-				pt:list:class="!p-0 !gap-0.5"
+				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
 				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
@@ -124,13 +141,27 @@ onServerPrefetch(async () => {
 				</template>
 			</Listbox>
 
+			<!-- Shared documents (placeholder: mirrors own notes until backend is wired) -->
+			<div class="flex items-center justify-between mt-4 mb-1 px-2">
+				<h2 class="section-title !mb-0">Shared with me</h2>
+			</div>
+			<Listbox v-if="!noteStore.isLoading" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
+				:options="noteStore.notes" optionLabel="title" dataKey="id"
+				pt:root:class="!border-0 !shadow-none !bg-transparent"
+				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
+				pt:option:class="!px-2 !py-1.5 !rounded-md">
+				<template #option="slotProps">
+					<span class="truncate text-sm">{{ slotProps.option.title || "Untitled" }}</span>
+				</template>
+			</Listbox>
+
 		</template>
 
 		<NoteEditor
-			v-if="mounted && noteStore.selectedNote"
-			:note-id="noteStore.selectedNote.id"
+			v-if="mounted && activeNote"
+			:note-id="activeNote.id"
 		/>
-		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
+		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">Select a note</div>
 
 		<Dialog v-model:visible="showInviteDialog" header="Invite to collaborate" modal
 			pt:root:class="w-full max-w-md">
