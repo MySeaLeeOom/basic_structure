@@ -163,11 +163,17 @@ Calculate your path to the 14-point minimum.
 | **Total estimated** | | | **18** |
 
 ## **IX. Individual contributions**
+
 Frameworks/Microservices: Ahmed, Maarten, Masha
+
 Web-Sockets: Ahmed, Maarten, Masha, Pavlos
+
 Authentication: Masha
+
 Monitoring/Browser Testing: Pavlos
+
 RAG/LLM: Maarten, Ahmed
+
 Localization: Grace
 
 ## **X. AI usage**
