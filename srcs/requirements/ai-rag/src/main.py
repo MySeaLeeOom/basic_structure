@@ -2,6 +2,7 @@ import os
 import logging
 import httpx
 import psycopg2
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -26,40 +27,68 @@ class ChatRequest(BaseModel):
     user_id: str
     query: str
 
+def score_chunk(query: str, content: str, vector_dist: float) -> float:
+    """
+    Combines vector distance with keyword matching.
+    Lower score is better.
+    """
+    # Start with normalized vector distance (usually 0.2 to 0.6)
+    score = vector_dist
+    
+    # Extract keywords (words with 3+ chars) and numbers
+    keywords = re.findall(r'[a-zA-Z0-9.,]{3,}', query.lower())
+    
+    matches = 0
+    for kw in keywords:
+        if kw in content.lower():
+            matches += 1
+            
+    # Apply a "Keyword Bonus"
+    # Each matching keyword reduces the distance score significantly
+    score -= (matches * 0.05)
+    
+    return max(score, 0.0)
+
 def get_context(user_id: str, query: str):
     try:
         conn = psycopg2.connect(DB_URL)
         register_vector(conn)
         
-        with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM embeddings WHERE user_id = %s", (user_id,))
-            count = cur.fetchone()[0]
-            logger.info(f"User {user_id} has {count} total chunks in database.")
-
-        logger.info(f"Searching context for query: {query}")
         embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
         query_vector = embeddings.embed_query(query)
         
         with conn.cursor() as cur:
-            # INCREASED LIMIT TO 6: Give the LLM more chance to see the right data
+            # Step 1: Fetch more candidates than needed (Top 50)
             cur.execute(
-                "SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 6",
+                "SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 50",
                 (query_vector, user_id)
             )
             rows = cur.fetchall()
         conn.close()
         
         if not rows:
-            return "DATABASE STATUS: No notes found for this user."
+            return "DATABASE STATUS: No notes found."
         
-        print("\n" + "-"*30)
-        print(f"SEARCH RESULTS FOR: {query}")
-        for i, (content, dist) in enumerate(rows):
-            print(f"RANK {i+1} (Distance: {dist:.4f}):\n{content[:150]}...\n")
-        print("-"*30 + "\n")
+        # Step 2: Re-rank in Python using keyword scoring
+        ranked_results = []
+        for content, dist in rows:
+            final_score = score_chunk(query, content, dist)
+            ranked_results.append((content, dist, final_score))
+            
+        # Sort by final score (ascending)
+        ranked_results.sort(key=lambda x: x[2])
 
-        context_str = "\n---\n".join([r[0] for r in rows])
-        return context_str
+        # --- AUDIT LOG ---
+        print("\n" + "#"*60)
+        print(f" RE-RANKED SEARCH AUDIT FOR: {query}")
+        print("#"*60)
+        for i, (content, v_dist, f_score) in enumerate(ranked_results[:10]):
+            preview = content.replace("\n", " ")[:150]
+            print(f"RANK {i+1:02d} | Score: {f_score:.4f} (Vec: {v_dist:.4f}) | {preview}...")
+        print("#"*60 + "\n")
+
+        # Return Top 15 after re-ranking to the LLM
+        return "\n---\n".join([r[0] for r in ranked_results[:15]])
     except Exception as e:
         logger.error(f"Retrieval Error: {str(e)}")
         return f"ERROR: {str(e)}"
@@ -69,20 +98,13 @@ async def chat(request: ChatRequest):
     try:
         context = get_context(request.user_id, request.query)
         
-        # OPTIMIZED PROMPT: More helpful, less "robotic"
         system_prompt = (
-            "You are MyCelium-AI, a helpful project assistant.\n"
-            "Analyze the following context carefully to answer the user's question.\n"
-            "Use ONLY the information provided. If the specific fact is missing, "
-            "tell the user clearly what you found and why it doesn't quite answer the question.\n\n"
+            "You are MyCelium-AI, a technical project expert.\n"
+            "Use the provided context fragments to answer the question accurately.\n"
+            "If the user asks for a 'Benchmark' or 'Value', look for specific numbers.\n"
+            "Respond in the same language as the user query.\n\n"
             f"Context:\n{context}"
         )
-        
-        print("\n" + "="*50)
-        print("FINAL PROMPT SENT TO LLM")
-        print(system_prompt)
-        print(f"\nUSER QUERY: {request.query}")
-        print("="*50 + "\n")
         
         payload = {"prompt": request.query, "system_prompt": system_prompt}
 

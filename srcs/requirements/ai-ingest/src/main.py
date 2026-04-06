@@ -23,15 +23,14 @@ BASE_URL = os.getenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
 OLLAMA_HOST = BASE_URL.replace("/v1", "")
 EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "llama3")
 
-# --- Global State for Smart Ingest ---
+# --- Global State ---
 processing_locks = set()
 last_processed_hashes = {}
 
-# OPTIMIZED Chunking Configuration
-# Smaller chunks (500) provide much higher precision for specific facts
+# PRECISION CHUNKING
 TEXT_SPLITTER = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50,
+    chunk_size=600,
+    chunk_overlap=150,
     length_function=len,
     separators=["\n\n", "\n", ".", " ", ""]
 )
@@ -47,50 +46,53 @@ def clean_html_to_text(xml_str: str) -> str:
     lines = [line.strip() for line in s.split('\n') if line.strip()]
     return "\n".join(lines)
 
-def extract_all_text(doc: Y.YDoc) -> str:
-    text_parts = []
-    for key in ["title", "default"]:
-        try:
-            xml_item = None
-            if hasattr(doc, "get_xml_fragment"):
-                xml_item = doc.get_xml_fragment(key)
-            elif hasattr(doc, "get_xml_element"):
-                xml_item = doc.get_xml_element(key)
-            
-            if xml_item and len(str(xml_item)) > 0:
-                extracted = clean_html_to_text(str(xml_item))
-                if extracted: text_parts.append(extracted)
-            else:
-                t = str(doc.get_text(key)).strip()
-                if t: text_parts.append(t)
-        except:
-            continue
-    return "\n\n".join(text_parts)
+def extract_content(doc: Y.YDoc):
+    title = str(doc.get_text("title")).strip()
+    body = ""
+    for key in ["default", "content"]:
+        xml_item = None
+        if hasattr(doc, "get_xml_fragment"):
+            xml_item = doc.get_xml_fragment(key)
+        elif hasattr(doc, "get_xml_element"):
+            xml_item = doc.get_xml_element("default")
+        
+        if xml_item:
+            extracted = clean_html_to_text(str(xml_item))
+            if extracted:
+                body = extracted
+                break
+    if not body:
+        body = str(doc.get_text("default")).strip()
+    return title, body
 
 def process_and_save(note_id: str, user_id: str, base64_blob: str):
     if note_id in processing_locks:
-        logger.info(f"THROTTLE: Note {note_id} is already being processed.")
         return
 
     try:
         processing_locks.add(note_id)
-        
         binary_data = base64.b64decode(base64_blob)
         doc = Y.YDoc()
         Y.apply_update(doc, binary_data)
-        full_content = extract_all_text(doc)
         
-        if not full_content.strip():
+        title, body = extract_content(doc)
+        full_text_for_hash = f"{title}\n{body}"
+        
+        if not full_text_for_hash.strip():
             return
 
-        content_hash = hashlib.sha256(full_content.encode()).hexdigest()
+        content_hash = hashlib.sha256(full_text_for_hash.encode()).hexdigest()
         if last_processed_hashes.get(note_id) == content_hash:
-            logger.info(f"SKIP: Content for note {note_id} hasn't changed.")
+            logger.info(f"SKIP: {note_id} unchanged.")
             return
 
-        chunks = TEXT_SPLITTER.split_text(full_content)
+        # Simple Chunks without noisy prefixes
+        chunks = TEXT_SPLITTER.split_text(body)
+        if title:
+            chunks.insert(0, f"TITLE: {title}")
+
         total = len(chunks)
-        logger.info(f"START SMART INGEST: User {user_id} - {total} chunks (Optimized size).")
+        logger.info(f"START CLEAN INGEST: User {user_id} - {total} chunks.")
 
         embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
         
@@ -104,17 +106,16 @@ def process_and_save(note_id: str, user_id: str, base64_blob: str):
                     "INSERT INTO embeddings (note_id, user_id, content, embedding) VALUES (%s, %s, %s, %s)",
                     (note_id, user_id, chunk, vector)
                 )
-                if (i + 1) % 50 == 0 or (i + 1) == total:
+                if (i + 1) % 100 == 0 or (i + 1) == total:
                     logger.info(f"Progress {note_id}: {i+1}/{total}")
         
         conn.commit()
         conn.close()
-        
         last_processed_hashes[note_id] = content_hash
-        logger.info(f"FINISH SUCCESS: Note {note_id} re-indexed with smaller chunks.")
+        logger.info(f"FINISH: Note {note_id} clean re-indexed.")
         
     except Exception as e:
-        logger.error(f"Ingestion Error for {note_id}: {str(e)}")
+        logger.error(f"Error: {str(e)}")
     finally:
         processing_locks.discard(note_id)
 
