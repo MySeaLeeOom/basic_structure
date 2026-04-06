@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS embeddings (
     note_id UUID NOT NULL,
     user_id UUID NOT NULL,
     content TEXT NOT NULL,
-    embedding vector(4096) -- Dimension for Llama 3
+    embedding vector(768) -- Dimension for nomic-embed-text (Llama: 4096, OpenAI: 1536, etc. Adjust based on your embedding model.)
 );
 -- CREATE INDEX IF NOT EXISTS embedding_idx ON embeddings USING hnsw (embedding vector_cosine_ops); -- very efficient algorithm for high-dimensional vector search (O(log n))
 -- removed the HNSW index for now because it has a 2000 dimension limit in some pgvector versions.

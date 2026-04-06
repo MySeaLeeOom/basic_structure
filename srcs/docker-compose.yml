@@ -215,7 +215,7 @@ services:
       VECTOR_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@vector-db:5432/vector_db
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
       LLM_BASE_URL: http://host.docker.internal:11434/v1
-      LLM_EMBEDDING_MODEL: llama3
+      LLM_EMBEDDING_MODEL: nomic-embed-text
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -233,7 +233,7 @@ services:
       LLM_GATEWAY_URL: http://llm-gateway:8001/stream
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
       LLM_BASE_URL: http://host.docker.internal:11434/v1
-      LLM_EMBEDDING_MODEL: llama3
+      LLM_EMBEDDING_MODEL: nomic-embed-text
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
