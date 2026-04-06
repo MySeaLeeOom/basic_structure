@@ -39,5 +39,5 @@ crdt-migration-plan.md
 dist
 
 target
-grafana-prometheus-review.md
+.DS_Store
 .pnpm-store
