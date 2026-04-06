@@ -2,6 +2,7 @@
 use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::metrics;
 use crate::models::{Note, CreateNote};
 
 fn get_user_id(headers: &HeaderMap) -> Result<Uuid, StatusCode> {
@@ -101,6 +102,7 @@ pub async fn post_note(State(pool): State<PgPool>, headers: HeaderMap, Json(payl
 		StatusCode::INTERNAL_SERVER_ERROR
 	})?;
 
+	metrics::inc_mutation("create");
 	tracing::info!("Note {} created successfully", note.id);
 	Ok(Json(note))
 }
@@ -128,6 +130,7 @@ pub async fn del_note(State(pool): State<PgPool>, Path(id): Path<Uuid>, headers:
 		return Err(StatusCode::NOT_FOUND);
 	}
 
+	metrics::inc_mutation("delete");
 	tracing::info!("Note {} deleted successfully", id);
 	Ok(StatusCode::NO_CONTENT)
 }

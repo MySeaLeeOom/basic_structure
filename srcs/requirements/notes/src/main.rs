@@ -1,7 +1,11 @@
+mod metrics;
 mod models;
 mod handlers;
 
 use axum::{
+	body::Body,
+	http::{header, StatusCode},
+	response::Response,
 	routing::get,
 	Router,
 };
@@ -19,8 +23,24 @@ async fn main() {
 		.init();
 
 	let db_pool = setup_database().await;
+	metrics::init();
+
+	async fn metrics_handler() -> Response {
+		match metrics::gather_prometheus_text() {
+			Ok((body, ctype)) => Response::builder()
+				.status(StatusCode::OK)
+				.header(header::CONTENT_TYPE, ctype)
+				.body(Body::from(body))
+				.unwrap_or_else(|_| Response::new(Body::empty())),
+			Err(_) => Response::builder()
+				.status(StatusCode::INTERNAL_SERVER_ERROR)
+				.body(Body::empty())
+				.unwrap_or_else(|_| Response::new(Body::empty())),
+		}
+	}
 
 	let app = Router::new()
+		.route("/metrics", get(metrics_handler))
 		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
 		.with_state(db_pool);

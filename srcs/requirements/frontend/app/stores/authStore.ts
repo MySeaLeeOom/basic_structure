@@ -99,7 +99,7 @@ export const useAuthStore = defineStore("auth", () => {
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || "Login failed");
+				throw new Error(data.message || data.error || "Login failed");
 			}
 
 			// success
@@ -125,7 +125,7 @@ export const useAuthStore = defineStore("auth", () => {
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.error || "Registration failed");
+				throw new Error(data.message || data.error || "Registration failed");
 			}
 
 			// success
