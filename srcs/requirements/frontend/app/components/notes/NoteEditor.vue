@@ -55,7 +55,7 @@ watchEffect((onCleanup) => {
   <Card pt:root:class="card-document">
     <template #content>
       <div class="flex flex-col h-full min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col">
           <InputText
             :model-value="titleText"
             @update:model-value="updateTitle"
