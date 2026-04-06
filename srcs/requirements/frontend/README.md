@@ -1,3 +1,41 @@
+# Frontend TODO
+
+Priority order based on severity and dependencies.
+
+## Critical — Data Loss & Broken Flows
+
+- [ ] **Text not saving** — entered text sometimes gets cut off or full lines go missing (#32)
+- [ ] **OAuth redirect broken** — GitHub login redirects to `localhost/...` instead of `localhost:8080` (#32)
+- [ ] **SSR 401 redirect not working** — `navigateTo('/login')` in `onServerPrefetch` doesn't fire, unauthenticated users get stuck (#32)
+
+## High — Identity & Core UX
+
+- [ ] **Wrong editor name** — logged-in user shows as "anonymous" in collaborative editing; pass GitHub username into Yjs awareness (#44)
+- [ ] **Increase typing area** — new note body has too-small clickable area, dead space above and below (#57)
+
+## Medium — Error Handling & Routing
+
+- [ ] **Custom error pages** — add 401/400/500 pages, especially a "try again" page for GitHub OAuth failures (#31)
+- [ ] **URL routing for notes** — notes should have addressable URLs by title/UUID for sharing and bookmarking (#31)
+
+## Low — Internationalization
+
+- [ ] **i18n patch** — integrate the string store prototype from `DOCS/26-01-17_frontend_42_i18n/` into the Nuxt frontend (#26)
+- [ ] **Right-to-left support** — add RTL language (Arabic), translate strings, create RTL style guide (depends on i18n) (#27)
+
+## Low — Accessibility
+
+- [ ] **Accessibility audit & fixes** — document WCAG touchpoints, list required features, update frontend (#28)
+
+## Backlog — Polish & Features
+
+- [ ] Close a note from the UI (#31)
+- [ ] Save button for version history (#31)
+- [ ] Cleaner editor UI (#31)
+- [ ] Mind maps — new service, beyond MVP (#18)
+
+---
+
 # Nuxt Minimal Starter
 
 NUXT LOG: `pnpm dev`

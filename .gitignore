@@ -1,15 +1,39 @@
+# Environments
 .env
-secrets
-node_modules
+srcs/.env
+secrets/
 
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+.nuxt/
+.output/
+target/
+
+# OS/Editor artifacts
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.bak
+*~
+
+# Temporary and backup files
+temp/
+_temp/
+*_original*
+*_OLD*
+*OLD*
+
+# Project specific
 Claude Code config
 **/DOCS/claude/
 **/.claude/
 CLAUDE.md
-
 copilot-instructions.md
-masha*.*
-temp
 masha*.*
 crdt-migration-plan.md
 dist

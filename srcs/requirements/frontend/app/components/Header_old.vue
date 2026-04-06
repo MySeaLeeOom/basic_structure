@@ -5,7 +5,6 @@ import Toolbar from '@/volt/Toolbar.vue';
 const navItems = [
   { to: '/', label: 'Home' },
   { to: '/notes', label: 'Notes' },
-  { to: '/mindmap', label: 'Mindmap' },
 ];
 
 </script>
