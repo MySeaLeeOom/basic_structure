@@ -88,7 +88,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			return reply.status(404).send({ error: "No user found with that email or username." });
 		}
 
-		return { user };
+		return { user: user };
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
