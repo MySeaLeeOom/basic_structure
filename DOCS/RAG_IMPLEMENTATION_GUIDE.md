@@ -28,8 +28,8 @@ Once Ollama is installed, you must download the specific models used by MyCelium
 # The 'brain' for chatting
 ollama pull llama3
 
-# The 'search expert' for indexing notes
-ollama pull nomic-embed-text
+# The 'search expert' for indexing notes (High Precision)
+ollama pull mxbai-embed-large
 ```
 
 ### C. Network Configuration (Crucial for Docker)
@@ -48,8 +48,8 @@ By default, Ollama only listens on `localhost`. To allow our Docker containers t
 
 The system is split into four specialized services:
 
-1.  **Vector Database (`vector-db`):** PostgreSQL + `pgvector`. Stores note fragments as 768-dimensional vectors.
-2.  **AI Ingest Service (`ai-ingest`):** Extracts text from Tiptap/CRDT blobs, splits them into 400-600 char chunks, and generates embeddings using `nomic-embed-text`.
+1.  **Vector Database (`vector-db`):** PostgreSQL + `pgvector`. Stores note fragments as **1024-dimensional** vectors.
+2.  **AI Ingest Service (`ai-ingest`):** Extracts text from Tiptap/CRDT blobs, splits them into 400-600 char chunks, and generates embeddings using `mxbai-embed-large`.
 3.  **AI RAG Service (`ai-rag`):** Orchestrates the search. It fetches the Top 50 candidates and performs a **Keyword-based Re-ranking** to ensure facts like numbers are prioritized.
 4.  **LLM Gateway (`llm-gateway`):** A stable proxy that handles streaming communication with the LLM.
 
@@ -59,7 +59,7 @@ The system is split into four specialized services:
 
 Once Ollama is prepared (see Step 2), follow these steps:
 
-1.  **Clean Boot (First time or schema change):**
+1.  **Clean Boot (First time or model change):**
     ```bash
     docker compose -f srcs/docker-compose.yml down -v
     ```
@@ -68,7 +68,7 @@ Once Ollama is prepared (see Step 2), follow these steps:
     make
     ```
 3.  **Wait for Indexing:**
-    Open a note in the browser, add some text, and wait about 10-20 seconds. Check logs with `docker logs -f ai-ingest` to see the "FINISH SUCCESS" message.
+    Open a note in the browser, add some text, and wait for the "FINISH" message in `docker logs -f ai-ingest`.
 
 ---
 
@@ -84,4 +84,4 @@ sudo firewall-cmd --reload
 ---
 
 ## 6. Conclusion
-The MyCelium-AI system provides production-grade retrieval by separating "Thinking" (Llama 3) from "Searching" (Nomic). This ensures high accuracy even in very large documents.
+The MyCelium-AI system is optimized for high-accuracy retrieval by separating "Thinking" (Llama 3) from "Deep Searching" (mxbai-embed-large).
