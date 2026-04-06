@@ -6,10 +6,7 @@
 /* Volt component overrides */
 @layer components {
 	.card-document {
-		/* @apply w-full max-w-3xl min-h-[800px]; */
-		@apply w-full max-w-2xl;
-		/* flex flex-col */
-		height: calc(100vh - 120px);
+		@apply w-full max-w-2xl h-full min-h-0;
 	}
 
 	.section-title {
