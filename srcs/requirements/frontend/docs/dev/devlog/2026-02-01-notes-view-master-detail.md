@@ -11,7 +11,7 @@ Master-detail layout for Notes view using Volt UI components. Fixed-width sideba
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Header: "Mycelium"    [Home] [Notes] [Mindmap]     │
+│  Header: "Mycelium"      [Home] [Notes]              │
 ├───────────────┬─────────────────────────────────────┤
 │  Sidebar      │  Document View                      │
 │  w-64         │  bg-surface-200                     │
@@ -45,7 +45,7 @@ src/
 ├── views/
 │   ├── HomeView.vue       # Dashboard (uses SidebarLayout)
 │   ├── NotesView.vue      # Notes master-detail
-│   └── MindmapView.vue    # Mindmap (uses SidebarLayout)
+│   └── ...                # Other pages
 ├── components/
 │   ├── Header.vue         # App header with nav links
 │   └── layouts/
