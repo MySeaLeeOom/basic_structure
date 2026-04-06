@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
+import InputText from "@/volt/InputText.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteEditor from "@/components/notes/NoteEditor.vue";
 import { useConfirm } from "primevue/useconfirm";
@@ -65,6 +66,24 @@ function selectSharedNote(note: any) {
 }
 
 const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
+
+const showInviteDialog = ref(false);
+const inviteNoteId = ref<string | null>(null);
+const inviteUsername = ref("");
+
+function openInvite(noteId: string) {
+	inviteNoteId.value = noteId;
+	showInviteDialog.value = true;
+}
+
+function sendInvite() {
+	if (!inviteUsername.value.trim() || !inviteNoteId.value) return;
+	// TODO: call backend invite endpoint
+	console.log(`Invite "${inviteUsername.value}" to note ${inviteNoteId.value}`);
+	inviteUsername.value = "";
+	showInviteDialog.value = false;
+	inviteNoteId.value = null;
+}
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
