@@ -154,9 +154,6 @@ services:
     secrets:
     - grafana_admin_user
     - grafana_admin_password
-    secrets:
-    - grafana_admin_user
-    - grafana_admin_password
     networks:
       - transcendence
     environment:
