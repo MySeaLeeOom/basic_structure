@@ -6,14 +6,14 @@ const COLORS = [
 ];
 
 export function userColor(id?: string): string {
-  if (!id) return COLORS[0];
+  if (!id) return COLORS[0] ?? "#958DF1";
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return COLORS[Math.abs(hash) % COLORS.length];
+  return COLORS[Math.abs(hash) % COLORS.length] ?? COLORS[0] ?? "#958DF1";
 }
 
-export function createCaretRenderer(awareness: Awareness) {
-  return (user: { name: string; color: string }, clientId: number) => {
+export function createCaretRenderer(awareness: Awareness): (user: { name: string; color: string }) => HTMLElement {
+  return (user: { name: string; color: string }) => {
     const cursor = document.createElement("span");
     cursor.classList.add("collaboration-carets__caret");
     cursor.style.borderColor = user.color;
@@ -31,11 +31,6 @@ export function createCaretRenderer(awareness: Awareness) {
     };
 
     show();
-    awareness.on("change", ({ added, updated }: any) => {
-      if (!cursor.isConnected) return;
-      if (added?.includes(clientId) || updated?.includes(clientId)) show();
-    });
-
     cursor.appendChild(label);
     return cursor;
   };

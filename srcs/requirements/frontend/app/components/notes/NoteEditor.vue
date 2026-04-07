@@ -8,6 +8,7 @@ import { useCollaboration } from "@/composables/useCollaboration";
 import { useNoteStore } from "@/stores/noteStore";
 import { useAuthStore } from "@/stores/authStore";
 import { userColor, createCaretRenderer } from "@/utils/caretRenderer";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 const props = defineProps<{
   noteId: string;
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const noteStore = useNoteStore();
 const authStore = useAuthStore();
+const { t } = useUiI18n();
 const { ydoc, provider, titleText, connectedUsers, updateTitle } =
   useCollaboration(() => props.noteId);
 
@@ -29,6 +31,8 @@ watchEffect((onCleanup) => {
   const prov = provider.value;
   if (!doc || !prov) return;
 
+  const renderCaret = createCaretRenderer(prov.awareness) as (user: Record<string, any>) => HTMLElement;
+
   const ed = new Editor({
     extensions: [
       StarterKit.configure({ undoRedo: false }),
@@ -39,7 +43,7 @@ watchEffect((onCleanup) => {
           name: authStore.user?.loginName ?? "Anonymous",
           color: userColor(authStore.user?.id),
         },
-        render: createCaretRenderer(prov.awareness),
+        render: renderCaret,
       }),
     ],
   });
@@ -56,14 +60,14 @@ watchEffect((onCleanup) => {
         ref="titleInput"
         :value="titleText"
         @input="updateTitle(($event.target as HTMLInputElement).value)"
-        placeholder="Untitled"
+        :placeholder="t('noteEditor.untitled')"
         class="editor-title"
       />
       <EditorContent :editor="editor" class="tiptap-editor" />
     </div>
     <div v-if="connectedUsers > 1" class="editor-status">
       <span class="editor-status-dot" />
-      {{ connectedUsers }} collaborators
+      {{ connectedUsers }} {{ t('noteEditor.collaborators') }}
     </div>
   </div>
 </template>
