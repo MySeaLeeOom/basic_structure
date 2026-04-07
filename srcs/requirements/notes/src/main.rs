@@ -16,8 +16,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db_pool: PgPool,
-    pub i18n: i18n::I18n,
+	pub db_pool: PgPool,
+	pub i18n: i18n::I18n,
 }
 
 #[tokio::main]
@@ -49,10 +49,6 @@ async fn main() {
 				.unwrap_or_else(|_| Response::new(Body::empty())),
 		}
 	}
-	let state = AppState {
-		db_pool,
-		i18n: i18n::I18n::new(),
-	};
 
 	let app = Router::new()
 		.route("/metrics", get(metrics_handler))
