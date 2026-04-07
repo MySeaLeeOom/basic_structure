@@ -1,7 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap");
 @import "tailwindcss";
 @import "tailwindcss-primeui";
+@custom-variant dark (&:where(.dark, .dark *));
 @plugin "@tailwindcss/typography";
+
+/* Smooth theme transition */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+	transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
 
 /* Volt component overrides */
 @layer components {
