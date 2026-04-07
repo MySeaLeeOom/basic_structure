@@ -1,7 +1,6 @@
 {
 	"nav.home": "Home",
 	"nav.notes": "Notes",
-	"nav.mindmap": "Mindmap",
 	"auth.login": "Login",
 	"auth.logout": "Logout",
 	"lang.select": "Language",

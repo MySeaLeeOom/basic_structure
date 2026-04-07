@@ -4,6 +4,7 @@ import Toolbar from '@/volt/Toolbar.vue';
 import Button from '@/volt/Button.vue';
 import Menu from '@/volt/Menu.vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiI18n } from '~/composables/useUiI18n';
 
 const authStore = useAuthStore();
 const { t, locale } = useUiI18n();
@@ -40,12 +41,7 @@ const langMenuItems = computed(() => [
 const navItems = computed(() => [
   { to: '/home', label: t('nav.home') },
   { to: '/notes', label: t('nav.notes') },
-  { to: '/mindmap', label: t('nav.mindmap') },
 ]);
-const navItems = [
-  { to: '/home', label: 'Home' },
-  { to: '/notes', label: 'Notes' },
-];
 
 async function handleLogout() {
   await authStore.logout();
