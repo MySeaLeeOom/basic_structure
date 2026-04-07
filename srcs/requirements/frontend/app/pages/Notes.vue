@@ -8,9 +8,11 @@ import NoteEditor from "@/components/notes/NoteEditor.vue";
 import { useConfirm } from "primevue/useconfirm";
 import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
+const { t } = useUiI18n();
 
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
@@ -76,15 +78,15 @@ async function handleCreate() {
 
 function confirmDelete(id: string) {
 	confirm.require({
-		message: 'Are you sure you want to delete this note?',
-		header: 'Confirm Deletion',
+		message: t('notes.delete.confirmMessage'),
+		header: t('notes.delete.confirmHeader'),
 		icon: 'pi pi-trash',
 		acceptProps: {
-			label: 'Delete',
+			label: t('notes.delete.confirmAccept'),
 			severity: 'danger'
 		},
 		rejectProps: {
-			label: 'Cancel',
+			label: t('notes.delete.confirmReject'),
 			severity: 'secondary'
 		},
 		accept: () => {
@@ -120,12 +122,12 @@ onServerPrefetch(async () => {
 	<SidebarLayout>
 		<template #sidebar>
 			<div class="flex items-center justify-between mb-1 px-2">
-				<h2 class="section-title !mb-0">Notes</h2>
+				<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
 				<Button label="+" text rounded @click="handleCreate" />
 			</div>
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
-				Loading notes...
+				{{ t('notes.loading') }}
 			</div>
 			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
@@ -134,7 +136,7 @@ onServerPrefetch(async () => {
 				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
-						<span class="truncate text-sm">{{ slotProps.option.title || "Untitled" }}</span>
+						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
 						<div class="flex items-center shrink-0"
 							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
 							<button
@@ -162,7 +164,7 @@ onServerPrefetch(async () => {
 
 			<!-- TODO: fetch from GET /api/notes/shared (returns same shape as GET /api/notes) -->
 			<div class="flex items-center justify-between mt-4 mb-1 px-2">
-				<h2 class="section-title !mb-0">Shared with me</h2>
+				<h2 class="section-title !mb-0">{{ t('notes.shared') }}</h2>
 			</div>
 			<Listbox v-if="!noteStore.isLoading" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
@@ -170,7 +172,7 @@ onServerPrefetch(async () => {
 				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
 				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
-					<span class="truncate text-sm">{{ slotProps.option.title || "Untitled" }}</span>
+					<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
 				</template>
 			</Listbox>
 
@@ -180,9 +182,9 @@ onServerPrefetch(async () => {
 			v-if="mounted && activeNote"
 			:note-id="activeNote.id"
 		/>
-		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">Select a note</div>
+		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
-		<Dialog v-model:visible="showInviteDialog" header="Invite to collaborate" modal :draggable="false"
+		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
 			pt:root:class="w-full max-w-sm">
 			<div class="flex flex-col gap-3">
 				<div v-if="selectedUsers.length" class="flex flex-wrap gap-1.5">
@@ -194,7 +196,7 @@ onServerPrefetch(async () => {
 						</button>
 					</span>
 				</div>
-				<label class="text-sm text-surface-500">Select users to invite</label>
+				<label class="text-sm text-surface-500">{{ t('notes.invite.selectUsers') }}</label>
 				<div class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
 					<button v-for="user in dummyUsers" :key="user.name"
 						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
@@ -213,7 +215,7 @@ onServerPrefetch(async () => {
 				</div>
 			</div>
 			<template #footer>
-				<Button label="Send Invite" :disabled="selectedUsers.length === 0" @click="sendInvite" />
+				<Button :label="t('notes.invite.send')" :disabled="selectedUsers.length === 0" @click="sendInvite" />
 			</template>
 		</Dialog>
 	</SidebarLayout>
