@@ -119,12 +119,13 @@ We distinguish between **Access** (is the door open?) and **Identity** (who is w
 
 ### Endpoint Reference
 
-These are the routes exposed by the container on port `3000`.
+These are the routes exposed by the AUTH container on port `3000`.
 
 | Method | Endpoint | Purpose | Wiring Context |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/verify` | **Checks session cookie.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, session }`. <br> **Headers:** Sets `X-User-Id` for Nginx. | Used by Nginx `auth_request` directive. Fast session lookup. |
 | **GET** | `/me` | **The Profile Identity.** <br> **Status:** `200 OK`. <br> **Body:** `{ authenticated: true, user: { id, loginName, email, role, ... } }`. | Used by Frontend (SSR & Client) to fetch full User information. |
+| **GET** | `/resolve` | **User Identity Resolution.** <br> **Accepts:** `?identifier=<email_or_login>` <br> **Returns:** `{ user: { id, loginName, imageURL } }` | Used by Share Flow to convert human identity to UUID. |
 | **POST** | `/logout` | **Clears session cookie.** | Called by frontend button. |
 | **POST** | `/login` | Accepts `{ identifier, password }`. Sets cookie. | Public form submission. |
 | **POST** | `/register` | Accepts `{ loginName, email, password }`. Sets cookie. | Public form submission. |

@@ -6,6 +6,16 @@ export default defineNuxtConfig({
 	devtools: { enabled: true },
 	modules: ["@primevue/nuxt-module", "@pinia/nuxt", "@vueuse/nuxt"],
 	css: ["~/assets/base.css"],
+	app: {
+		head: {
+			script: [
+				{
+					innerHTML: `(function(){var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()`,
+					type: "text/javascript",
+				},
+			],
+		},
+	},
 	vite: {
 		plugins: [tailwindcss() as any],
 	},
