@@ -249,7 +249,7 @@ async function handleExportData() {
 
 					<div class="flex flex-col gap-2 pt-4">
 						<h3 class="font-bold text-red-500">{{ t('profile.section.danger') }}</h3>
-						<Button label="Export Data (JSON)" severity="secondary" fluid :disabled="isSubmitting"
+						<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="isSubmitting"
 							@click="handleExportData" />
 						<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="isSubmitting"
 							@click="handleDeleteAccount" />
