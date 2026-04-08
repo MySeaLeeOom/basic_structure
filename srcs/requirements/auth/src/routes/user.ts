@@ -129,7 +129,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 
 		return { user: user };
 	});
-sk
+
 	/*
 	 * GET /users: Returns all registered users (id + loginName).
 	 * Used by the frontend share dialog to list/search users.
