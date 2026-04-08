@@ -3,7 +3,7 @@ use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::metrics;
-use crate::models::{Note, CreateNote};
+use crate::models::{Note, CreateNote, NoteExport};
 
 fn get_user_id(headers: &HeaderMap) -> Result<Uuid, StatusCode> {
 	headers.get("X-User-Id")
@@ -168,4 +168,39 @@ pub async fn edit_title(State(pool): State<PgPool>, Path(id): Path<Uuid>, header
 			Err(StatusCode::NOT_FOUND)
 		}
 	}
+}
+
+pub async fn del_notes_by_owner(State(pool): State<PgPool>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
+	let user_id = get_user_id(&headers)?;
+	tracing::info!("Deleting all notes for user {}", user_id);
+
+	sqlx::query("DELETE FROM notes WHERE owner_id = $1")
+		.bind(user_id)
+		.execute(&pool)
+		.await
+		.map_err(|e| {
+			tracing::error!("Failed to delete notes for user {}: {}", user_id, e);
+			StatusCode::INTERNAL_SERVER_ERROR
+		})?;
+
+	Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn export_notes(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<NoteExport>>, StatusCode> {
+	let user_id = get_user_id(&headers)?;
+	tracing::info!("Exporting notes for user {}", user_id);
+
+	let notes = sqlx::query_as::<_, NoteExport>(
+		"SELECT n.id, n.title, n.owner_id, n.created_at, n.updated_at, ns.state_vector \
+		 FROM notes n LEFT JOIN note_states ns ON n.id = ns.note_id WHERE n.owner_id = $1 ORDER BY n.created_at ASC",
+	)
+	.bind(user_id)
+	.fetch_all(&pool)
+	.await
+	.map_err(|e| {
+		tracing::error!("Failed to export notes for user {}: {}", user_id, e);
+		StatusCode::INTERNAL_SERVER_ERROR
+	})?;
+
+	Ok(Json(notes))
 }

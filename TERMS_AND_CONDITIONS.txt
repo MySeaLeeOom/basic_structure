@@ -85,8 +85,9 @@ or permanently, if we reasonably believe you have violated these terms or
 pose a risk to other users or the Service.
 
 6.2 You may request deletion of your account at any time. Account deletion
-will cascade to your sessions and linked provider accounts. See our
-Privacy Policy for details on data retention and deletion of note content.
+will remove your sessions, linked provider accounts, and notes associated
+with your account. See our Privacy Policy for details on data retention and
+deletion behavior.
 
 6.3 We reserve the right to discontinue the Service at any time, with
 reasonable notice where practicable.
