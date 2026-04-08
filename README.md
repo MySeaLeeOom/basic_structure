@@ -139,7 +139,7 @@ Calculate your path to the 14-point minimum.
 | Real-time collaboration | Web | Minor | 1 |
 | Server-Side Rendering | Web | Minor | 1 |
 | Support for multiple languages | Accesibility | Minor | 1 |
-| Support for rtl | Accesibility | Minor | 1 |
+| Support for rtl | Accessibility | Minor | 1 |
 | Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
 | OAuth Authentication | User Management | Minor | 1 |
 |ORM system | Web | Minor | 1 |

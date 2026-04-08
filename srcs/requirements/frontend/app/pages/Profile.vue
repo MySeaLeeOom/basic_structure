@@ -116,7 +116,7 @@ async function handleChangePassword() {
 				<div class="flex flex-col gap-6">
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.identity') }}</h3>
+						<h3 class="font-bold">{{ t('profile.section.username') }}</h3>
 						<p v-if="auth.user?.loginName">{{ t('profile.currentPrefix') }} <strong>{{ auth.user.loginName }}</strong></p>
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
 							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
@@ -128,7 +128,7 @@ async function handleChangePassword() {
 					</div>
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.contact') }}</h3>
+						<h3 class="font-bold">{{ t('profile.section.email') }}</h3>
 						<p>{{ t('profile.currentPrefix') }} <strong>{{ auth.user?.email || t('profile.none') }}</strong></p>
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
 							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
