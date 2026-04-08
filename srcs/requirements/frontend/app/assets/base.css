@@ -115,10 +115,8 @@ html.theme-transition *::after {
 
 .tiptap-editor .tiptap {
 	outline: none;
-	padding: 12px;
+	padding: 0;
 	flex: 1;
-	min-height: 0;
-	overflow-y: auto;
 	cursor: text;
 	line-height: 1.7;
 	font-size: 1rem;
