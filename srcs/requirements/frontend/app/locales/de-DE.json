@@ -31,7 +31,7 @@
 	"notes.delete.confirmAccept": "Löschen",
 	"notes.delete.confirmReject": "Abbrechen",
 	"profile.title": "Einstellungen",
-	"profile.success.username": "Benutzername erfolgreich aktualisiert",
+	"profile.success.username": "Der Benutzername wurde erfolgreich aktualisiert!",
 	"profile.success.email": "E-Mail erfolgreich aktualisiert",
 	"profile.success.password": "Passwort erfolgreich geändert",
 	"profile.section.username": "Benutzername",

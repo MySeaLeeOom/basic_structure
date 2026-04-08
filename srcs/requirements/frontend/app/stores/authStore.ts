@@ -18,13 +18,13 @@ export const useAuthStore = defineStore("auth", () => {
 	const isAuthenticated = computed(() => !!user.value);
 
 	// Check if session cookie is valid
-	async function checkAuth(serverCookie?: string) {
+	async function checkAuth(serverCookie?: string, force = false) {
 		// Capture headers at the very start (Magic must happen before any await)
 		const isServer = typeof window === "undefined";
 		const capturedCookie = serverCookie || (isServer ? useRequestHeaders(["cookie"]).cookie : undefined);
 
-		// If user is already set, skip.
-		if (user.value) return;
+		// If user is already set, skip unless forced refresh is requested.
+		if (user.value && !force) return;
 
 		loading.value = true;
 		error.value = null;
@@ -151,7 +151,7 @@ export const useAuthStore = defineStore("auth", () => {
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
 
-			await checkAuth(); // Refresh profile
+			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
 		} catch (e: any) {
 			error.value = e.message;
@@ -173,7 +173,7 @@ export const useAuthStore = defineStore("auth", () => {
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
 
-			await checkAuth(); // Refresh profile
+			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
 		} catch (e: any) {
 			error.value = e.message;
