@@ -2,12 +2,14 @@ mod metrics;
 mod models;
 mod handlers;
 mod i18n;
+mod share_handlers;
+mod slug_handlers;
 
 use axum::{
 	body::Body,
 	http::{header, StatusCode},
 	response::Response,
-	routing::{delete, get},
+	routing::{delete, get, post},
 	Router,
 };
 use sqlx::PgPool;
@@ -56,6 +58,13 @@ async fn main() {
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
 		.route("/api/notes/by-owner", delete(handlers::del_notes_by_owner))
 		.route("/api/notes/export", get(handlers::export_notes))
+		.route("/api/notes/u/{slug}", get(slug_handlers::get_note_by_slug))
+		.route("/api/notes/collab/received", get(share_handlers::shared_with_me))
+		.route("/api/notes/collab/", post(share_handlers::create_share))
+		.route("/api/notes/collab/access/{share_id}", get(share_handlers::open_share))
+		.route("/api/notes/collab/created", get(share_handlers::my_shares))
+		.route("/api/notes/collab/{note_id}", get(share_handlers::note_collaborators))
+		.route("/api/notes/collab/revoke/{share_id}", delete(share_handlers::revoke_share))
 		.with_state(state);
 
 	let port = std::env::var("PORT").unwrap_or_else(|_| "3003".to_string());
