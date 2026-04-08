@@ -31,7 +31,7 @@
 	"notes.delete.confirmAccept": "Eliminar",
 	"notes.delete.confirmReject": "Cancelar",
 	"profile.title": "Ajustes",
-	"profile.success.username": "Nombre de usuario actualizado correctamente",
+	"profile.success.username": "¡El nombre de usuario se ha actualizado correctamente!",
 	"profile.success.email": "Correo electrónico actualizado correctamente",
 	"profile.success.password": "Contraseña cambiada correctamente",
 	"profile.section.username": "Nombre de usuario",
