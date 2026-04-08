@@ -1,23 +1,24 @@
 # **Mycelium Notes**
 
-*This project has been created as part of the 42 curriculum by [adiler], [maahof], [myakoven], [pvasilan] and [grmullin].* 
+*This project has been created as part of the 42 curriculum by [adiler], [grr-ace], [maahof], [myakoven], [pvasilan].*
+
+# Part 1: General README
 
 ## **I. Description**
 
-A modular open source personal knowledge management system with built-in realtime collaboration. 
-
+A modular open-source personal knowledge management system with built-in real-time collaboration.
 
 ## **II. Instructions**
 
 ### Prerequisites
 
 * Docker Engine with Compose v2 (`docker compose` subcommand).
-* A GitHub OAuth App for authentication (you will need the Client ID and Client Secret).
+* A GitHub OAuth App for authentication (Client ID and Client Secret).
 * `make` (GNU Make).
 
 ### Setup
 
-1. **Environment variables** -- Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
+1. **Environment variables** — Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
 
 ```
 DB_USER=<postgres superuser>
@@ -37,7 +38,7 @@ FRONTEND_PORT=3000
 WEBSITE_URL=http://localhost:8080
 ```
 
-2. **Secrets** -- Copy the example secrets directory and fill in real values (one value per file):
+2. **Secrets** — Copy the example secrets directory and fill in real values (one value per file):
 
 ```bash
 cp -r srcs/secrets.example srcs/secrets
@@ -60,9 +61,7 @@ make re        # clean + rebuild
 
 The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
 
-
-
-## **III. Team Information**
+## **III. Resources**
 
 * List documentation and tutorials used.
 
@@ -121,7 +120,7 @@ Two logical databases in a single PostgreSQL 16 instance.
 
 **Key relations**: one user → many accounts (multi-provider auth), one user → many sessions, one note → one note_state. All foreign keys cascade on delete.
 
-## **VII.Features list**
+## **VII. Features list**
 
 ## **VIII. Modules & points**
 
@@ -132,14 +131,13 @@ Calculate your path to the 14-point minimum.
 | Frameworks (Vue + Axum) | Web | Major | 2 | 
 | Microservices | DevOps | Major | 2 |
 | Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
-| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
 | RAG System | AI | Major | 2 |
 | LLM System Interface | AI | Major | 2 |
 | Web-socket communication | Web | Major | 2 |
 | Real-time collaboration | Web | Minor | 1 |
 | Server-Side Rendering | Web | Minor | 1 |
 | Support for multiple languages | Accesibility | Minor | 1 |
-| Support for rtl | Accessibility | Minor | 1 |
+| Support for rtl | Accesibility | Minor | 1 |
 | Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
 | OAuth Authentication | User Management | Minor | 1 |
 |ORM system | Web | Minor | 1 |
