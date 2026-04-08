@@ -1,0 +1,28 @@
+DB_USER=postgres
+DB_PASSWORD=your_password_here 
+DB_NAME=transcendence
+#could move password to secrets? TODO
+
+AUTH_DB_USER=auth_user
+AUTH_DB_NAME=auth_db
+
+GITHUB_CLIENT_ID="Ov23liL3n5DgYL8mKbwi"
+GITHUB_CALLBACK_URL="https://localhost/api/auth/login/github/callback" # needs to match the github app
+WEBSITE_URL="https://localhost"
+
+# AUTH_DB_PASSWORD=password //now in secrets, chosen by us
+# GITHUB_CLIENT_SECRET="123" //now in secret, generated in github
+# SESSION_SECRET_KEY="123"  #now in secrets, randomly chosen, only used for gateway now
+
+
+# Service Ports & Hostnames (Internal Network)
+AUTH_PORT="3000"
+AUTH_ADDR="auth:${AUTH_PORT}"
+FRONTEND_PORT="3000"
+FRONTEND_ADDR="frontend:${FRONTEND_PORT}"
+NOTES_PORT="3003"
+NOTES_ADDR="notes:${NOTES_PORT}"
+POSTGRES_PORT="5432"
+POSTGRES_ADDR="postgres:${POSTGRES_PORT}"
+UID=1000
+GID=1000

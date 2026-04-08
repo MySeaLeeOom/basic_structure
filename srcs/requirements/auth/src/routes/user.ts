@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
@@ -61,9 +61,14 @@ const ChangePasswordSchema = Type.Object({
 	newPassword: Type.String({ minLength: 8 }),
 });
 
+const ResolveUserSchema = Type.Object({
+	identifier: Type.String({ minLength: 3 }),
+});
+
 type ChangeLoginType = Static<typeof ChangeLoginSchema>;
 type ChangeEmailType = Static<typeof ChangeEmailSchema>;
 type ChangePasswordType = Static<typeof ChangePasswordSchema>;
+type ResolveUserType = Static<typeof ResolveUserSchema>;
 
 /**
  * User Management Routes
@@ -96,6 +101,51 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 				createdAt: user.createdAt,
 			},
 		};
+	});
+
+	/*
+	 * GET /resolve: Look up a user by exact email or loginName.
+	 * Used by the Frontend to verify identity before creating a share.
+	 */
+	server.get<{ Querystring: ResolveUserType }>("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const { identifier } = request.query;
+
+		const [user] = await server.db
+			.select({
+				id: schema.users.id,
+				loginName: schema.users.loginName,
+				imageURL: schema.users.imageURL,
+			})
+			.from(schema.users)
+			.where(or(eq(schema.users.email, identifier), eq(schema.users.loginName, identifier)))
+			.limit(1);
+
+		if (!user) {
+			return reply.status(404).send({ error: "No user found with that email or username." });
+		}
+
+		return { user: user };
+	});
+sk
+	/*
+	 * GET /users: Returns all registered users (id + loginName).
+	 * Used by the frontend share dialog to list/search users.
+	 */
+	server.get("/users", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const users = await server.db
+			.select({
+				id: schema.users.id,
+				loginName: schema.users.loginName,
+			})
+			.from(schema.users);
+
+		return { users };
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
