@@ -68,60 +68,6 @@ function selectSharedNote(note: any) {
 
 const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
 
-const showInviteDialog = ref(false);
-const inviteNoteId = ref<string | null>(null);
-const selectedUsers = ref<string[]>([]);
-
-// TODO: fetch from GET /api/users (returns [{ name: string, fullName: string }])
-const dummyUsers = [
-	{ name: 'aydiler', fullName: 'Ahmet Diler' },
-	{ name: 'catdev42', fullName: 'Masha Yakoven' },
-{ name: 'gmullin', fullName: 'Grace Mullin' },
-	{ name: 'maahoff', fullName: 'Maarten Hoff' },
-	{ name: 'pvasilan', fullName: 'Pavlos Vasilantonakis' },
-];
-
-function openInvite(noteId: string) {
-	inviteNoteId.value = noteId;
-	selectedUsers.value = [];
-	showInviteDialog.value = true;
-}
-
-function toggleUser(username: string) {
-	const idx = selectedUsers.value.indexOf(username);
-	if (idx === -1) {
-		selectedUsers.value.push(username);
-	} else {
-		selectedUsers.value.splice(idx, 1);
-	}
-}
-
-function sendInvite() {
-	if (selectedUsers.value.length === 0 || !inviteNoteId.value) return;
-	// TODO: POST /api/notes/:noteId/invite { usernames: string[] }
-	// Expected response: 200 OK on success
-	console.log(`Invite ${selectedUsers.value.join(', ')} to note ${inviteNoteId.value}`);
-	selectedUsers.value = [];
-	showInviteDialog.value = false;
-	inviteNoteId.value = null;
-}
-
-// Shared notes selection (separate from own notes)
-const selectedSharedNote = ref<any>(null);
-
-// When selecting in one list, deselect the other
-function selectOwnNote(note: any) {
-	noteStore.selectedNote = note;
-	selectedSharedNote.value = null;
-}
-
-function selectSharedNote(note: any) {
-	selectedSharedNote.value = note;
-	noteStore.selectedNote = null;
-}
-
-const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
-
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
 onMounted(() => { mounted.value = true; });

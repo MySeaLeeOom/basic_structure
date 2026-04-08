@@ -6,11 +6,11 @@ use crate::models::{Note, CreateNote};
 use crate::AppState;
 
 #[derive(Serialize)]
-struct ErrorResponse {
+pub(crate) struct ErrorResponse {
 	message: String,
 }
 
-type ApiError = (StatusCode, Json<ErrorResponse>);
+pub(crate) type ApiError = (StatusCode, Json<ErrorResponse>);
 
 fn requested_locale(headers: &HeaderMap, default_locale: &str) -> String {
 	headers
