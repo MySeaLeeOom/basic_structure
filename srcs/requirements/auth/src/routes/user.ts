@@ -7,6 +7,46 @@ import { upsertAccount } from "../lib/account_helpers";
 import * as argon2 from "argon2";
 import { authMeTotal } from "../metrics";
 
+const notesServiceBaseUrl = process.env.NOTES_SERVICE_URL ?? "http://notes:3003";
+
+type NotesExportItem = {
+	id: string;
+	title: string;
+	owner_id: string | null;
+	created_at: string;
+	updated_at: string;
+	state_vector: number[] | null;
+};
+
+async function callNotesService(
+	path: string,
+	method: "GET" | "DELETE",
+	userId: string,
+): Promise<{ ok: boolean; status: number; body: unknown }> {
+	try {
+		const response = await fetch(`${notesServiceBaseUrl}${path}`, {
+			method,
+			headers: {
+				"X-User-Id": userId,
+			},
+		});
+
+		let body: unknown = null;
+		const text = await response.text();
+		if (text) {
+			try {
+				body = JSON.parse(text);
+			} catch {
+				body = text;
+			}
+		}
+
+		return { ok: response.ok, status: response.status, body };
+	} catch (_error) {
+		return { ok: false, status: 0, body: { error: "Notes service unreachable." } };
+	}
+}
+
 /* Schemas for Inputs */
 const ChangeLoginSchema = Type.Object({
 	loginName: Type.String({ minLength: 3, maxLength: 50 }),
@@ -145,6 +185,55 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		});
 
 		return { message: "Password updated successfully." };
+	});
+
+	server.get("/export-data", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
+		if (!user) return reply.status(404).send({ error: "User not found." });
+
+		const notesResponse = await callNotesService("/api/notes/export", "GET", session.userId);
+		if (!notesResponse.ok) {
+			return reply.status(502).send({
+				error: "Failed to export notes from notes service.",
+				upstreamStatus: notesResponse.status || undefined,
+			});
+		}
+
+		const notes = Array.isArray(notesResponse.body) ? (notesResponse.body as NotesExportItem[]) : [];
+		return {
+			exportedAt: new Date().toISOString(),
+			user: {
+				id: user.id,
+				loginName: user.loginName,
+				email: user.email,
+				role: user.role,
+				status: user.status,
+				imageURL: user.imageURL,
+				createdAt: user.createdAt,
+			},
+			notes,
+		};
+	});
+
+	server.delete("/delete-account", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const deleteNotesResponse = await callNotesService("/api/notes/by-owner", "DELETE", session.userId);
+		if (!deleteNotesResponse.ok && deleteNotesResponse.status !== 404) {
+			return reply.status(502).send({
+				error: "Failed to delete user notes.",
+				upstreamStatus: deleteNotesResponse.status || undefined,
+			});
+		}
+
+		await server.db.delete(schema.users).where(eq(schema.users.id, session.userId));
+		reply.clearCookie("session_id", { path: "/" });
+
+		return { message: "Account deleted successfully." };
 	});
 };
 
