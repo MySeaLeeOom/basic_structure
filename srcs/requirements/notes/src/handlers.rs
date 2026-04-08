@@ -188,7 +188,7 @@ pub async fn edit_title(State(state): State<AppState>, Path(id): Path<Uuid>, hea
 		Some(note) => {
 			tx.commit().await.map_err(|e| {
 				tracing::error!("Failed to commit transaction: {}", e);
-				StatusCode::INTERNAL_SERVER_ERROR
+				error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
 			})?;
 			tracing::info!("Note {} updated successfully", id);
 			Ok(Json(note))
