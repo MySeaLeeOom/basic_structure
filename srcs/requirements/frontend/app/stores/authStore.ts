@@ -203,6 +203,48 @@ export const useAuthStore = defineStore("auth", () => {
 		}
 	}
 
+	async function deleteAccount() {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/delete-account", { method: "DELETE" });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data.message || data.error || "Account deletion failed");
+
+			resetStore();
+			try {
+				const { useNoteStore } = await import("@/stores/noteStore");
+				const noteStore = useNoteStore();
+				noteStore.resetStore();
+			} catch (err) {
+				console.error("Failed to reset note store", err);
+			}
+
+			return { success: true, message: data.message || "Account deleted successfully." };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
+	async function exportData() {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/export-data", { method: "GET" });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data.message || data.error || "Data export failed");
+			return { success: true, data };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
 	return {
 		user,
 		isAuthenticated,
@@ -217,5 +259,7 @@ export const useAuthStore = defineStore("auth", () => {
 		updateLoginName,
 		updateEmail,
 		changePassword,
+		deleteAccount,
+		exportData,
 	};
 });

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue';
+import * as Y from 'yjs';
 import { useAuthStore } from '../stores/authStore';
 import Card from '../volt/Card.vue';
 import Divider from '../volt/Divider.vue';
@@ -99,11 +100,104 @@ async function handleChangePassword() {
 	isSubmitting.value = false;
 	activeForm.value = null;
 }
+
+async function handleDeleteAccount() {
+	const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
+	if (!confirmed) return;
+
+	isSubmitting.value = true;
+	successMessage.value = '';
+	errors.login = '';
+	errors.email = '';
+	errors.password = '';
+
+	const result = await auth.deleteAccount();
+	if (!result.success) {
+		errors.password = result.message;
+		isSubmitting.value = false;
+		return;
+	}
+
+	window.location.href = '/';
+}
+
+function extractPlainTextFromXml(xml: string): string {
+	if (!xml) return '';
+	const parser = new DOMParser();
+	const parsed = parser.parseFromString(`<div>${xml}</div>`, 'text/html');
+	return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
+	if (!Array.isArray(stateVector)) return null;
+	const bytes = Uint8Array.from(stateVector.filter((v) => Number.isInteger(v) && v >= 0 && v <= 255));
+	if (bytes.length === 0) return null;
+
+	try {
+		const doc = new Y.Doc();
+		Y.applyUpdate(doc, bytes);
+		const title = doc.getText('title').toString();
+		const contentXml = doc.getXmlFragment('default').toString();
+		const content = extractPlainTextFromXml(contentXml);
+		return { title, content };
+	} catch {
+		return null;
+	}
+}
+
+function buildReadableExportPayload(rawData: any) {
+	if (!rawData || typeof rawData !== 'object') return rawData;
+	if (!Array.isArray(rawData.notes)) return rawData;
+
+	const notes = rawData.notes.map((note: any) => {
+		const decoded = decodeStateVector(note?.state_vector);
+		const { state_vector, ...rest } = note || {};
+		return {
+			...rest,
+			title: decoded?.title || rest.title || 'Untitled',
+			content: decoded?.content || '',
+		};
+	});
+
+	return { ...rawData, notes };
+}
+
+async function handleExportData() {
+	isSubmitting.value = true;
+	successMessage.value = '';
+	errors.login = '';
+	errors.email = '';
+	errors.password = '';
+
+	const result = await auth.exportData();
+	if (!result.success) {
+		errors.password = result.message || "Data export failed";
+		isSubmitting.value = false;
+		return;
+	}
+
+	const payloadData = buildReadableExportPayload(result.data);
+	const payload = JSON.stringify(payloadData, null, 2);
+	const blob = new Blob([payload], { type: 'application/json' });
+	const url = URL.createObjectURL(blob);
+	const now = new Date().toISOString().replace(/[:.]/g, '-');
+	const anchor = document.createElement('a');
+	anchor.href = url;
+	anchor.download = `mycelium-notes-export-${now}.json`;
+	document.body.appendChild(anchor);
+	anchor.click();
+	document.body.removeChild(anchor);
+	URL.revokeObjectURL(url);
+
+	successMessage.value = "Data exported successfully";
+	isSubmitting.value = false;
+}
 </script>
 
 
 <template>
-	<div class="flex items-center justify-center min-h-screen p-4">
+	<div class="h-full overflow-y-auto p-4">
+		<div class="min-h-full flex items-start justify-center py-4 md:items-center">
 		<Card class="w-full max-w-sm">
 			<template #title>
 				<h2 class="text-xl font-bold text-center">Settings</h2>
@@ -153,11 +247,15 @@ async function handleChangePassword() {
 
 					<div class="flex flex-col gap-2 pt-4">
 						<h3 class="font-bold text-red-500">Danger Zone</h3>
-						<Button label="Delete Account" severity="danger" fluid />
+						<Button label="Export Data (JSON)" severity="secondary" fluid :disabled="isSubmitting"
+							@click="handleExportData" />
+						<Button label="Delete Account" severity="danger" fluid :disabled="isSubmitting"
+							@click="handleDeleteAccount" />
 					</div>
 
 				</div>
 			</template>
 		</Card>
+		</div>
 	</div>
 </template>
