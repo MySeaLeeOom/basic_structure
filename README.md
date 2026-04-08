@@ -141,6 +141,8 @@ Calculate your path to the 14-point minimum.
 | Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
 | OAuth Authentication | User Management | Minor | 1 |
 |ORM system | Web | Minor | 1 |
+|Standard user management|User Management | Major | 2|
+| GDPR compliance | Data | Minor | 1 |
 | **Total estimated** | | | **18** |
 
 ## **IX. Individual contributions**

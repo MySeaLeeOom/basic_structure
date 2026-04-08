@@ -7,7 +7,7 @@ use axum::{
 	body::Body,
 	http::{header, StatusCode},
 	response::Response,
-	routing::get,
+	routing::{delete, get},
 	Router,
 };
 use sqlx::PgPool;
@@ -54,6 +54,8 @@ async fn main() {
 		.route("/metrics", get(metrics_handler))
 		.route("/api/notes", get(handlers::get_all_notes).post(handlers::post_note))
 		.route("/api/notes/{id}", get(handlers::get_note).delete(handlers::del_note).put(handlers::edit_title))
+		.route("/api/notes/by-owner", delete(handlers::del_notes_by_owner))
+		.route("/api/notes/export", get(handlers::export_notes))
 		.with_state(state);
 
 	let port = std::env::var("PORT").unwrap_or_else(|_| "3003".to_string());

@@ -48,6 +48,7 @@
 	"profile.button.updateUsername": "Update Username",
 	"profile.button.updateEmail": "Update Email",
 	"profile.button.changePassword": "Change Password",
+	"profile.button.exportData": "Export Data (JSON)",
 	"profile.button.deleteAccount": "Delete Account",
 	"profile.error.passwordMismatch": "New passwords do not match",
 	"home.sidebarTitle": "Dashboard",
