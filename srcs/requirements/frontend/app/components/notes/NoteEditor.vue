@@ -51,9 +51,18 @@ watchEffect((onCleanup) => {
   editor.value = ed;
   onCleanup(() => ed.destroy());
 });
+
+function focusEditorEnd(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (target.closest(".editor-scroll")) return;
+  const ed = editor.value;
+  if (!ed) return;
+  ed.commands.focus("end");
+}
 </script>
 
 <template>
+  <div ref="wrapper" class="editor-wrapper" @click="focusEditorEnd">
   <div class="editor-surface">
     <div class="editor-scroll">
       <input
@@ -69,5 +78,6 @@ watchEffect((onCleanup) => {
       <span class="editor-status-dot" />
       {{ connectedUsers }} {{ t('noteEditor.collaborators') }}
     </div>
+  </div>
   </div>
 </template>
