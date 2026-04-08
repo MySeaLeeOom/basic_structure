@@ -30,8 +30,8 @@ pub async fn ws_route(
 			None => return StatusCode::UNAUTHORIZED.into_response(),
 		};
 
-	// Simple ownership check
-	if !db::check_ownership(&state.pool, note_id, user_id).await {
+	// Check ownership or share access
+	if !db::check_access(&state.pool, note_id, user_id).await {
 		return StatusCode::FORBIDDEN.into_response();
 	}
 

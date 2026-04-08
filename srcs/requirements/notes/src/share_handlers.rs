@@ -1,15 +1,13 @@
 use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
-use sqlx::PgPool;
 use uuid::Uuid;
 use crate::models::{Note, Share, ShareNotePayload, ManagedShareItem, ReceivedShareItem};
+use crate::AppState;
+use crate::handlers::get_user_id;
 use chrono::Utc;
 
-// We reuse the get_user_id function from handlers.rs
-use crate::handlers::get_user_id;
-
 // Fetch all notes that are shared with the specific user
-pub async fn shared_with_me(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<ReceivedShareItem>>, StatusCode> {
-	let user_id = get_user_id(&headers)?;
+pub async fn shared_with_me(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Vec<ReceivedShareItem>>, StatusCode> {
+	let user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
 	tracing::debug!("Fetching all notes shared with user {}", user_id);
 	let shared_notes = sqlx::query_as::<_, ReceivedShareItem>(
 		"SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.role, n.owner_id, s.created_at
@@ -18,7 +16,7 @@ pub async fn shared_with_me(State(pool): State<PgPool>, headers: HeaderMap) -> R
 		 WHERE s.guest_id = $1
 		 ORDER BY s.created_at DESC")
 		.bind(user_id)
-		.fetch_all(&pool)
+		.fetch_all(&state.db_pool)
 		.await
 		.map_err(|e| {
 			tracing::error!("Failed to fetch shared notes: {}", e);
@@ -29,8 +27,8 @@ pub async fn shared_with_me(State(pool): State<PgPool>, headers: HeaderMap) -> R
 }
 
 // Fetch a single note that has been shared with the user
-pub async fn open_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
-    let user_id = get_user_id(&headers)?;
+pub async fn open_share(State(state): State<AppState>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Note>, StatusCode> {
+    let user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     tracing::debug!("Fetching shared note via share {} for user {}", share_id, user_id);
     
     // A note is accessible if:
@@ -45,7 +43,7 @@ pub async fn open_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, 
     )
     .bind(share_id)
     .bind(user_id)
-    .fetch_optional(&pool)
+    .fetch_optional(&state.db_pool)
     .await
     .map_err(|e| {
         tracing::error!("Failed to fetch shared note via share {}: {}", share_id, e);
@@ -59,8 +57,8 @@ pub async fn open_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, 
 }
 
 // Fetch every single share linking to any note owned by this user
-pub async fn my_shares(State(pool): State<PgPool>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
-    let owner_id = get_user_id(&headers)?;
+pub async fn my_shares(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
+    let owner_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     tracing::debug!("Fetching all shares managed by user {}", owner_id);
 
     let managed_shares = sqlx::query_as::<_, ManagedShareItem>(
@@ -71,7 +69,7 @@ pub async fn my_shares(State(pool): State<PgPool>, headers: HeaderMap) -> Result
          ORDER BY s.created_at DESC"
     )
     .bind(owner_id)
-    .fetch_all(&pool)
+    .fetch_all(&state.db_pool)
     .await
     .map_err(|e| {
         tracing::error!("Failed to fetch managed shares: {}", e);
@@ -82,8 +80,8 @@ pub async fn my_shares(State(pool): State<PgPool>, headers: HeaderMap) -> Result
 }
 
 // Fetch all shares associated with a specific note ID
-pub async fn note_collaborators(State(pool): State<PgPool>, Path(note_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
-    let owner_id = get_user_id(&headers)?;
+pub async fn note_collaborators(State(state): State<AppState>, Path(note_id): Path<Uuid>, headers: HeaderMap) -> Result<Json<Vec<ManagedShareItem>>, StatusCode> {
+    let owner_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     tracing::debug!("Fetching all shares for note {} by user {}", note_id, owner_id);
 
     let note_shares = sqlx::query_as::<_, ManagedShareItem>(
@@ -95,7 +93,7 @@ pub async fn note_collaborators(State(pool): State<PgPool>, Path(note_id): Path<
     )
     .bind(note_id)
     .bind(owner_id)
-    .fetch_all(&pool)
+    .fetch_all(&state.db_pool)
     .await
     .map_err(|e| {
         tracing::error!("Failed to fetch shares for note {}: {}", note_id, e);
@@ -105,13 +103,13 @@ pub async fn note_collaborators(State(pool): State<PgPool>, Path(note_id): Path<
     Ok(Json(note_shares))
 }
 
-pub async fn create_share(State(pool): State<PgPool>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
-    let requesting_user_id = get_user_id(&headers)?;
+pub async fn create_share(State(state): State<AppState>, headers: HeaderMap, Json(payload): Json<ShareNotePayload>) -> Result<Json<Share>, StatusCode> {
+    let requesting_user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     tracing::debug!("Attempting to create a share for note {} by user {}", payload.note_id, requesting_user_id);
 
     let note_owner_id = sqlx::query_scalar::<_, Uuid>("SELECT owner_id FROM notes WHERE id = $1")
         .bind(payload.note_id)
-        .fetch_optional(&pool)
+        .fetch_optional(&state.db_pool)
         .await
         .map_err(|e| {
             tracing::error!("Failed to query note ownership for note {}: {}", payload.note_id, e);
@@ -139,7 +137,7 @@ pub async fn create_share(State(pool): State<PgPool>, headers: HeaderMap, Json(p
     .bind(payload.role)
     .bind(current_time)
     .bind(current_time)
-    .fetch_one(&pool)
+    .fetch_one(&state.db_pool)
     .await
     .map_err(|e| {
         if let Some(db_err) = e.as_database_error() {
@@ -156,8 +154,8 @@ pub async fn create_share(State(pool): State<PgPool>, headers: HeaderMap, Json(p
     Ok(Json(new_share))
 }
 
-pub async fn revoke_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
-    let requesting_user_id = get_user_id(&headers)?;
+pub async fn revoke_share(State(state): State<AppState>, Path(share_id): Path<Uuid>, headers: HeaderMap) -> Result<StatusCode, StatusCode> {
+    let requesting_user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     tracing::info!("Attempting to revoke share {} by user {}", share_id, requesting_user_id);
 
     // Ensure the person attempting to revoke the share is the owner of the note
@@ -168,7 +166,7 @@ pub async fn revoke_share(State(pool): State<PgPool>, Path(share_id): Path<Uuid>
     )
     .bind(share_id)
     .bind(requesting_user_id)
-    .execute(&pool)
+    .execute(&state.db_pool)
     .await
     .map_err(|e| {
         tracing::error!("Failed to revoke share {}: {}", share_id, e);

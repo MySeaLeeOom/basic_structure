@@ -1,14 +1,14 @@
 use axum::{extract::{State, Path}, http::{HeaderMap, StatusCode}, Json};
-use sqlx::PgPool;
 use crate::models::Note;
+use crate::AppState;
 use crate::handlers::get_user_id;
 
 pub async fn get_note_by_slug(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(slug): Path<String>,
     headers: HeaderMap
 ) -> Result<Json<Note>, StatusCode> {
-    let user_id = get_user_id(&headers)?;
+    let user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
     
     tracing::debug!("Searching for note by slug '{}' for user {}", slug, user_id);
 
@@ -20,7 +20,7 @@ pub async fn get_note_by_slug(
     )
     .bind(&slug)
     .bind(user_id)
-    .fetch_optional(&pool)
+    .fetch_optional(&state.db_pool)
     .await
     .map_err(|e| {
         tracing::error!("Failed to lookup note by slug {}: {}", slug, e);
