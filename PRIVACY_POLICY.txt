@@ -86,15 +86,17 @@ reverse proxy, which should be configured with TLS in production.
 - Account and note data are retained for as long as your account exists.
 - Server logs are retained according to your deployment's log-rotation
   configuration.
+- You can request an export of your account profile and notes before
+  account deletion.
 
 
 7. Data Deletion
 
 Account deletion cascades to all associated sessions and provider-account
 links (enforced by database foreign-key constraints with ON DELETE CASCADE).
-Note ownership and deletion policy should be documented here once finalized
-— the current schema has an owner_id column but the cascade behavior for
-notes on account deletion is not yet enforced in the database.
+Because notes are stored in a separate service/database, note deletion is
+orchestrated in application code during account deletion. This removes all
+notes owned by the account and their dependent collaborative state entries.
 
 
 8. Children

@@ -2,7 +2,7 @@ use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use serde::Serialize;
 use uuid::Uuid;
 use crate::metrics;
-use crate::models::{Note, CreateNote};
+use crate::models::{Note, CreateNote, NoteExport};
 use crate::AppState;
 
 #[derive(Serialize)]
@@ -174,4 +174,43 @@ pub async fn edit_title(State(state): State<AppState>, Path(id): Path<Uuid>, hea
 			Err(error_response(&state, &locale, StatusCode::NOT_FOUND, "note-not-found"))
 		}
 	}
+}
+
+pub async fn del_notes_by_owner(State(state): State<AppState>, headers: HeaderMap) -> Result<StatusCode, ApiError> {
+	let locale = requested_locale(&headers, state.i18n.default_locale());
+	let user_id = get_user_id(&headers)
+		.map_err(|_| error_response(&state, &locale, StatusCode::UNAUTHORIZED, "unauthorized"))?;
+	tracing::info!("Deleting all notes for user {}", user_id);
+
+	sqlx::query("DELETE FROM notes WHERE owner_id = $1")
+		.bind(user_id)
+		.execute(&state.db_pool)
+		.await
+		.map_err(|e| {
+			tracing::error!("Failed to delete notes for user {}: {}", user_id, e);
+			error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
+		})?;
+
+	Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn export_notes(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Vec<NoteExport>>, ApiError> {
+	let locale = requested_locale(&headers, state.i18n.default_locale());
+	let user_id = get_user_id(&headers)
+		.map_err(|_| error_response(&state, &locale, StatusCode::UNAUTHORIZED, "unauthorized"))?;
+	tracing::info!("Exporting notes for user {}", user_id);
+
+	let notes = sqlx::query_as::<_, NoteExport>(
+		"SELECT n.id, n.title, n.owner_id, n.created_at, n.updated_at, ns.state_vector \
+		 FROM notes n LEFT JOIN note_states ns ON n.id = ns.note_id WHERE n.owner_id = $1 ORDER BY n.created_at ASC",
+	)
+	.bind(user_id)
+	.fetch_all(&state.db_pool)
+	.await
+	.map_err(|e| {
+		tracing::error!("Failed to export notes for user {}: {}", user_id, e);
+		error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
+	})?;
+
+	Ok(Json(notes))
 }
