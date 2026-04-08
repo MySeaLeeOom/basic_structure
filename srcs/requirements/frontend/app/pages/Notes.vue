@@ -17,43 +17,110 @@ const { t } = useUiI18n();
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
+const allUsers = ref<{ id: string; loginName: string }[]>([]);
+const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
+const inviteError = ref('');
+const inviteSuccess = ref('');
 
-// TODO: fetch from GET /api/users (returns [{ name: string, fullName: string }])
-const dummyUsers = [
-	{ name: 'aydiler', fullName: 'Ahmet Diler' },
-	{ name: 'catdev42', fullName: 'Masha Yakoven' },
-{ name: 'grmullin', fullName: 'Grace Mullin' },
-	{ name: 'maahoff', fullName: 'Maarten Hoff' },
-	{ name: 'pvasilan', fullName: 'Pavlos Vasilantonakis' },
-];
+async function fetchUsers() {
+	try {
+		const res = await $fetch<{ users: { id: string; loginName: string }[] }>('/api/auth/users');
+		allUsers.value = res.users;
+	} catch {
+		allUsers.value = [];
+	}
+}
+
+async function fetchCollaborators(noteId: string) {
+	try {
+		collaborators.value = await $fetch(`/api/notes/collab/${noteId}`);
+	} catch {
+		collaborators.value = [];
+	}
+}
 
 function openInvite(noteId: string) {
 	inviteNoteId.value = noteId;
 	selectedUsers.value = [];
+	inviteError.value = '';
+	inviteSuccess.value = '';
 	showInviteDialog.value = true;
+	if (allUsers.value.length === 0) fetchUsers();
+	fetchCollaborators(noteId);
 }
 
-function toggleUser(username: string) {
-	const idx = selectedUsers.value.indexOf(username);
+function toggleUser(userId: string) {
+	const idx = selectedUsers.value.indexOf(userId);
 	if (idx === -1) {
-		selectedUsers.value.push(username);
+		selectedUsers.value.push(userId);
 	} else {
 		selectedUsers.value.splice(idx, 1);
 	}
 }
 
-function sendInvite() {
-	if (selectedUsers.value.length === 0 || !inviteNoteId.value) return;
-	// TODO: POST /api/notes/:noteId/invite { usernames: string[] }
-	// Expected response: 200 OK on success
-	console.log(`Invite ${selectedUsers.value.join(', ')} to note ${inviteNoteId.value}`);
-	selectedUsers.value = [];
-	showInviteDialog.value = false;
-	inviteNoteId.value = null;
+function usernameFor(userId: string | null) {
+	if (!userId) return 'Public link';
+	return allUsers.value.find(u => u.id === userId)?.loginName ?? userId.slice(0, 8);
 }
 
-// Shared notes selection (separate from own notes)
+// Users not already collaborators (exclude self too via owner check)
+const availableUsers = computed(() => {
+	const collabIds = new Set(collaborators.value.map(c => c.guest_id));
+	return allUsers.value.filter(u => !collabIds.has(u.id));
+});
+
+async function revokeShare(shareId: string) {
+	try {
+		await $fetch(`/api/notes/collab/revoke/${shareId}`, { method: 'DELETE' });
+		collaborators.value = collaborators.value.filter(c => c.share_id !== shareId);
+	} catch {
+		inviteError.value = 'Failed to revoke access';
+	}
+}
+
+async function sendInvite() {
+	if (selectedUsers.value.length === 0 || !inviteNoteId.value) return;
+	inviteError.value = '';
+	inviteSuccess.value = '';
+
+	let shared = 0;
+	let skipped = 0;
+	for (const guestId of selectedUsers.value) {
+		try {
+			await $fetch('/api/notes/collab/', {
+				method: 'POST',
+				body: { note_id: inviteNoteId.value, guest_id: guestId, role: 'Edit' },
+			});
+			shared++;
+		} catch (e: any) {
+			if (e?.response?.status === 409) {
+				skipped++;
+			} else {
+				inviteError.value = 'Failed to share with some users';
+			}
+		}
+	}
+
+	if (shared > 0) inviteSuccess.value = `Shared with ${shared} user${shared > 1 ? 's' : ''}`;
+	if (skipped > 0) inviteSuccess.value += skipped === selectedUsers.value.length
+		? 'All selected users already have access'
+		: ` (${skipped} already had access)`;
+
+	selectedUsers.value = [];
+	if (inviteNoteId.value) fetchCollaborators(inviteNoteId.value);
+}
+
+// Shared notes
+const sharedNotes = ref<{ share_id: string; note_id: string; note_title: string; role: string; owner_id: string; created_at: string }[]>([]);
 const selectedSharedNote = ref<any>(null);
+
+async function fetchSharedNotes() {
+	try {
+		sharedNotes.value = await $fetch('/api/notes/collab/received');
+	} catch {
+		sharedNotes.value = [];
+	}
+}
 
 // When selecting in one list, deselect the other
 function selectOwnNote(note: any) {
@@ -66,7 +133,11 @@ function selectSharedNote(note: any) {
 	noteStore.selectedNote = null;
 }
 
-const activeNote = computed(() => noteStore.selectedNote || selectedSharedNote.value);
+const activeNote = computed(() => {
+	if (noteStore.selectedNote) return noteStore.selectedNote;
+	if (selectedSharedNote.value) return { id: selectedSharedNote.value.note_id, title: selectedSharedNote.value.note_title };
+	return null;
+});
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
@@ -103,6 +174,7 @@ onMounted(() => {
 			}
 		});
 	}
+	fetchSharedNotes();
 });
 
 onServerPrefetch(async () => {
@@ -162,17 +234,19 @@ onServerPrefetch(async () => {
 				</template>
 			</Listbox>
 
-			<!-- TODO: fetch from GET /api/notes/shared (returns same shape as GET /api/notes) -->
-			<div class="flex items-center justify-between mt-4 mb-1 px-2">
+			<div v-if="sharedNotes.length" class="flex items-center justify-between mt-4 mb-1 px-2">
 				<h2 class="section-title !mb-0">{{ t('notes.shared') }}</h2>
 			</div>
-			<Listbox v-if="!noteStore.isLoading" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
-				:options="noteStore.notes" optionLabel="title" dataKey="id"
+			<Listbox v-if="sharedNotes.length" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
+				:options="sharedNotes" optionLabel="note_title" dataKey="note_id"
 				pt:root:class="!border-0 !shadow-none !bg-transparent"
 				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
 				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
-					<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
+					<div class="flex items-center justify-between w-full">
+						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
+						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.role }}</span>
+					</div>
 				</template>
 			</Listbox>
 
@@ -187,32 +261,62 @@ onServerPrefetch(async () => {
 		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
 			pt:root:class="w-full max-w-sm">
 			<div class="flex flex-col gap-3">
+				<!-- Current collaborators -->
+				<div v-if="collaborators.length">
+					<label class="text-sm text-surface-500 mb-1 block">Current access</label>
+					<div class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
+						<div v-for="collab in collaborators" :key="collab.share_id"
+							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
+							<div class="flex items-center gap-3 min-w-0">
+								<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
+									{{ usernameFor(collab.guest_id)?.charAt(0).toUpperCase() || "?" }}
+								</span>
+								<div class="min-w-0">
+									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
+									<div class="text-xs text-surface-500">{{ collab.role }}</div>
+								</div>
+							</div>
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center text-surface-400 hover:text-red-400 hover:bg-surface-600 transition-colors shrink-0"
+								@click="revokeShare(collab.share_id)">
+								<TimesIcon class="w-2.5 h-2.5" />
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Selected users to invite -->
 				<div v-if="selectedUsers.length" class="flex flex-wrap gap-1.5">
-					<span v-for="user in selectedUsers" :key="user"
+					<span v-for="uid in selectedUsers" :key="uid"
 						class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-500/15 text-primary-400">
-						{{ user }}
-						<button class="hover:text-primary-300" @click="toggleUser(user)">
+						{{ allUsers.find(u => u.id === uid)?.loginName ?? uid }}
+						<button class="hover:text-primary-300" @click="toggleUser(uid)">
 							<TimesIcon class="w-2 h-2" />
 						</button>
 					</span>
 				</div>
+
+				<!-- Available users to add -->
 				<label class="text-sm text-surface-500">{{ t('notes.invite.selectUsers') }}</label>
-				<div class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
-					<button v-for="user in dummyUsers" :key="user.name"
+				<div v-if="availableUsers.length" class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
+					<button v-for="user in availableUsers" :key="user.id"
 						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
-						:class="selectedUsers.includes(user.name)
+						:class="selectedUsers.includes(user.id)
 							? 'bg-primary-500/15 text-primary-400'
 							: 'hover:bg-surface-800 text-surface-300'"
-						@click="toggleUser(user.name)">
+						@click="toggleUser(user.id)">
 						<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
-							{{ user.name?.charAt(0).toUpperCase() || "?" }}
+							{{ user.loginName?.charAt(0).toUpperCase() || "?" }}
 						</span>
 						<div class="min-w-0">
-							<div class="truncate">{{ user.fullName }}</div>
-							<div class="text-xs text-surface-500 truncate">@{{ user.name }}</div>
+							<div class="truncate">@{{ user.loginName }}</div>
 						</div>
 					</button>
 				</div>
+				<div v-else class="text-xs text-surface-500">All users already have access</div>
+
+				<span v-if="inviteError" class="text-xs text-red-500">{{ inviteError }}</span>
+				<span v-if="inviteSuccess" class="text-xs text-green-600">{{ inviteSuccess }}</span>
 			</div>
 			<template #footer>
 				<Button :label="t('notes.invite.send')" :disabled="selectedUsers.length === 0" @click="sendInvite" />
