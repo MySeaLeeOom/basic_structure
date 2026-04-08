@@ -9,6 +9,12 @@
 | [live-cursors.md](dev/collab/live-cursors.md) | Awareness protocol: ephemeral cursor/selection data, CollaborationCaret config, connected users count. |
 | [tiptap-yjs-summary.md](dev/tiptap-yjs-summary.md) | Comprehensive reference with mermaid diagrams covering all of the above in one file. |
 
+## Internationalization (`dev/`)
+
+| File | Description |
+|------|-------------|
+| [i18n.md](dev/i18n.md) | i18n architecture: frontend useUiI18n composable + JSON dictionaries, backend Fluent FTL files, error localization, locale resolution, consuming backend errors in Vue, best practices. |
+
 ## Vue + Volt UI (`dev/vue/`)
 
 | File | Description |
