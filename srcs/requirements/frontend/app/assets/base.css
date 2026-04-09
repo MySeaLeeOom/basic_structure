@@ -244,11 +244,12 @@ html.theme-transition *::after {
 
 /* Placeholder text (@tiptap/extension-placeholder) */
 .tiptap-editor .tiptap p.is-editor-empty:first-child::before {
-	color: #adb5bd;
+	color: var(--p-surface-600);
 	content: attr(data-placeholder);
 	float: left;
 	height: 0;
 	pointer-events: none;
+	font-style: italic;
 }
 
 /* Collaboration caret — subtle glow line + fading label */

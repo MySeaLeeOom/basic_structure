@@ -56,5 +56,6 @@
 	"home.title": "Startseite",
 	"home.greeting": "Hallo Myceleum-Team!",
 	"noteEditor.untitled": "Unbenannt",
+	"noteEditor.placeholder": "Schreib los...",
 	"noteEditor.collaborators": "Mitwirkende"
 }

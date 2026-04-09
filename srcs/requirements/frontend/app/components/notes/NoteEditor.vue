@@ -2,6 +2,7 @@
 import { shallowRef, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { useCollaboration } from "@/composables/useCollaboration";
@@ -36,6 +37,7 @@ watchEffect((onCleanup) => {
   const ed = new Editor({
     extensions: [
       StarterKit.configure({ undoRedo: false }),
+      Placeholder.configure({ placeholder: t('noteEditor.placeholder') }),
       Collaboration.configure({ document: doc }),
       CollaborationCaret.configure({
         provider: prov,
