@@ -229,8 +229,8 @@ async function handleExportData() {
 
 
 <template>
-	<div class="h-full overflow-y-auto p-4">
-		<div class="min-h-full flex items-start justify-center py-4 md:items-center">
+	<div class="h-full overflow-y-auto p-4 bg-surface-50 dark:bg-surface-950">
+		<div class="flex justify-center py-4">
 		<Card class="w-full max-w-sm">
 			<template #title>
 				<h2 class="text-xl font-bold text-center">{{ t('profile.title') }}</h2>
