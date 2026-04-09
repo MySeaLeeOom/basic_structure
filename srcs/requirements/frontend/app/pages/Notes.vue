@@ -37,6 +37,8 @@ async function fetchCollaborators(noteId: string) {
 	} catch {
 		collaborators.value = [];
 	}
+	const count = collaborators.value.length;
+	inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
 }
 
 function openInvite(noteId: string) {
@@ -70,9 +72,12 @@ const availableUsers = computed(() => {
 });
 
 async function revokeShare(shareId: string) {
+	inviteError.value = '';
 	try {
 		await $fetch(`/api/notes/collab/revoke/${shareId}`, { method: 'DELETE' });
 		collaborators.value = collaborators.value.filter(c => c.share_id !== shareId);
+		const count = collaborators.value.length;
+		inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
 	} catch {
 		inviteError.value = 'Failed to revoke access';
 	}
