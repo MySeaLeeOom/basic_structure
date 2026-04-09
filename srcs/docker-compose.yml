@@ -42,7 +42,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
 
@@ -59,7 +60,8 @@ services:
         DB_PASSWORD: ${DB_PASSWORD}
         DB_NAME: ${DB_NAME}
       depends_on:
-        - postgres
+        postgres:
+          condition: service_healthy
       networks:
         - transcendence
 
