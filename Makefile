@@ -14,7 +14,11 @@ MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
 
-all: cleanv up
+# Tear down first so volumes are not still mounted by running containers.
+all: getuser
+	$(COMPOSE) down $(FLAGS)
+	@$(MAKE) cleanv
+	@$(MAKE) up
 
 getuser:
 	@touch srcs/.env
@@ -27,11 +31,13 @@ up: getuser
 live: getuser
 	$(COMPOSE) up --build
 
-down: getuser cleanv
+down: getuser
 	$(COMPOSE) down $(FLAGS)
+	@$(MAKE) cleanv
 
-clean: getuser cleanv
+clean: getuser
 	$(COMPOSE) down --rmi all $(FLAGS)
+	@$(MAKE) cleanv
 
 # Removes all artifacts and dev containers, does not remove the databases
 cleanv: 
@@ -45,7 +51,7 @@ fclean: getuser
 	@echo "Removing all volumes..."
 	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
-re: clean cleanv all
+re: clean up
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
