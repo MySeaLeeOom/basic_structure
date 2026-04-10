@@ -17,7 +17,7 @@ const activeForm = ref<'login' | 'email' | 'password' | null>(null);
 const successMessage = ref('');
 
 /** Language selection logic */
-function setLocale(tag: 'en-UK' | 'de-DE' | 'es-ES') {
+function setLocale(tag: 'en-UK' | 'de-DE' | 'es-ES' | 'ie-IE' | 'tr-TR' | 'el-GR' | 'ru-RU') {
 	locale.value = tag;
 }
 
@@ -40,6 +40,22 @@ const langMenuItems = computed(() => [
 		label: t('lang.es'),
 		command: () => setLocale('es-ES'),
 	},
+	{
+		label: t('lang.ie'),
+		command: () => setLocale('ie-IE'),
+	},
+	{
+		label: t('lang.tr'),
+		command: () => setLocale('tr-TR'),
+	},
+	{
+		label: t('lang.el'),
+		command: () => setLocale('el-GR'),
+	},
+	{
+		label: t('lang.ru'),
+		command: () => setLocale('ru-RU'),
+	}
 ]);
 
 async function handleLogout() {
