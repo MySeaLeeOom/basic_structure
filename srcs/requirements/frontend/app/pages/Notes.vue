@@ -10,10 +10,12 @@ import { useConfirm } from "primevue/useconfirm";
 import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
 import { useUiI18n } from "~/composables/useUiI18n";
+import { useAuthStore } from "@/stores/authStore";
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
 const { t } = useUiI18n();
+const authStore = useAuthStore();
 
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
@@ -66,10 +68,11 @@ function usernameFor(userId: string | null) {
 	return allUsers.value.find(u => u.id === userId)?.loginName ?? userId.slice(0, 8);
 }
 
-// Users not already collaborators (exclude self too via owner check)
+// Users not already collaborators and not the current user
 const availableUsers = computed(() => {
 	const collabIds = new Set(collaborators.value.map(c => c.guest_id));
-	return allUsers.value.filter(u => !collabIds.has(u.id));
+	const currentUserId = authStore.user?.id;
+	return allUsers.value.filter(u => !collabIds.has(u.id) && u.id !== currentUserId);
 });
 
 async function revokeShare(shareId: string) {

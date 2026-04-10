@@ -125,6 +125,10 @@ pub async fn create_share(State(state): State<AppState>, headers: HeaderMap, Jso
         return Err(StatusCode::FORBIDDEN);
     }
 
+    if payload.guest_id == Some(requesting_user_id) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let current_time = Utc::now();
 
     let new_share = sqlx::query_as::<_, Share>(
