@@ -10,9 +10,11 @@ import Tab from "@/volt/Tab.vue";
 import TabPanels from "@/volt/TabPanels.vue";
 import TabPanel from "@/volt/TabPanel.vue";
 import { useAuthStore } from "@/stores/authStore";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const { t } = useUiI18n();
 
 const identifier = ref("");
 const password = ref("");
@@ -40,34 +42,34 @@ async function handleRegister() {
 	<div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
 		<Card class="w-full max-w-md">
 			<template #title>
-				<div class="text-center text-2xl font-bold mb-4">Welcome</div>
+				<div class="text-center text-2xl font-bold mb-4">{{ t('login.welcome') }}</div>
 			</template>
 			<template #content>
 				<Tabs value="0">
 					<TabList>
-						<Tab value="0">Login</Tab>
-						<Tab value="1">Register</Tab>
+						<Tab value="0">{{ t('login.tab.login') }}</Tab>
+						<Tab value="1">{{ t('login.tab.register') }}</Tab>
 					</TabList>
 					<TabPanels>
 						<TabPanel value="0">
 							<div class="flex flex-col gap-4 mt-4">
-								<InputText v-model="identifier" placeholder="Username or Email" fluid />
-								<InputText v-model="password" type="password" placeholder="Password" fluid />
-								<Button label="Sign In" @click="handleLogin" :loading="authStore.loading" fluid />
+								<InputText v-model="identifier" :placeholder="t('login.identifier')" fluid />
+								<InputText v-model="password" type="password" :placeholder="t('login.password')" fluid />
+								<Button :label="t('login.signin')" @click="handleLogin" :loading="authStore.loading" fluid />
 
-								<div class="text-center text-sm text-gray-500 my-2">OR</div>
+								<div class="text-center text-sm text-gray-500 my-2">{{ t('login.or') }}</div>
 
 								<a href="/api/auth/login/github" class="w-full">
-									<Button label="Login with GitHub" icon="pi pi-github" severity="secondary" fluid />
+									<Button :label="t('login.github')" icon="pi pi-github" severity="secondary" fluid />
 								</a>
 							</div>
 						</TabPanel>
 						<TabPanel value="1">
 							<div class="flex flex-col gap-4 mt-4">
-								<InputText v-model="regLogin" placeholder="Username" fluid />
-								<InputText v-model="regEmail" placeholder="Email" fluid />
-								<InputText v-model="regPassword" type="password" placeholder="Password" fluid />
-								<Button label="Create Account" @click="handleRegister" :loading="authStore.loading"
+								<InputText v-model="regLogin" :placeholder="t('login.username')" fluid />
+								<InputText v-model="regEmail" :placeholder="t('login.email')" fluid />
+								<InputText v-model="regPassword" type="password" :placeholder="t('login.password')" fluid />
+								<Button :label="t('login.create')" @click="handleRegister" :loading="authStore.loading"
 									fluid />
 							</div>
 						</TabPanel>

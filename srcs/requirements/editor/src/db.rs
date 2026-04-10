@@ -41,14 +41,20 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 	Ok(doc)
 }
 
-pub async fn check_ownership(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
-	sqlx::query("SELECT 1 FROM notes WHERE id = $1 AND owner_id = $2")
-		.bind(note_id)
-		.bind(user_id)
-		.fetch_optional(pool)
-		.await
-		.map(|r| r.is_some())
-		.unwrap_or(false)
+pub async fn check_access(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
+	// Owner OR shared guest (private share or public link)
+	sqlx::query(
+		"SELECT 1 FROM notes WHERE id = $1 AND owner_id = $2
+		 UNION ALL
+		 SELECT 1 FROM share WHERE note_id = $1 AND (guest_id = $2 OR guest_id IS NULL)
+		 LIMIT 1"
+	)
+	.bind(note_id)
+	.bind(user_id)
+	.fetch_optional(pool)
+	.await
+	.map(|r| r.is_some())
+	.unwrap_or(false)
 }
 
 pub async fn save_note(pool: &PgPool, note_id: Uuid, user_id: Uuid, doc: &Doc) -> Result<(), ()> {

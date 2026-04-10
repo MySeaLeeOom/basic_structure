@@ -1,0 +1,175 @@
+Terms and Conditions — Mycelium Notes
+
+Last updated: [DATE]
+
+By creating an account or using Mycelium Notes ("the Service"), you agree
+to these terms. If you do not agree, do not use the Service.
+
+
+1. Definitions
+
+"Service" refers to the Mycelium Notes web application and all associated
+backend services.
+"User" refers to any individual who creates an account or accesses the
+Service.
+"Content" refers to any notes, text, documents, or other material created,
+uploaded, or edited through the Service.
+"We", "us", and "our" refer to the operator(s) of the Service.
+
+
+2. Eligibility
+
+You must be at least 16 years old to use the Service. By registering, you
+represent that you meet this requirement.
+
+
+3. Account Registration
+
+3.1 You may register using a local account (email and password) or by
+authenticating through GitHub OAuth. You are responsible for maintaining
+the security of your credentials.
+
+3.2 You agree to provide accurate information during registration. Each
+account must have a unique email address and login name.
+
+3.3 If you sign in via GitHub, you authorize us to receive your profile
+information (display name, email, avatar URL) from GitHub. Your use of
+GitHub is subject to GitHub's own terms of service.
+
+3.4 You are responsible for all activity that occurs under your account.
+Notify us immediately if you believe your account has been compromised.
+
+
+4. User Content
+
+4.1 Ownership. You retain ownership of the Content you create through the
+Service. We do not claim intellectual property rights over your Content.
+
+4.2 License to operate. By storing Content on the Service, you grant us a
+limited, non-exclusive license to store, process, transmit, and display
+your Content solely for the purpose of providing and maintaining the
+Service. This includes synchronizing Content across collaborative sessions.
+
+4.3 Collaborative editing. The Service supports real-time collaborative
+editing. When you share a note or collaborate with other users, those users
+may view, edit, and modify the shared Content. You acknowledge that
+collaborative edits are merged automatically and may not be individually
+reversible.
+
+4.4 Content format. Document bodies are stored as binary CRDT state vectors.
+We do not guarantee that Content can be exported in any particular format
+beyond what the Service's interface provides.
+
+
+5. Acceptable Use
+
+You agree not to:
+
+(a) Use the Service to store or transmit unlawful, defamatory, harassing,
+    or otherwise objectionable material.
+(b) Attempt to gain unauthorized access to other users' accounts, notes,
+    or any part of the Service's infrastructure.
+(c) Interfere with or disrupt the Service, including its servers, networks,
+    or WebSocket connections.
+(d) Use automated tools (bots, scrapers) to access the Service without
+    prior written permission.
+(e) Circumvent any access controls, rate limits, or security measures.
+(f) Impersonate another person or misrepresent your affiliation with any
+    entity.
+
+
+6. Account Suspension and Termination
+
+6.1 We may change your account status to inactive or banned, temporarily
+or permanently, if we reasonably believe you have violated these terms or
+pose a risk to other users or the Service.
+
+6.2 You may request deletion of your account at any time. Account deletion
+will remove your sessions, linked provider accounts, and notes associated
+with your account. See our Privacy Policy for details on data retention and
+deletion behavior.
+
+6.3 We reserve the right to discontinue the Service at any time, with
+reasonable notice where practicable.
+
+
+7. Administrative Roles
+
+Certain accounts may be designated as administrators. Administrators may
+have elevated access to manage users, content, and Service configuration.
+Administrative actions are taken at our discretion and are subject to
+these terms.
+
+
+8. Third-Party Services
+
+8.1 The Service integrates with GitHub solely for authentication purposes.
+We are not responsible for GitHub's availability, terms, or handling of
+your data.
+
+8.2 The Service does not currently integrate advertising networks, payment
+processors, or third-party analytics. If this changes, these terms will be
+updated accordingly.
+
+
+9. Availability and Warranties
+
+9.1 The Service is provided "as is" and "as available" without warranties
+of any kind, whether express or implied, including but not limited to
+merchantability, fitness for a particular purpose, or non-infringement.
+
+9.2 We do not guarantee that the Service will be uninterrupted, error-free,
+or secure. Real-time collaboration depends on WebSocket connectivity, which
+may be affected by network conditions outside our control.
+
+9.3 We do not guarantee the integrity or durability of stored Content.
+You are responsible for maintaining your own backups.
+
+
+10. Limitation of Liability
+
+To the maximum extent permitted by applicable law, we shall not be liable
+for any indirect, incidental, special, consequential, or punitive damages,
+or any loss of data, profits, or goodwill, arising from or related to your
+use of the Service.
+
+
+11. Indemnification
+
+You agree to indemnify and hold us harmless from any claims, damages, or
+expenses (including reasonable legal fees) arising from your use of the
+Service, your Content, or your violation of these terms.
+
+
+12. Privacy
+
+Your use of the Service is also governed by our Privacy Policy, which
+describes how we collect, use, and store your personal data. By using the
+Service, you acknowledge that you have read and understood the Privacy
+Policy.
+
+
+13. Modifications to These Terms
+
+We may update these terms at any time. The "Last updated" date at the top
+will reflect the most recent revision. Continued use of the Service after
+changes are posted constitutes acceptance of the revised terms.
+
+
+14. Governing Law
+
+These terms shall be governed by and construed in accordance with the laws
+of [JURISDICTION]. Any disputes arising under these terms shall be subject
+to the exclusive jurisdiction of the courts of [JURISDICTION].
+
+
+15. Severability
+
+If any provision of these terms is found to be unenforceable, the remaining
+provisions shall continue in full force and effect.
+
+
+16. Contact
+
+For questions about these terms, contact us at [YOUR CONTACT EMAIL OR
+ADDRESS].

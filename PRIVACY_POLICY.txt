@@ -1,0 +1,117 @@
+Privacy Policy — Mycelium Notes
+
+Last updated: [DATE]
+
+This policy describes what personal data Mycelium Notes ("the Service")
+collects, why, and how it is handled.
+
+
+1. Data We Collect
+
+1.1 Account information
+
+When you register a local account, we store your email address, a display
+name (login name), and a password hash (Argon2). When you sign in via
+GitHub OAuth, we store the provider account identifier and any profile data
+GitHub returns (display name, email, avatar URL). We do not store your
+GitHub password or OAuth token long-term.
+
+1.2 Session data
+
+Each time you sign in, we create a server-side session record containing a
+session token, your IP address, your browser's User-Agent string, and an
+expiry timestamp. Sessions expire after seven days.
+
+1.3 Content
+
+Notes you create — including titles, metadata, and collaborative document
+state — are stored in our database. Document bodies are stored as binary
+CRDT (Yjs/Yrs) state vectors, not plain text.
+
+1.4 Cookies
+
+We set a single session_id HTTP-only cookie with SameSite=Lax. It contains
+only the session token used to authenticate your requests. We do not use
+advertising, analytics, or tracking cookies.
+
+1.5 Server logs and metrics
+
+Application logs may contain request metadata (timestamps, URLs, status
+codes). Sensitive fields — request bodies containing passwords, cookie
+headers, and authorization headers — are redacted before logging. We run
+self-hosted Prometheus and Grafana for operational metrics; no data is sent
+to third-party analytics or monitoring services.
+
+
+2. Data We Do Not Collect
+
+We do not integrate third-party analytics (Google Analytics, Segment,
+etc.), advertising networks, or payment processors. There is no client-side
+telemetry, no local-storage tracking, and no fingerprinting beyond the
+User-Agent string stored in your session record.
+
+
+3. How We Use Your Data
+
+- Account information: to authenticate you and display your identity within
+  the application.
+- Session data (IP, User-Agent): to maintain your login session, detect
+  session anomalies, and comply with security best practices.
+- Content: to provide the note-taking and real-time collaboration features
+  of the Service.
+- Operational metrics: to monitor service health, performance, and error
+  rates.
+
+
+4. Third-Party Services
+
+The only external service the application communicates with is GitHub, and
+only when you choose to sign in via GitHub OAuth. In that flow, GitHub
+receives a standard OAuth authorization request and returns your profile
+information. GitHub's own privacy policy governs its handling of that data.
+
+
+5. Data Storage and Security
+
+All data is stored in a self-hosted PostgreSQL database. Passwords are
+hashed with Argon2 and never stored or logged in cleartext. Session secrets
+and database credentials are managed via Docker secrets files.
+Communication between the browser and the server passes through an Nginx
+reverse proxy, which should be configured with TLS in production.
+
+
+6. Data Retention
+
+- Sessions are automatically deleted after their seven-day expiry.
+- Account and note data are retained for as long as your account exists.
+- Server logs are retained according to your deployment's log-rotation
+  configuration.
+- You can request an export of your account profile and notes before
+  account deletion.
+
+
+7. Data Deletion
+
+Account deletion cascades to all associated sessions and provider-account
+links (enforced by database foreign-key constraints with ON DELETE CASCADE).
+Because notes are stored in a separate service/database, note deletion is
+orchestrated in application code during account deletion. This removes all
+notes owned by the account and their dependent collaborative state entries.
+
+
+8. Children
+
+The Service is not directed at individuals under 16. We do not knowingly
+collect data from children.
+
+
+9. Changes to This Policy
+
+We will update the "Last updated" date at the top of this page when we make
+material changes. Continued use of the Service after changes constitutes
+acceptance.
+
+
+10. Contact
+
+[Your contact email or address here.]

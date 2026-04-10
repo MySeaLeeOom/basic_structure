@@ -24,7 +24,8 @@ services:
       - NODE_ENV=development
       - HOME=/tmp      # Fix for Corepack/pnpm permission issues
       - HOST=0.0.0.0  # For nuxt, so it knows
-      - PORT=${AUTH_PORT}   # For nuxt, so it knows          
+      - PORT=${AUTH_PORT}   # For nuxt, so it knows
+      - NODE_TLS_REJECT_UNAUTHORIZED=0  # Allow SSR with self-signed certificates
     depends_on:
       - auth
   
@@ -41,7 +42,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
 
@@ -58,7 +60,8 @@ services:
         DB_PASSWORD: ${DB_PASSWORD}
         DB_NAME: ${DB_NAME}
       depends_on:
-        - postgres
+        postgres:
+          condition: service_healthy
       networks:
         - transcendence
 
@@ -109,10 +112,8 @@ services:
     networks:
       - transcendence
     ports:
-      - "0.0.0.0:8080:80"
-      - "0.0.0.0:8081:81"
-      - "0.0.0.0:8082:82"
-      - "0.0.0.0:8083:83"
+      - "80:80"
+      - "443:443"
     depends_on:
       - frontend
       - auth
@@ -152,13 +153,18 @@ services:
     image: grafana
     container_name: grafana
     restart: always
+    secrets:
+    - grafana_admin_user
+    - grafana_admin_password
     networks:
       - transcendence
-    ports:
-      - "0.0.0.0:3000:3000"
     environment:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/overview.json
       - GF_NEWS_NEWS_FEED_ENABLED=false
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ADMIN_USER__FILE=/run/secrets/grafana_admin_user
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
   prometheus:
     build:
       context: ./requirements/prometheus
@@ -176,6 +182,10 @@ services:
     build: ./requirements/nginx-exporter
     container_name: nginx-exporter
     restart: always
+    command:
+      - "--nginx.scrape-uri=http://nginx:8088/stub_status"
+    depends_on:
+      - nginx
     networks:
       - transcendence
   postgres-exporter:
@@ -273,6 +283,10 @@ secrets:
     file: ./secrets/github_client_secret #
   session_secret_key:  
     file: ./secrets/session_secret_key
+  grafana_admin_user:
+    file: ./secrets/grafana_admin_user
+  grafana_admin_password:
+    file: ./secrets/grafana_admin_password
 
 networks:
   transcendence:

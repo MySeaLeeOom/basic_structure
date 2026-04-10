@@ -18,13 +18,13 @@ export const useAuthStore = defineStore("auth", () => {
 	const isAuthenticated = computed(() => !!user.value);
 
 	// Check if session cookie is valid
-	async function checkAuth(serverCookie?: string) {
+	async function checkAuth(serverCookie?: string, force = false) {
 		// Capture headers at the very start (Magic must happen before any await)
 		const isServer = typeof window === "undefined";
 		const capturedCookie = serverCookie || (isServer ? useRequestHeaders(["cookie"]).cookie : undefined);
 
-		// If user is already set, skip.
-		if (user.value) return;
+		// If user is already set, skip unless forced refresh is requested.
+		if (user.value && !force) return;
 
 		loading.value = true;
 		error.value = null;
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore("auth", () => {
 			// Thick Check: Fetch Profile (This internally verifies the session)
 			// If server, we MUST use the internal docker network URL
 			// If client, we use the relative URL (proxied by Nginx)
-			const url = isServer ? "http://auth:3000/me" : "/api/auth/me";
+			const url = isServer ? "https://nginx:443/api/auth/me" : "/api/auth/me";
 
 			const res = await fetch(url, { headers });
 			if (res.ok) {
@@ -151,7 +151,7 @@ export const useAuthStore = defineStore("auth", () => {
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
 
-			await checkAuth(); // Refresh profile
+			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
 		} catch (e: any) {
 			error.value = e.message;
@@ -173,7 +173,7 @@ export const useAuthStore = defineStore("auth", () => {
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
 
-			await checkAuth(); // Refresh profile
+			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
 		} catch (e: any) {
 			error.value = e.message;
@@ -203,6 +203,48 @@ export const useAuthStore = defineStore("auth", () => {
 		}
 	}
 
+	async function deleteAccount() {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/delete-account", { method: "DELETE" });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data.message || data.error || "Account deletion failed");
+
+			resetStore();
+			try {
+				const { useNoteStore } = await import("@/stores/noteStore");
+				const noteStore = useNoteStore();
+				noteStore.resetStore();
+			} catch (err) {
+				console.error("Failed to reset note store", err);
+			}
+
+			return { success: true, message: data.message || "Account deleted successfully." };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
+	async function exportData() {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/export-data", { method: "GET" });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data.message || data.error || "Data export failed");
+			return { success: true, data };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
 	return {
 		user,
 		isAuthenticated,
@@ -217,5 +259,7 @@ export const useAuthStore = defineStore("auth", () => {
 		updateLoginName,
 		updateEmail,
 		changePassword,
+		deleteAccount,
+		exportData,
 	};
 });

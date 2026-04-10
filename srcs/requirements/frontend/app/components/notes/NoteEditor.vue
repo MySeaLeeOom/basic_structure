@@ -2,14 +2,14 @@
 import { shallowRef, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
-import Card from "@/volt/Card.vue";
-import InputText from "@/volt/InputText.vue";
 import { useCollaboration } from "@/composables/useCollaboration";
 import { useNoteStore } from "@/stores/noteStore";
 import { useAuthStore } from "@/stores/authStore";
 import { userColor, createCaretRenderer } from "@/utils/caretRenderer";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 const props = defineProps<{
   noteId: string;
@@ -17,6 +17,7 @@ const props = defineProps<{
 
 const noteStore = useNoteStore();
 const authStore = useAuthStore();
+const { t } = useUiI18n();
 const { ydoc, provider, titleText, connectedUsers, updateTitle } =
   useCollaboration(() => props.noteId);
 
@@ -31,9 +32,12 @@ watchEffect((onCleanup) => {
   const prov = provider.value;
   if (!doc || !prov) return;
 
+  const renderCaret = createCaretRenderer(prov.awareness) as (user: Record<string, any>) => HTMLElement;
+
   const ed = new Editor({
     extensions: [
       StarterKit.configure({ undoRedo: false }),
+      Placeholder.configure({ placeholder: t('noteEditor.placeholder') }),
       Collaboration.configure({ document: doc }),
       CollaborationCaret.configure({
         provider: prov,
@@ -41,7 +45,7 @@ watchEffect((onCleanup) => {
           name: authStore.user?.loginName ?? "Anonymous",
           color: userColor(authStore.user?.id),
         },
-        render: createCaretRenderer(prov.awareness),
+        render: renderCaret,
       }),
     ],
   });
@@ -49,26 +53,33 @@ watchEffect((onCleanup) => {
   editor.value = ed;
   onCleanup(() => ed.destroy());
 });
+
+function focusEditorEnd(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (target.closest(".editor-scroll")) return;
+  const ed = editor.value;
+  if (!ed) return;
+  ed.commands.focus("end");
+}
 </script>
 
 <template>
-  <Card pt:root:class="card-document">
-    <template #content>
-      <div class="flex flex-col h-full min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto">
-          <InputText
-            :model-value="titleText"
-            @update:model-value="updateTitle"
-            placeholder="Title"
-            fluid
-            class="mb-4"
-          />
-          <EditorContent :editor="editor" class="tiptap-editor prose dark:prose-invert max-w-none" />
-        </div>
-        <span v-if="connectedUsers > 1" class="text-sm text-gray-500 pt-2">
-          {{ connectedUsers }} users editing
-        </span>
-      </div>
-    </template>
-  </Card>
+  <div ref="wrapper" class="editor-wrapper" @click="focusEditorEnd">
+  <div class="editor-surface">
+    <div class="editor-scroll">
+      <input
+        ref="titleInput"
+        :value="titleText"
+        @input="updateTitle(($event.target as HTMLInputElement).value)"
+        :placeholder="t('noteEditor.untitled')"
+        class="editor-title"
+      />
+      <EditorContent :editor="editor" class="tiptap-editor" />
+    </div>
+    <div v-if="connectedUsers > 1" class="editor-status">
+      <span class="editor-status-dot" />
+      {{ connectedUsers }} {{ t('noteEditor.collaborators') }}
+    </div>
+  </div>
+  </div>
 </template>

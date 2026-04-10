@@ -21,7 +21,8 @@
         "datasource": {"type": "prometheus", "uid": "prometheus"},
         "definition": "label_values(pg_stat_database_numbackends, datname)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
+        "includeAll": true,
         "label": "Database",
         "multi": false,
         "name": "datname",
@@ -31,7 +32,6 @@
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "^(?!template).*",
         "sort": 1,
         "type": "query"
       }
@@ -69,7 +69,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 1},
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -82,7 +82,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "up{job=\"nginx_exporter\"}",
+          "expr": "(up{job=\"nginx_exporter\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "nginx",
           "refId": "A"
@@ -115,7 +115,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 1},
       "id": 2,
       "options": {
         "colorMode": "background",
@@ -128,7 +128,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_up",
+          "expr": "(pg_up) or on() vector(0)",
           "instant": true,
           "legendFormat": "postgres",
           "refId": "A"
@@ -154,7 +154,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 1},
       "id": 3,
       "options": {
         "colorMode": "value",
@@ -167,7 +167,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_active",
+          "expr": "(nginx_connections_active) or on() vector(0)",
           "instant": true,
           "legendFormat": "active",
           "refId": "A"
@@ -183,128 +183,13 @@
           "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 10},
-              {"color": "red", "value": 25}
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_numbackends{datname=\"$datname\"}",
-          "instant": true,
-          "legendFormat": "connections",
-          "refId": "A"
-        }
-      ],
-      "title": "postgres Active Connections",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "red", "value": null},
-              {"color": "yellow", "value": 0.8},
-              {"color": "green", "value": 0.95}
-            ]
-          },
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 5},
-      "id": 5,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)",
-          "instant": true,
-          "legendFormat": "hit ratio",
-          "refId": "A"
-        }
-      ],
-      "title": "postgres Cache Hit Ratio",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{"color": "blue", "value": null}]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 5},
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_database_size_bytes{datname=\"$datname\"}",
-          "instant": true,
-          "legendFormat": "size",
-          "refId": "A"
-        }
-      ],
-      "title": "Database Size",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "thresholds": {
-            "mode": "absolute",
             "steps": [{"color": "blue", "value": null}]
           },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 5},
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 5},
       "id": 7,
       "options": {
         "colorMode": "value",
@@ -317,7 +202,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_http_requests_total",
+          "expr": "(nginx_http_requests_total) or on() vector(0)",
           "instant": true,
           "legendFormat": "requests",
           "refId": "A"
@@ -368,7 +253,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_http_requests_total[1m])",
+          "expr": "(rate(nginx_http_requests_total[1m])) or on() vector(0)",
           "legendFormat": "req/s",
           "refId": "A"
         }
@@ -411,19 +296,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_reading",
+          "expr": "(nginx_connections_reading) or on() vector(0)",
           "legendFormat": "reading",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_writing",
+          "expr": "(nginx_connections_writing) or on() vector(0)",
           "legendFormat": "writing",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "nginx_connections_waiting",
+          "expr": "(nginx_connections_waiting) or on() vector(0)",
           "legendFormat": "waiting (keep-alive)",
           "refId": "C"
         }
@@ -466,13 +351,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_connections_accepted[1m])",
+          "expr": "(rate(nginx_connections_accepted[1m])) or on() vector(0)",
           "legendFormat": "accepted/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(nginx_connections_handled[1m])",
+          "expr": "(rate(nginx_connections_handled[1m])) or on() vector(0)",
           "legendFormat": "handled/s",
           "refId": "B"
         }
@@ -484,8 +369,128 @@
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26},
       "id": 102,
-      "title": "PostgreSQL",
+      "repeat": "datname",
+      "repeatDirection": "v",
+      "title": "PostgreSQL — database: $datname",
+      "repeat": "datname",
+      "repeatDirection": "v",
+      "title": "PostgreSQL — database: $datname",
       "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 10},
+              {"color": "red", "value": 25}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 27},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(pg_stat_database_numbackends{datname=\"$datname\"}) or on() vector(0)",
+          "instant": true,
+          "legendFormat": "connections",
+          "refId": "A"
+        }
+      ],
+      "title": "Active connections",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 0.8},
+              {"color": "green", "value": 0.95}
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 27},
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(pg_stat_database_blks_hit{datname=\"$datname\"} / (pg_stat_database_blks_hit{datname=\"$datname\"} + pg_stat_database_blks_read{datname=\"$datname\"} + 1)) or on() vector(0)",
+          "instant": true,
+          "legendFormat": "hit ratio",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache hit ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "blue", "value": null}]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 27},
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(pg_database_size_bytes{datname=\"$datname\"}) or on() vector(0)",
+          "instant": true,
+          "legendFormat": "size",
+          "refId": "A"
+        }
+      ],
+      "title": "Database size",
+      "type": "stat"
     },
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
@@ -513,7 +518,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 27},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 31},
       "id": 20,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -522,13 +527,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_xact_commit{datname=\"$datname\"}[1m])",
+          "expr": "(rate(pg_stat_database_xact_commit{datname=\"$datname\"}[1m])) or on() vector(0)",
           "legendFormat": "commits/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_xact_rollback{datname=\"$datname\"}[1m])",
+          "expr": "(rate(pg_stat_database_xact_rollback{datname=\"$datname\"}[1m])) or on() vector(0)",
           "legendFormat": "rollbacks/s",
           "refId": "B"
         }
@@ -562,7 +567,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 27},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 31},
       "id": 21,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -571,19 +576,19 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_ins{relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_ins{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "inserts/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_upd{relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_upd{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "updates/s",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_n_tup_del{relname=\"notes\"}[1m])",
+          "expr": "(rate(pg_stat_user_tables_n_tup_del{datname=\"$datname\",relname=\"notes\"}[1m])) or on() vector(0)",
           "legendFormat": "deletes/s",
           "refId": "C"
         }
@@ -617,7 +622,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 39},
       "id": 22,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -626,7 +631,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_user_tables_n_dead_tup{relname=\"notes\"}",
+          "expr": "(pg_stat_user_tables_n_dead_tup{datname=\"$datname\",relname=\"notes\"}) or on() vector(0)",
           "legendFormat": "dead tuples",
           "refId": "A"
         }
@@ -660,7 +665,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 39},
       "id": 23,
       "options": {
         "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -669,13 +674,13 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_seq_scan{relname=\"notes\"}[5m])",
+          "expr": "(rate(pg_stat_user_tables_seq_scan{datname=\"$datname\",relname=\"notes\"}[5m])) or on() vector(0)",
           "legendFormat": "seq scans/s",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_user_tables_idx_scan{relname=\"notes\"}[5m])",
+          "expr": "(rate(pg_stat_user_tables_idx_scan{datname=\"$datname\",relname=\"notes\"}[5m])) or on() vector(0)",
           "legendFormat": "index scans/s",
           "refId": "B"
         }
@@ -709,7 +714,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 35},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 39},
       "id": 24,
       "options": {
         "legend": {"calcs": ["lastNotNull", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -718,7 +723,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "rate(pg_stat_database_deadlocks{datname=\"$datname\"}[5m])",
+          "expr": "(rate(pg_stat_database_deadlocks{datname=\"$datname\"}[5m])) or on() vector(0)",
           "legendFormat": "deadlocks/s",
           "refId": "A"
         }
@@ -752,7 +757,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 43},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 47},
       "id": 25,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -761,7 +766,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "pg_stat_database_temp_bytes{datname=\"$datname\"}",
+          "expr": "(pg_stat_database_temp_bytes{datname=\"$datname\"}) or on() vector(0)",
           "legendFormat": "temp bytes",
           "refId": "A"
         }
@@ -786,7 +791,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 43},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 47},
       "id": 26,
       "options": {
         "colorMode": "background",
@@ -799,7 +804,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "time() - pg_stat_user_tables_last_autovacuum{relname=\"notes\"}",
+          "expr": "(time() - pg_stat_user_tables_last_autovacuum{datname=\"$datname\",relname=\"notes\"}) or on() vector(0)",
           "instant": true,
           "legendFormat": "seconds since last autovacuum",
           "refId": "A"

@@ -36,8 +36,10 @@ CLAUDE.md
 copilot-instructions.md
 masha*.*
 crdt-migration-plan.md
+dist
 
-
-# RAG-testing
-8800-row.txt
-DOCS/RAG.md
+target
+grafana-prometheus-review.md
+.pnpm-store
+.DS_Store
+.pnpm-store

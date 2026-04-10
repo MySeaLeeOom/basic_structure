@@ -1,10 +1,51 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import { verifySession } from "../lib/session_helpers";
 import { upsertAccount } from "../lib/account_helpers";
 import * as argon2 from "argon2";
+import { authMeTotal } from "../metrics";
+
+const notesServiceBaseUrl = process.env.NOTES_SERVICE_URL ?? "http://notes:3003";
+
+type NotesExportItem = {
+	id: string;
+	title: string;
+	owner_id: string | null;
+	created_at: string;
+	updated_at: string;
+	state_vector: number[] | null;
+};
+
+async function callNotesService(
+	path: string,
+	method: "GET" | "DELETE",
+	userId: string,
+): Promise<{ ok: boolean; status: number; body: unknown }> {
+	try {
+		const response = await fetch(`${notesServiceBaseUrl}${path}`, {
+			method,
+			headers: {
+				"X-User-Id": userId,
+			},
+		});
+
+		let body: unknown = null;
+		const text = await response.text();
+		if (text) {
+			try {
+				body = JSON.parse(text);
+			} catch {
+				body = text;
+			}
+		}
+
+		return { ok: response.ok, status: response.status, body };
+	} catch (_error) {
+		return { ok: false, status: 0, body: { error: "Notes service unreachable." } };
+	}
+}
 
 /* Schemas for Inputs */
 const ChangeLoginSchema = Type.Object({
@@ -20,9 +61,14 @@ const ChangePasswordSchema = Type.Object({
 	newPassword: Type.String({ minLength: 8 }),
 });
 
+const ResolveUserSchema = Type.Object({
+	identifier: Type.String({ minLength: 3 }),
+});
+
 type ChangeLoginType = Static<typeof ChangeLoginSchema>;
 type ChangeEmailType = Static<typeof ChangeEmailSchema>;
 type ChangePasswordType = Static<typeof ChangePasswordSchema>;
+type ResolveUserType = Static<typeof ResolveUserSchema>;
 
 /**
  * User Management Routes
@@ -33,13 +79,16 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	server.get("/me", async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) {
+			authMeTotal.labels("401").inc();
 			return reply.status(401).send({ error: "No active session found." });
 		}
 		// Get User Profile
 		const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
 		if (!user) {
+			authMeTotal.labels("404").inc();
 			return reply.status(404).send({ error: "User profile not found." });
 		}
+		authMeTotal.labels("200").inc();
 		// Return sanitized user data
 		return {
 			authenticated: true,
@@ -52,6 +101,51 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 				createdAt: user.createdAt,
 			},
 		};
+	});
+
+	/*
+	 * GET /resolve: Look up a user by exact email or loginName.
+	 * Used by the Frontend to verify identity before creating a share.
+	 */
+	server.get<{ Querystring: ResolveUserType }>("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const { identifier } = request.query;
+
+		const [user] = await server.db
+			.select({
+				id: schema.users.id,
+				loginName: schema.users.loginName,
+				imageURL: schema.users.imageURL,
+			})
+			.from(schema.users)
+			.where(or(eq(schema.users.email, identifier), eq(schema.users.loginName, identifier)))
+			.limit(1);
+
+		if (!user) {
+			return reply.status(404).send({ error: "No user found with that email or username." });
+		}
+
+		return { user: user };
+	});
+
+	/*
+	 * GET /users: Returns all registered users (id + loginName).
+	 * Used by the frontend share dialog to list/search users.
+	 */
+	server.get("/users", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const users = await server.db
+			.select({
+				id: schema.users.id,
+				loginName: schema.users.loginName,
+			})
+			.from(schema.users);
+
+		return { users };
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
@@ -141,6 +235,55 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 		});
 
 		return { message: "Password updated successfully." };
+	});
+
+	server.get("/export-data", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const [user] = await server.db.select().from(schema.users).where(eq(schema.users.id, session.userId)).limit(1);
+		if (!user) return reply.status(404).send({ error: "User not found." });
+
+		const notesResponse = await callNotesService("/api/notes/export", "GET", session.userId);
+		if (!notesResponse.ok) {
+			return reply.status(502).send({
+				error: "Failed to export notes from notes service.",
+				upstreamStatus: notesResponse.status || undefined,
+			});
+		}
+
+		const notes = Array.isArray(notesResponse.body) ? (notesResponse.body as NotesExportItem[]) : [];
+		return {
+			exportedAt: new Date().toISOString(),
+			user: {
+				id: user.id,
+				loginName: user.loginName,
+				email: user.email,
+				role: user.role,
+				status: user.status,
+				imageURL: user.imageURL,
+				createdAt: user.createdAt,
+			},
+			notes,
+		};
+	});
+
+	server.delete("/delete-account", async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const deleteNotesResponse = await callNotesService("/api/notes/by-owner", "DELETE", session.userId);
+		if (!deleteNotesResponse.ok && deleteNotesResponse.status !== 404) {
+			return reply.status(502).send({
+				error: "Failed to delete user notes.",
+				upstreamStatus: deleteNotesResponse.status || undefined,
+			});
+		}
+
+		await server.db.delete(schema.users).where(eq(schema.users.id, session.userId));
+		reply.clearCookie("session_id", { path: "/" });
+
+		return { message: "Account deleted successfully." };
 	});
 };
 

@@ -14,6 +14,26 @@ export const useNoteStore = defineStore("notes", () => {
 	// Cache to prevent unnecessary refetches
 	const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 	const lastFetchTimestamp = ref(0);
+	const language = useCookie<string>("lang", { default: () => "en-UK" });
+
+	function buildHeaders(extra: HeadersInit = {}): HeadersInit {
+		const headers = new Headers(extra);
+		headers.set("Accept-Language", language.value || "en-UK");
+		return headers;
+	}
+
+	async function throwForResponse(response: Response): Promise<void> {
+		if (response.ok) return;
+
+		let message = `HTTP ${response.status}`;
+		try {
+			const data = (await response.json()) as { message?: string; error?: string };
+			message = data?.message || data?.error || message;
+		} catch {
+			// keep fallback
+		}
+		throw new Error(message);
+	}
 
 	async function fetchNotes() {
 		// Prevent redundant fetches
@@ -24,6 +44,7 @@ export const useNoteStore = defineStore("notes", () => {
 
 		error.value = null;
 		isLoading.value = true;
+		let response: Response | null = null;
 
 		try {
 			// Ensure we have user profile before fetching notes.
@@ -38,22 +59,21 @@ export const useNoteStore = defineStore("notes", () => {
 
 			// On the server, we MUST use the full internal Docker URL.
 			const isServer = typeof window === "undefined";
-			const url = isServer ? "http://nginx:80/api/notes" : "/api/notes";
+			const url = isServer ? "https://nginx:443/api/notes" : "/api/notes";
 
-			const headers: HeadersInit = {};
 			const userCookie = authStore.sessionCookie;
-
+			const base = new Headers();
 			if (isServer && userCookie) {
-				headers["Cookie"] = userCookie;
+				base.set("Cookie", userCookie);
 			}
 
-			const response = await fetch(url, {
+			response = await fetch(url, {
 				method: "GET",
-				headers,
+				headers: buildHeaders(base),
 				signal: AbortSignal.timeout(5000), // Prevent hanging
 			});
 
-			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			await throwForResponse(response);
 
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
@@ -68,7 +88,8 @@ export const useNoteStore = defineStore("notes", () => {
 		} catch (catchError) {
 			const errorMsg = catchError instanceof Error ? (catchError.name === "AbortError" ? "Request timed out" : catchError.message) : "Load failed";
 
-			error.value = errorMsg;
+			// Notes.vue redirects on this exact string when the list request is unauthorized
+			error.value = response?.status === 401 ? "HTTP 401" : errorMsg;
 			console.error("Failed to fetch notes:", errorMsg);
 		} finally {
 			isLoading.value = false;
@@ -81,18 +102,11 @@ export const useNoteStore = defineStore("notes", () => {
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: buildHeaders({ "Content-Type": "application/json" }),
 				body: JSON.stringify({ title: "Untitled" }),
 			});
 
-			if (response.status === 401) {
-				error.value = "Unauthorized: user not logged in.";
-				console.error("Unauthorized:", response.status);
-				return;
-			}
-
-			//for any other errors
-			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			await throwForResponse(response);
 
 			const note: Note = await response.json();
 			notes.value.push(note);
@@ -134,11 +148,12 @@ export const useNoteStore = defineStore("notes", () => {
 	// Debounced save to Postgres — temporary until WS notification channel
 	const _persistTitle = useDebounceFn(async (id: string, title: string) => {
 		try {
-			await fetch(`/api/notes/${id}`, {
+			const response = await fetch(`/api/notes/${id}`, {
 				method: "PUT",
-				headers: { "Content-Type": "application/json" },
+				headers: buildHeaders({ "Content-Type": "application/json" }),
 				body: JSON.stringify({ title }),
 			});
+			await throwForResponse(response);
 		} catch (e) {
 			console.error("Failed to persist title:", e);
 		}
