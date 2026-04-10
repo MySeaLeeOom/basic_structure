@@ -51,8 +51,24 @@ const langMenuItems = computed(() => [
     command: () => setLocale('es-ES'),
   },
   {
+    label: t('lang.ie'),
+    command: () => setLocale('ie-IE'),
+  },
+  {
+    label: t('lang.el'),
+    command: () => setLocale('el-GR'),
+  },
+  {
+    label: t('lang.tr'),
+    command: () => setLocale('tr-TR'),
+  },
+  {
     label: t('lang.ar'),
     command: () => setLocale('ar'),
+  },
+  {
+    label: t('lang.ru'),
+    command: () => setLocale('ru-RU'),
   },
 ]);
 
