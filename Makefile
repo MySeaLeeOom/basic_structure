@@ -39,12 +39,13 @@ clean: getuser
 	$(COMPOSE) down --rmi all $(FLAGS)
 	@$(MAKE) cleanv
 
-# Removes all artifacts and dev containers, does not remove the databases
+# Removes all artifacts and dev containers, does not remove the notes databases
 cleanv: 
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
 	@echo "Cleaning frontend build cache..."
 	-docker volume rm $(FRONTEND_CACHE_VOLUMES)
+	@docker image prune -f
 
 # Destructive: will destroy databases, both notes and users
 fclean: getuser

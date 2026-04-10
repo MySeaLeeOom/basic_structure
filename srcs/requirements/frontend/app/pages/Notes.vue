@@ -173,15 +173,11 @@ function confirmDelete(id: string) {
 			noteStore.deleteNote(id);
 		}
 	});
-}
+}/
 
 onMounted(() => {
 	if (noteStore.notesCount === 0) {
-		noteStore.fetchNotes().then(() => {
-			if (noteStore.error === 'HTTP 401') {
-				navigateTo('/login');
-			}
-		});
+		noteStore.fetchNotes();
 	}
 	fetchSharedNotes();
 });
@@ -192,9 +188,6 @@ onServerPrefetch(async () => {
 
 	if (noteStore.notesCount === 0) {
 		await noteStore.fetchNotes();
-		if (noteStore.error === 'HTTP 401') {
-			await navigateTo('/login');
-		}
 	}
 });
 </script>
@@ -212,26 +205,24 @@ onServerPrefetch(async () => {
 			</div>
 			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
-				pt:root:class="!border-0 !shadow-none !bg-transparent"
-				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
-				pt:option:class="!px-2 !py-1.5 !rounded-md">
+				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
+				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
 						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
 						<div class="flex items-center shrink-0"
 							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
-							<button
-								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
 								:class="noteStore.selectedNote?.id === slotProps.option.id
 									? 'text-white hover:bg-white/20'
-									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'"
-								@click.stop="openInvite(slotProps.option.id)">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
-									<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
+									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'" @click.stop="openInvite(slotProps.option.id)">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+									class="w-3.5 h-3.5">
+									<path
+										d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
 								</svg>
 							</button>
-							<button
-								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
 								:class="noteStore.selectedNote?.id === slotProps.option.id
 									? 'text-white hover:text-red-300 hover:bg-white/20'
 									: 'text-surface-400 hover:text-red-400 hover:bg-surface-600'"
@@ -248,9 +239,8 @@ onServerPrefetch(async () => {
 			</div>
 			<Listbox v-if="sharedNotes.length" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
 				:options="sharedNotes" optionLabel="note_title" dataKey="note_id"
-				pt:root:class="!border-0 !shadow-none !bg-transparent"
-				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
-				pt:option:class="!px-2 !py-1.5 !rounded-md">
+				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
+				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full">
 						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
@@ -262,10 +252,7 @@ onServerPrefetch(async () => {
 		</template>
 
 		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
-			<NoteEditor
-				:note-id="activeNote.id"
-				class="flex-1"
-			/>
+			<NoteEditor :note-id="activeNote.id" class="flex-1" />
 			<ChatSidebar />
 		</div>
 		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
@@ -280,7 +267,8 @@ onServerPrefetch(async () => {
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
 							<div class="flex items-center gap-3 min-w-0">
-								<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
+								<span
+									class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
 									{{ usernameFor(collab.guest_id)?.charAt(0).toUpperCase() || "?" }}
 								</span>
 								<div class="min-w-0">
@@ -301,7 +289,7 @@ onServerPrefetch(async () => {
 				<div v-if="selectedUsers.length" class="flex flex-wrap gap-1.5">
 					<span v-for="uid in selectedUsers" :key="uid"
 						class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-500/15 text-primary-400">
-						{{ allUsers.find(u => u.id === uid)?.loginName ?? uid }}
+						{{allUsers.find(u => u.id === uid)?.loginName ?? uid}}
 						<button class="hover:text-primary-300" @click="toggleUser(uid)">
 							<TimesIcon class="w-2 h-2" />
 						</button>
@@ -310,14 +298,14 @@ onServerPrefetch(async () => {
 
 				<!-- Available users to add -->
 				<label class="text-sm text-surface-500">{{ t('notes.invite.selectUsers') }}</label>
-				<div v-if="availableUsers.length" class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
+				<div v-if="availableUsers.length"
+					class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
 					<button v-for="user in availableUsers" :key="user.id"
-						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
-						:class="selectedUsers.includes(user.id)
+						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors" :class="selectedUsers.includes(user.id)
 							? 'bg-primary-500/15 text-primary-400'
-							: 'hover:bg-surface-800 text-surface-300'"
-						@click="toggleUser(user.id)">
-						<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
+							: 'hover:bg-surface-800 text-surface-300'" @click="toggleUser(user.id)">
+						<span
+							class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
 							{{ user.loginName?.charAt(0).toUpperCase() || "?" }}
 						</span>
 						<div class="min-w-0">

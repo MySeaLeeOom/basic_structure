@@ -24,7 +24,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 	reply.setCookie("session_id", session.token, {
 		path: "/",
 		httpOnly: true, //this is javascript cant do anything to the cookie
-		secure: false, // Set to TRUE when using real HTTPS
+		secure: true,
 		sameSite: "lax",
 		expires: expiresAt,
 		signed: true,

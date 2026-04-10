@@ -88,8 +88,7 @@ export const useNoteStore = defineStore("notes", () => {
 		} catch (catchError) {
 			const errorMsg = catchError instanceof Error ? (catchError.name === "AbortError" ? "Request timed out" : catchError.message) : "Load failed";
 
-			// Notes.vue redirects on this exact string when the list request is unauthorized
-			error.value = response?.status === 401 ? "HTTP 401" : errorMsg;
+			error.value = errorMsg;
 			console.error("Failed to fetch notes:", errorMsg);
 		} finally {
 			isLoading.value = false;
