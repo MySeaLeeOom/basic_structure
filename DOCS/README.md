@@ -9,4 +9,3 @@ Project documentation is organized with [Diátaxis](https://diataxis.fr/): four 
 | Looking up facts (paths, names, contracts) | [reference/](reference/) |
 | Understanding why things are built this way | [explanation/](explanation/) |
 
-Older narrative notes (dated filenames, service drafts, meeting minutes) still live directly under `DOCS/`. Prefer the quadrant folders when a topic has been migrated; treat the rest as legacy until it is split or replaced.
