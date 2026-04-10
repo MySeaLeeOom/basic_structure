@@ -258,14 +258,14 @@ onServerPrefetch(async () => {
 
 		</template>
 
-		<div v-if="mounted && noteStore.selectedNote" class="flex flex-1 w-full h-full gap-4">
+		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
 			<NoteEditor
-				:note-id="noteStore.selectedNote.id"
+				:note-id="activeNote.id"
 				class="flex-1"
 			/>
 			<ChatSidebar />
 		</div>
-		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
+		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
 		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
 			pt:root:class="w-full max-w-sm">
