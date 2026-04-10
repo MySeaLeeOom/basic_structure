@@ -1,6 +1,6 @@
 Privacy Policy — Mycelium Notes
 
-Last updated: [DATE]
+Last updated: 10/04/2026
 
 This policy describes what personal data Mycelium Notes ("the Service")
 collects, why, and how it is handled.
@@ -86,8 +86,9 @@ reverse proxy, which should be configured with TLS in production.
 - Account and note data are retained for as long as your account exists.
 - Server logs are retained according to your deployment's log-rotation
   configuration.
-- You can request an export of your account profile and notes before
-  account deletion.
+- You can request an export of your account profile and owned notes
+  (including document state) before account deletion. Sharing metadata
+  and session history are not included in the export.
 
 
 7. Data Deletion
@@ -101,8 +102,8 @@ notes owned by the account and their dependent collaborative state entries.
 
 8. Children
 
-The Service is not directed at individuals under 16. We do not knowingly
-collect data from children.
+The Service is not directed at children. We do not knowingly collect data
+from children.
 
 
 9. Changes to This Policy
@@ -114,4 +115,4 @@ acceptance.
 
 10. Contact
 
-[Your contact email or address here.]
+For questions about this policy, contact us at myakoven@student.42berlin.de.
