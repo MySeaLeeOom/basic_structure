@@ -7,40 +7,13 @@ import Divider from '../volt/Divider.vue';
 import InputText from '../volt/InputText.vue';
 import Password from '../volt/Password.vue';
 import Button from '../volt/Button.vue';
-import Menu from '../volt/Menu.vue';
 import { useUiI18n } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
-const { t, locale } = useUiI18n();
+const { t } = useUiI18n();
 const isSubmitting = ref(false);
 const activeForm = ref<'login' | 'email' | 'password' | null>(null);
 const successMessage = ref('');
-
-/** Language selection logic */
-function setLocale(tag: 'en-UK' | 'de-DE' | 'es-ES') {
-	locale.value = tag;
-}
-
-const langMenu = ref<InstanceType<typeof Menu> | null>(null);
-
-function toggleLangMenu(event: Event) {
-	langMenu.value?.toggle(event);
-}
-
-const langMenuItems = computed(() => [
-	{
-		label: t('lang.en'),
-		command: () => setLocale('en-UK'),
-	},
-	{
-		label: t('lang.de'),
-		command: () => setLocale('de-DE'),
-	},
-	{
-		label: t('lang.es'),
-		command: () => setLocale('es-ES'),
-	},
-]);
 
 async function handleLogout() {
 	await auth.logout();
@@ -278,23 +251,6 @@ async function handleExportData() {
 						</form>
 					</div>
 				<div class="flex flex-col gap-2 pt-2">
-					<div class="relative">
-						<Button
-							type="button"
-							:label="t('lang.select')"
-							severity="secondary"
-							fluid
-							aria-haspopup="true"
-							aria-controls="lang_menu"
-							@click="toggleLangMenu"
-						/>
-						<Menu
-							id="lang_menu"
-							ref="langMenu"
-							:model="langMenuItems"
-							:popup="true"
-						/>
-					</div>
 					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="isSubmitting"
 						@click="handleExportData" />
 					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="isSubmitting"
