@@ -2,21 +2,23 @@
  * UI copy for the Nuxt app (nav, buttons, etc.). This is separate from the notes
  * service Fluent/FTL files: those only translate strings the API returns.
  */
-import { watch } from "vue";
+import { computed, watch } from "vue";
+import ar from "~/locales/ar.json";
 import deDE from "~/locales/de-DE.json";
 import enUK from "~/locales/en-UK.json";
 import esES from "~/locales/es-ES.json";
 
-type LocaleId = "en-UK" | "de-DE" | "es-ES";
+export type LocaleId = "en-UK" | "de-DE" | "es-ES" | "ar";
 
 const BUNDLES: Record<LocaleId, Record<string, string>> = {
 	"en-UK": enUK,
 	"de-DE": deDE,
 	"es-ES": esES,
+	"ar": ar,
 };
 
 function normalizeLocale(value: string | null | undefined): LocaleId {
-	if (value === "de-DE" || value === "es-ES" || value === "en-UK") {
+	if (value === "de-DE" || value === "es-ES" || value === "en-UK" || value === "ar") {
 		return value;
 	}
 	return "en-UK";
@@ -39,10 +41,19 @@ export function useUiI18n() {
 		}
 	});
 
+	useHead({
+		htmlAttrs: {
+			lang: computed(() => locale.value),
+			dir: computed(() => (locale.value === "ar" ? "rtl" : "ltr")),
+		},
+	});
+
+	const isRtl = computed(() => locale.value === "ar");
+
 	function t(key: string): string {
 		const id = normalizeLocale(locale.value);
 		return BUNDLES[id]?.[key] ?? BUNDLES["en-UK"][key] ?? key;
 	}
 
-	return { t, locale };
+	return { t, locale, isRtl };
 }

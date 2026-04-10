@@ -8,7 +8,7 @@ import InputText from '../volt/InputText.vue';
 import Password from '../volt/Password.vue';
 import Button from '../volt/Button.vue';
 import Menu from '../volt/Menu.vue';
-import { useUiI18n } from '~/composables/useUiI18n';
+import { useUiI18n, type LocaleId } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
 const { t, locale } = useUiI18n();
@@ -17,7 +17,7 @@ const activeForm = ref<'login' | 'email' | 'password' | null>(null);
 const successMessage = ref('');
 
 /** Language selection logic */
-function setLocale(tag: 'en-UK' | 'de-DE' | 'es-ES') {
+function setLocale(tag: LocaleId) {
 	locale.value = tag;
 }
 
@@ -39,6 +39,10 @@ const langMenuItems = computed(() => [
 	{
 		label: t('lang.es'),
 		command: () => setLocale('es-ES'),
+	},
+	{
+		label: t('lang.ar'),
+		command: () => setLocale('ar'),
 	},
 ]);
 
