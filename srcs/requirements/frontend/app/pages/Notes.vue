@@ -5,6 +5,7 @@ import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteEditor from "@/components/notes/NoteEditor.vue";
+import ChatSidebar from "@/components/notes/ChatSidebar.vue";
 import { useConfirm } from "primevue/useconfirm";
 import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
@@ -257,10 +258,13 @@ onServerPrefetch(async () => {
 
 		</template>
 
-		<NoteEditor
-			v-if="mounted && activeNote"
-			:note-id="activeNote.id"
-		/>
+		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
+			<NoteEditor
+				:note-id="activeNote.id"
+				class="flex-1"
+			/>
+			<ChatSidebar />
+		</div>
 		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
 		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
