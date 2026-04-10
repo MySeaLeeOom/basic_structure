@@ -1,11 +1,11 @@
 # AI Ingest Service
-Smart worker for note indexing and vectorization.
+Worker for note extraction and vectorization.
 
 ## Features
-- **Recursive Extraction:** Deep-parses Yjs/Tiptap XML structures to plain text.
-- **HTML Cleaning:** Prevents word-clumping by replacing block tags with newlines.
-- **Smart Ingest:** Uses SHA-256 hashing to skip redundant processing and mutex-locking to prevent parallel conflicts.
-- **Recursive Chunking:** Segments long documents into overlapping 400-char chunks for higher search precision.
+- **Recursive Extraction:** Deep-parses Tiptap/Yjs XML structures to plain text.
+- **Smart Ingest:** Uses SHA-256 hashing to skip redundant updates and mutex-locking to prevent race conditions.
+- **Precision Chunking:** Segments text into overlapping 400-600 char chunks.
+- **Embeddings:** Uses `mxbai-embed-large` (1024d) for high-accuracy German/English support.
 
 ## Tech
-- FastAPI, y-py, LangChain (OllamaEmbeddings)
+- FastAPI, y-py, LangChain.

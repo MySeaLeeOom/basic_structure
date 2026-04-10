@@ -1,87 +1,60 @@
-# RAG System: Implementation & Setup Guide
+# RAG System: Setup & Operation Guide
 
-This document is the central reference for the Retrieval-Augmented Generation (RAG) system in ft_transcendence. It covers the architecture, the technology stack, and full setup instructions.
+This guide provides instructions for installing and running the MyCelium-AI system locally.
 
-## 1. System Objectives
-The RAG system acts as an AI Co-Pilot ("MyCelium-AI"), allowing users to query their personal notes using natural language.
-*   **Privacy:** 100% locally runnable (no data leaves your machine).
-*   **Scalability:** Decoupled microservice architecture.
-*   **Precision:** High-density vector retrieval with hybrid re-ranking.
+## 1. Prerequisites: Ollama
+The system uses Ollama to run models on your host machine.
 
----
+### Installation
+- **Linux:** `curl -fsSL https://ollama.com/install.sh | sh`
+- **macOS / Windows:** Download from [ollama.com](https://ollama.com).
 
-## 2. Prerequisites: Installing Ollama
-
-The system relies on **Ollama** to run Large Language Models (LLMs) locally.
-
-### A. Installation
-*   **Linux (Fedora/Ubuntu):**
-    ```bash
-    curl -fsSL https://ollama.com/install.sh | sh
-    ```
-*   **macOS / Windows:**
-    Download the installer from [ollama.com](https://ollama.com/download).
-
-### B. Pulling Required Models
-Once Ollama is installed, you must download the specific models used by MyCelium-AI:
+### Required Models
+Download the chat and embedding models:
 ```bash
-# The 'brain' for chatting
 ollama pull llama3
-
-# The 'search expert' for indexing notes (High Precision)
 ollama pull mxbai-embed-large
 ```
 
-### C. Network Configuration (Crucial for Docker)
-By default, Ollama only listens on `localhost`. To allow our Docker containers to talk to it, you must expose it to all interfaces:
-
-1.  **Stop Ollama** (if running).
-2.  **Start with Host Variable:**
-    ```bash
-    OLLAMA_HOST=0.0.0.0 ollama serve
-    ```
-    *(Note: On Linux, you might need to use `systemctl edit ollama.service` to set this permanently).*
+### Network Configuration
+To allow Docker access, expose Ollama to all network interfaces:
+1. Stop any running Ollama process.
+2. Restart with the host variable:
+   `OLLAMA_HOST=0.0.0.0 ollama serve`
 
 ---
 
-## 3. Architecture (Micro-AI Mesh)
+## 2. Infrastructure Setup
 
-The system is split into four specialized services:
+### Starting the services
+1. Perform a clean boot to ensure correct database dimensions (1024d):
+   `docker compose -f srcs/docker-compose.yml down -v`
+2. Launch the stack:
+   `make`
 
-1.  **Vector Database (`vector-db`):** PostgreSQL + `pgvector`. Stores note fragments as **1024-dimensional** vectors.
-2.  **AI Ingest Service (`ai-ingest`):** Extracts text from Tiptap/CRDT blobs, splits them into 400-600 char chunks, and generates embeddings using `mxbai-embed-large`.
-3.  **AI RAG Service (`ai-rag`):** Orchestrates the search. It fetches the Top 50 candidates and performs a **Keyword-based Re-ranking** to ensure facts like numbers are prioritized.
-4.  **LLM Gateway (`llm-gateway`):** A stable proxy that handles streaming communication with the LLM.
-
----
-
-## 4. Quick Start (Running the System)
-
-Once Ollama is prepared (see Step 2), follow these steps:
-
-1.  **Clean Boot (First time or model change):**
-    ```bash
-    docker compose -f srcs/docker-compose.yml down -v
-    ```
-2.  **Start Services:**
-    ```bash
-    make
-    ```
-3.  **Wait for Indexing:**
-    Open a note in the browser, add some text, and wait for the "FINISH" message in `docker logs -f ai-ingest`.
-
----
-
-## 5. Troubleshooting (Fedora/Linux)
-
-If the AI cannot be reached from Docker, check your firewall:
+### Firewall (Linux/Fedora)
+If services cannot reach Ollama, allow the Docker bridge network:
 ```bash
-# Allow Docker bridge network to access the host
 sudo firewall-cmd --add-source=172.18.0.0/16 --zone=public --permanent
 sudo firewall-cmd --reload
 ```
 
 ---
 
-## 6. Conclusion
-The MyCelium-AI system is optimized for high-accuracy retrieval by separating "Thinking" (Llama 3) from "Deep Searching" (mxbai-embed-large).
+## 3. Operational Features
+
+### Smart Ingestion
+The system automatically indexes notes as they are saved. 
+- **Wait Time:** For large documents, wait for the "FINISH SUCCESS" message in `docker logs ai-ingest`.
+- **Throttling:** Parallel indexing of the same note is blocked to prevent data corruption.
+
+### Search Precision
+- **Hybrid Search:** The system uses vector similarity combined with keyword boosting to find specific values (e.g., numbers or technical terms).
+- **Retrieval Window:** The AI analyzes the top 20-25 text fragments to ensure accurate answers.
+
+---
+
+## 4. Troubleshooting
+- **AI only answers "I don't know":** Ensure indexing is finished. Check `ai-ingest` logs.
+- **Port Conflicts:** Ensure port 11434 is not blocked on your host.
+- **Dark Mode:** If text is unreadable, force-refresh the browser cache (Ctrl+F5).

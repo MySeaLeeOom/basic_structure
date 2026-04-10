@@ -1,12 +1,11 @@
 # Vector DB
-Isolated PostgreSQL instance with `pgvector` extension.
+PostgreSQL instance for semantic memory.
 
-## Purpose
-- Stores note embeddings (vectors) and plain text content.
-- Provides semantic search using HNSW indexing.
-- Offloads heavy vector math from the main application database.
+## Setup
+- **Extension:** `pgvector`.
+- **Database:** `vector_db`.
+- **Dimension:** 1024 (optimized for `mxbai-embed-large`).
 
-## Config
-- Port: 5432
-- Extension: `vector`
-- Default Dimension: 4096 (Llama 3)
+## Notes
+- Uses high-precision flat search for the current scale.
+- Isolated from the main application database for better resource management.
