@@ -1,9 +1,13 @@
 {
 	"nav.home": "Inicio",
 	"nav.notes": "Notas",
+	"nav.brand": "Mycelium",
+	"nav.light": "Cambiar a modo claro",
+	"nav.dark": "Cambiar a modo oscuro",
 	"auth.login": "Entrar",
 	"auth.logout": "Salir",
 	"lang.select": "Idioma",
+	"lang.change": "Cambiar idioma",
 	"lang.en": "English",
 	"lang.de": "Deutsch",
 	"lang.es": "Español",
