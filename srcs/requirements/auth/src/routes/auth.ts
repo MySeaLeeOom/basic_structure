@@ -185,14 +185,18 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 
 		const { loginName, email, password } = request.body as RegisterType;
 
-		// Check for existing users
-		const userExists = await findUserByIdentifier(server.db, loginName || email);
+		// Check for existing users — must be two separate lookups since loginName || email
+		// always evaluates to loginName (TypeBox ensures it's always truthy).
+		const loginConflict = await findUserByIdentifier(server.db, loginName);
+		if (loginConflict) {
+			authRegisterTotal.labels("conflict_login").inc();
+			return reply.status(409).send({ error: "Username already taken." });
+		}
 
-		if (userExists) {
-			const conflict = userExists.loginName === loginName ? "conflict_login" : "conflict_email";
-			authRegisterTotal.labels(conflict).inc();
-			const message = userExists.loginName === loginName ? "Login name already taken." : "Email already registered.";
-			return reply.status(409).send({ error: message });
+		const emailConflict = await findUserByIdentifier(server.db, email);
+		if (emailConflict) {
+			authRegisterTotal.labels("conflict_email").inc();
+			return reply.status(409).send({ error: "Email already registered." });
 		}
 
 		// Hash password (placeholder for now)
