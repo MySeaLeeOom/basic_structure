@@ -17,7 +17,6 @@ MODULE_VOLUMES := \
 # Tear down first so volumes are not still mounted by running containers.
 all: getuser
 	$(COMPOSE) down $(FLAGS)
-	@$(MAKE) cleanv
 	@$(MAKE) up
 
 getuser:

@@ -21,7 +21,7 @@ LLM_GATEWAY_URL = os.getenv("LLM_GATEWAY_URL", "http://llm-gateway:8001/stream")
 
 BASE_URL = os.getenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
 OLLAMA_HOST = BASE_URL.replace("/v1", "")
-EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "llama3")
+EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "mxbai-embed-large")
 
 class ChatRequest(BaseModel):
 	user_id: str
@@ -58,11 +58,27 @@ def get_context(user_id: str, query: str):
 		conn = psycopg2.connect(DB_URL)
 		register_vector(conn)
 		
-		embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
-		query_vector = embeddings.embed_query(query)
-		
 		with conn.cursor() as cur:
-			# Step 1: Fetch more candidates than needed (Top 50)
+			# Step 1: Check total chunks for this user
+			cur.execute("SELECT COUNT(*) FROM embeddings WHERE user_id = %s", (user_id,))
+			total_chunks = cur.fetchone()[0]
+			
+			if total_chunks <= 15:
+				logger.info(f"FAST PATH: Total chunks {total_chunks} <= 15. Skipping vector search.")
+				if total_chunks == 0:
+					conn.close()
+					return "DATABASE STATUS: No notes found."
+				
+				cur.execute("SELECT content FROM embeddings WHERE user_id = %s", (user_id,))
+				rows = cur.fetchall()
+				conn.close()
+				return "\n---\n".join([r[0] for r in rows])
+
+			# STANDARD PATH: Vector Search + Re-ranking
+			embeddings = OllamaEmbeddings(base_url=OLLAMA_HOST, model=EMBEDDING_MODEL)
+			query_vector = embeddings.embed_query(query)
+			
+			# Step 2: Fetch more candidates than needed (Top 50)
 			cur.execute(
 				"SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 50",
 				(query_vector, user_id)
@@ -73,7 +89,7 @@ def get_context(user_id: str, query: str):
 		if not rows:
 			return "DATABASE STATUS: No notes found."
 		
-		# Step 2: Re-rank in Python using keyword scoring
+		# Step 3: Re-rank in Python using keyword scoring
 		ranked_results = []
 		for content, dist in rows:
 			final_score = score_chunk(query, content, dist)
