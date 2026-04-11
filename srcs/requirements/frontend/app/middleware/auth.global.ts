@@ -2,7 +2,7 @@ import { navigateTo, defineNuxtRouteMiddleware } from "nuxt/app";
 import { useAuthStore } from "~/stores/authStore";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-	const publicRoutes = ["/login"];
+	const publicRoutes = ["/login", "/home"];
 	if (publicRoutes.includes(to.path)) return;
 
 	const authStore = useAuthStore();
