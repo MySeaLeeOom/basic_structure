@@ -71,6 +71,7 @@ function focusEditorEnd(event: MouseEvent) {
         ref="titleInput"
         :value="titleText"
         @input="updateTitle(($event.target as HTMLInputElement).value)"
+        @keydown.enter.prevent="editor?.commands.focus('start')"
         :placeholder="t('noteEditor.untitled')"
         class="editor-title"
       />

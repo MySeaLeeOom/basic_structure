@@ -171,10 +171,12 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			await server.db.update(schema.users).set({ loginName }).where(eq(schema.users.id, session.userId));
 			return { message: "Username updated successfully.", user: { loginName } };
 		} catch (err: any) {
-			if (err.code === "23505") {
+			const pgCode = err.code ?? err.cause?.code;
+			if (pgCode === "23505") {
 				return reply.status(409).send({ error: "Username already taken." });
 			}
-			throw err;
+			server.log.error(err);
+			return reply.status(500).send({ error: "Failed to update username." });
 		}
 	});
 
@@ -188,10 +190,12 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			await server.db.update(schema.users).set({ email }).where(eq(schema.users.id, session.userId));
 			return { message: "Email updated successfully.", user: { email } };
 		} catch (err: any) {
-			if (err.code === "23505") {
+			const pgCode = err.code ?? err.cause?.code;
+			if (pgCode === "23505") {
 				return reply.status(409).send({ error: "Email already in use." });
 			}
-			throw err;
+			server.log.error(err);
+			return reply.status(500).send({ error: "Failed to update email." });
 		}
 	});
 
