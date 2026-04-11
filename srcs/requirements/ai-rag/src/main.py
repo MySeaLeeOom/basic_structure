@@ -17,6 +17,7 @@ app = FastAPI(title="AI RAG Service - Orchestrator")
 
 # --- Configuration ---
 DB_URL = os.getenv("VECTOR_DB_URL")
+MAIN_DB_URL = os.getenv("MAIN_DB_URL")
 LLM_GATEWAY_URL = os.getenv("LLM_GATEWAY_URL", "http://llm-gateway:8001/stream")
 
 BASE_URL = os.getenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
@@ -53,14 +54,41 @@ def score_chunk(query: str, content: str, vector_dist: float) -> float:
 	
 	return max(score, 0.0)
 
+def get_accessible_note_ids(user_id: str):
+	if not MAIN_DB_URL:
+		logger.error("MAIN_DB_URL is not set.")
+		return []
+	
+	conn = None
+	try:
+		conn = psycopg2.connect(MAIN_DB_URL)
+		with conn.cursor() as cur:
+			cur.execute("SELECT id FROM notes WHERE owner_id = %s", (user_id,))
+			owned = [r[0] for r in cur.fetchall()]
+			cur.execute("SELECT note_id FROM share WHERE guest_id = %s OR guest_id IS NULL", (user_id,))
+			shared = [r[0] for r in cur.fetchall()]
+			return list(set(owned + shared))
+	except Exception as e:
+		logger.error(f"Failed to fetch accessible note IDs: {e}")
+		return []
+	finally:
+		if conn:
+			conn.close()
+
 def get_context(user_id: str, query: str):
 	try:
+		note_ids = get_accessible_note_ids(user_id)
+		if not note_ids:
+			return "DATABASE STATUS: No notes found."
+
+		note_ids_str = [str(n) for n in note_ids]
+
 		conn = psycopg2.connect(DB_URL)
 		register_vector(conn)
 		
 		with conn.cursor() as cur:
-			# Step 1: Check total chunks for this user
-			cur.execute("SELECT COUNT(*) FROM embeddings WHERE user_id = %s", (user_id,))
+			# Step 1: Check total chunks for these notes
+			cur.execute("SELECT COUNT(*) FROM embeddings WHERE note_id = ANY(%s::uuid[])", (note_ids_str,))
 			total_chunks = cur.fetchone()[0]
 			
 			if total_chunks <= 15:
@@ -69,7 +97,7 @@ def get_context(user_id: str, query: str):
 					conn.close()
 					return "DATABASE STATUS: No notes found."
 				
-				cur.execute("SELECT content FROM embeddings WHERE user_id = %s", (user_id,))
+				cur.execute("SELECT content FROM embeddings WHERE note_id = ANY(%s::uuid[])", (note_ids_str,))
 				rows = cur.fetchall()
 				conn.close()
 				return "\n---\n".join([r[0] for r in rows])
@@ -80,8 +108,8 @@ def get_context(user_id: str, query: str):
 			
 			# Step 2: Fetch more candidates than needed (Top 50)
 			cur.execute(
-				"SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE user_id = %s ORDER BY distance LIMIT 50",
-				(query_vector, user_id)
+				"SELECT content, embedding <=> %s::vector as distance FROM embeddings WHERE note_id = ANY(%s::uuid[]) ORDER BY distance LIMIT 50",
+				(query_vector, note_ids_str)
 			)
 			rows = cur.fetchall()
 		conn.close()

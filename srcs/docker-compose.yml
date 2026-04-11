@@ -239,6 +239,7 @@ services:
     restart: always
     environment:
       VECTOR_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@vector-db:5432/vector_db
+      MAIN_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       LLM_GATEWAY_URL: http://llm-gateway:8001/stream
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
       LLM_BASE_URL: http://host.docker.internal:11434/v1
