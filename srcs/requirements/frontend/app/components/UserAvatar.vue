@@ -50,7 +50,7 @@ const avatarSvg = computed(() => {
 	const identityLightness = Math.floor(rand() * 55 + 30);
 
 	// Harmonious Palette (Base, Complement, Analogous)
-	const secondaryHu = (baseHu + 180) % 360;
+	const secondaryHu = (baseHu + 240) % 360;
 	const tertiaryHu = (baseHu + 30) % 360;
 
 	const palette = [
@@ -62,14 +62,18 @@ const avatarSvg = computed(() => {
 	// Pick how many colors this specific ID gets
 	const paletteRoll = rand();
 	let selectedPalette;
-	if (paletteRoll < 0.2) selectedPalette = palette;
-	else if (paletteRoll < 0.7) selectedPalette = palette.slice(0, 2);
+	if (paletteRoll < 0.2) selectedPalette = palette.slice(0, 1);
+	else if (paletteRoll < 0.7) selectedPalette = [palette[0]];
 	else selectedPalette = palette.slice(0, 1);
 
 	const gridSize = 5;
-	const pixelSize = props.size / gridSize;
+	// Force integer pixel size for crisp edges
+	const pixelSize = Math.floor(props.size / gridSize);
+	// Calculate offset to center the grid
+	const gridTotal = pixelSize * gridSize;
+	const offset = Math.floor((props.size - gridTotal) / 2);
 
-	let svg = `<svg width="${props.size}" height="${props.size}" viewBox="0 0 ${props.size} ${props.size}" xmlns="http://www.w3.org/2000/svg">`;
+	let svg = `<svg width="${props.size}" height="${props.size}" viewBox="0 0 ${props.size} ${props.size}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
 	// Background based on base hue
 	svg += `<rect width="100%" height="100%" fill="hsl(${baseHu}, 15%, 97%)" />`;
 
@@ -79,16 +83,16 @@ const avatarSvg = computed(() => {
 			if (rand() > 0.42) {
 				const color = selectedPalette[Math.floor(rand() * selectedPalette.length)];
 
-				const rect = (px: number, py: number) =>
-					`<rect x="${px * pixelSize}" y="${py * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" />`;
+				       const rect = (px: number, py: number) =>
+					       `<rect x="${offset + px * pixelSize}" y="${offset + py * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" />`;
 
-				svg += rect(x, y);
-				if (x < Math.floor(gridSize / 2)) {
-					svg += rect(gridSize - 1 - x, y);
-				}
-			}
-		}
-	}
+				       svg += rect(x, y);
+				       if (x < Math.floor(gridSize / 2)) {
+					       svg += rect(gridSize - 1 - x, y);
+				       }
+			       }
+		       }
+	       }
 	svg += `</svg>`;
 	return svg;
 });

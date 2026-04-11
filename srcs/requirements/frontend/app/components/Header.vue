@@ -32,6 +32,19 @@ function toggleDark() {
   setTimeout(() => document.documentElement.classList.remove('theme-transition'), 300);
 }
 
+const avatarMenu = ref<InstanceType<typeof Menu> | null>(null);
+
+const avatarMenuItems = computed(() => [
+  { label: `Hello, ${authStore.user?.loginName}!`, disabled: true },
+  { separator: true },
+  { label: t('nav.account'), command: () => navigateTo('/profile') },
+  { label: t('auth.logout'), command: () => authStore.logout() },
+]);
+
+function toggleAvatarMenu(event: Event) {
+  avatarMenu.value?.toggle(event);
+}
+
 const navItems = computed(() => [
   { to: '/home', label: t('nav.home') },
   { to: '/notes', label: t('nav.notes') },
@@ -133,6 +146,22 @@ const langMenuItems = computed(() => [
               {{ authStore.user.loginName }}
             </span>
           </NuxtLink>
+          <div class="relative">
+            <UserAvatar
+              :uuid="authStore.user!.id"
+              :size="32"
+              class="cursor-pointer"
+              aria-haspopup="true"
+              aria-controls="header_avatar_menu"
+              @click="toggleAvatarMenu"
+            />
+            <Menu
+              id="header_avatar_menu"
+              ref="avatarMenu"
+              :model="avatarMenuItems"
+              :popup="true"
+            />
+          </div>
         </template>
         <template v-else>
           <NuxtLink to="/login">
