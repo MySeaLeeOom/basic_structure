@@ -21,7 +21,7 @@ app = FastAPI(title="AI Ingest Service - Data Processing")
 DB_URL = os.getenv("VECTOR_DB_URL")
 BASE_URL = os.getenv("LLM_BASE_URL", "http://host.docker.internal:11434/v1")
 OLLAMA_HOST = BASE_URL.replace("/v1", "")
-EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "llama3")
+EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "mxbai-embed-large")
 
 # --- Global State ---
 processing_locks = set()
