@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildServer, type AppConfig } from "../app";
 import { databaseUrl } from "../db/connections";
-import { fallback } from "../lib/auth_utils";
 import { sql } from "drizzle-orm";
 
 describe("Auth Routes (Integration)", () => {
@@ -32,6 +31,7 @@ describe("Auth Routes (Integration)", () => {
 			githubClientSecret: "test_client_secret",
 			sessionSecret: "a_very_long_test_secret_key_that_is_32_bytes",
 			callbackUri: "http://localhost:8080/cb",
+			frontendUrl: "http://localhost:8080",
 			runMigrations: false, // Assume DB is already migrated in dev
 		};
 
@@ -57,9 +57,8 @@ describe("Auth Routes (Integration)", () => {
 
 		logInteraction("Register Success", req, response);
 
-		// We expect a redirect (302) to the notes page upon success
-		expect(response.statusCode).toBe(302);
-		expect(response.headers.location).toBe(`http://localhost:8080${fallback}`);
+		expect(response.statusCode).toBe(200);
+		expect(response.json()).toEqual({ success: true });
 		// Use regex to check for the session cookie
 		const setCookie = response.headers["set-cookie"];
 		expect(setCookie).toBeDefined();
@@ -101,8 +100,8 @@ describe("Auth Routes (Integration)", () => {
 
 		logInteraction("Login Success", req, response);
 
-		expect(response.statusCode).toBe(302);
-		expect(response.headers.location).toBe(`http://localhost:8080${fallback}`);
+		expect(response.statusCode).toBe(200);
+		expect(response.json()).toEqual({ success: true });
 		expect(response.headers["set-cookie"]).toBeDefined();
 	});
 
@@ -231,7 +230,7 @@ describe("Auth Routes (Integration)", () => {
 		const response = await server.inject(req);
 
 		logInteraction("Logout", req, response);
-		expect(response.statusCode).toBe(302);
+		expect(response.statusCode).toBe(200);
 
 		// Cookie must be cleared (empty value + past expiry)
 		const setCookie = response.headers["set-cookie"];

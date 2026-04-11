@@ -16,8 +16,8 @@ The tests run against the **running development database** (as configured in `do
 **Goal**: Verify a user can sign up.
 - **Action**: Sends a POST request with `loginName`, `email`, and `password`.
 - **Checks**:
-    - **Status 302**: Expects a redirect (Standard pattern for successful form submissions).
-    - **Location**: specific fallback URL (e.g., `http://localhost:8080/notes`).
+    - **Status 200**.
+    - **Body**: `{ success: true }`. Navigation is handled by the frontend, not the server.
     - **Cookie**: Checks that a `session_id` HttpOnly cookie is set (signed).
 
 ### 2. Duplicate Email Registration
@@ -38,7 +38,8 @@ The tests run against the **running development database** (as configured in `do
 **Goal**: Verify a user can return and log in.
 - **Action**: Sends a POST request with the registered credentials.
 - **Checks**:
-    - **Status 302**: Redirects to the app.
+    - **Status 200**.
+    - **Body**: `{ success: true }`. Navigation is handled by the frontend, not the server.
     - **Cookie**: A new session cookie is issued.
 
 ### 5. Invalid Login — Wrong Password
@@ -78,7 +79,7 @@ The tests run against the **running development database** (as configured in `do
 **Goal**: Verify full session revocation.
 - **Action**: Logs in, then calls `POST /logout` with the session cookie.
 - **Checks**:
-    - **Status 302**.
+    - **Status 200**.
     - `set-cookie` header clears the `session_id` cookie.
     - The `sessions` row no longer exists in the DB.
 

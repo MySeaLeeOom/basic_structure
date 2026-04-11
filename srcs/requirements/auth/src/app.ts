@@ -19,6 +19,7 @@ declare module "fastify" {
     interface FastifyInstance {
         githubOAuth2: OAuth2Namespace;
         db: NodePgDatabase<typeof schema>;
+        frontendUrl: string;
     }
 }
 
@@ -29,6 +30,7 @@ export interface AppConfig {
     githubClientSecret: string;
     sessionSecret: string;
     callbackUri: string;
+    frontendUrl: string;
     runMigrations?: boolean;
 }
 
@@ -46,6 +48,8 @@ export const buildServer = async (config: AppConfig) => {
         },
         trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
     }).withTypeProvider<TypeBoxTypeProvider>();
+
+    server.decorate("frontendUrl", config.frontendUrl);
 
     server.get("/metrics", async (_request, reply) => {
         reply.header("Content-Type", prometheusRegister.contentType);

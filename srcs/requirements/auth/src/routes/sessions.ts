@@ -3,7 +3,6 @@ import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import * as schema from "../db/schema";
 
 import { verifySession, revokeSession } from "../lib/session_helpers";
-import { getHomeURL, getOrigin } from "../lib/auth_utils";
 
 export const sessionRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// A simple endpoint to check "Who am I?"
@@ -34,7 +33,7 @@ export const sessionRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// LOGOUT: The Revocation
 	server.post("/logout", async (request, reply) => {
 		await revokeSession(request, reply, server.db); // HELPER: Revoke Session
-		return reply.redirect(getHomeURL(request)); // ACTION: Redirect to home/login
+		return reply.send({ ok: true });
 	});
 };
 

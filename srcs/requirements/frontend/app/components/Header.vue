@@ -17,7 +17,7 @@ const avatarMenuItems = computed(() => [
   { label: t('nav.home'), command: () => navigateTo('/home') },
   { label: t('nav.notes'), command: () => navigateTo('/notes') },
   { separator: true },
-  { label: t('nav.account'), command: () => navigateTo('/profile') },
+  { label: t('nav.account'), command: () => navigateTo('/account') },
   { label: t('auth.logout'), command: () => authStore.logout() },
 ]);
 
