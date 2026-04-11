@@ -59,7 +59,7 @@ make fclean    # Destructive: removes everything including database volumes
 make re        # clean + rebuild
 ```
 
-The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
+The application is accessible at `http://localhost:8443`. Grafana dashboards are at `http://localhost:8443/grafana`.
 
 ## **III. Resources**
 
@@ -69,15 +69,15 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 
 ## Team information
 
-Ahmed Diler - Principal Developer
+Ahmed Diler - Programming
 
 Maarten Hoff - Technical Lead
 
-Masha Mashenkova - Product Owner
+Masha Yakovenko - Product Owner
 
 Pavlos Vasilantonakis - Project Manager
 
-Grace Mullin - Manager of Development
+Grace Mullin - Programming
 
 ## **IV. Project management**
 
@@ -128,21 +128,21 @@ Calculate your path to the 14-point minimum.
 
 | Module | Category | Type | Points |
 | --- | --- | --- | --- |
-| Frameworks (Vue + Axum) | Web | Major | 2 | 
-| Microservices | DevOps | Major | 2 |
-| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
-| RAG System | AI | Major | 2 |
-| LLM System Interface | AI | Major | 2 |
-| Web-socket communication | Web | Major | 2 |
-| Real-time collaboration | Web | Minor | 1 |
-| Server-Side Rendering | Web | Minor | 1 |
-| Support for multiple languages | Accesibility | Minor | 1 |
-| Support for rtl | Accesibility | Minor | 1 |
-| Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
-| OAuth Authentication | User Management | Minor | 1 |
-|ORM system | Web | Minor | 1 |
-|Standard user management|User Management | Major | 2|
-| GDPR compliance | Data | Minor | 1 |
+| Frameworks (Vue + Axum) | Web | Major | 2 | A+Ms |
+| Microservices | DevOps | Major | 2 | Ma+Ms |
+| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 | P |
+| RAG System | AI | Major | 2 | Ma |
+| LLM System Interface | AI | Major | 2 | Ma |
+| Web-socket communication | Web | Major | 2 | Ma + A + P|
+| Real-time collaboration | Web | Minor | 1 | A|
+| Server-Side Rendering | Web | Minor | 1 | Ms |
+| Support for multiple languages | Accesibility | Minor | 1 | Gr |
+| Support for rtl | Accesibility | Minor | 1 | Gr |
+| Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 | P |
+| OAuth Authentication | User Management | Minor | 1 | Ms |
+| ORM system | Web | Minor | 1 | Ms |
+| Standard user management|User Management | Major | 2| Ms |
+| GDPR compliance | Data | Minor | 1 | P |
 | **Total estimated** | | | **18** |
 
 ## **IX. Individual contributions**
@@ -162,6 +162,7 @@ Localization: Grace
 ## **X. AI usage**
 Pavlos: Used AI to research the pros and cons of different stacks, for detecting code smells, for changes that needed multi-file editing to make sure all contact points were adequately worked on and for the creation of tutorials and learning material for the project
 Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
+Grace: Used AI to figure out how to integrate my contributions to the project and to summarise the other different services, their roles and how they interact. It was also used to debug configuration issues, in particular with Docker and Cargo.
 
 ## **Future Features**
 What in-theory would be an obvious next step:
