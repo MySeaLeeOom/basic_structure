@@ -6,7 +6,7 @@ interface User {
 	email: string | null;
 	role: string | null;
 	loginName: string | null;
-	// add other fields if verification returns them
+	hasLocalAuth: boolean;
 }
 
 export const useAuthStore = defineStore("auth", () => {

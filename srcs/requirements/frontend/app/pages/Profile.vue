@@ -80,7 +80,12 @@ async function handleUpdateEmail() {
 }
 
 async function handleChangePassword() {
-	if (!oldPassword.value || !newPassword.value) return;
+	if (!newPassword.value) return;
+
+	if (auth.user?.hasLocalAuth && !oldPassword.value) {
+		errors.password = t('profile.error.oldPasswordRequired');
+		return;
+	}
 
 	if (newPassword.value !== confirmPassword.value) {
 		errors.password = t('profile.error.passwordMismatch');
@@ -240,12 +245,14 @@ async function handleExportData() {
 						<h3 class="font-bold">{{ t('profile.section.security') }}</h3>
 						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
 							<Password v-model="oldPassword" :placeholder="t('profile.placeholder.currentPassword')" :feedback="false" toggleMask
-								fluid />
+								fluid :disabled="!auth.user?.hasLocalAuth" />
 							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid />
 							<Password v-model="confirmPassword" :placeholder="t('profile.placeholder.confirmNewPassword')" :feedback="false"
 								toggleMask fluid />
-							<Button :label="t('profile.button.changePassword')" type="submit"
-								:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+							<Button
+								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
+								type="submit"
+								:disabled="isSubmitting || !newPassword || !confirmPassword || newPassword !== confirmPassword"
 								fluid />
 							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
 						</form>

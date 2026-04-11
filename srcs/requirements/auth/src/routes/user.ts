@@ -89,6 +89,12 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			return reply.status(404).send({ error: "User profile not found." });
 		}
 		authMeTotal.labels("200").inc();
+		// Check if user has a local password account
+		const [localAccount] = await server.db
+			.select({ id: schema.accounts.id })
+			.from(schema.accounts)
+			.where(and(eq(schema.accounts.userId, user.id), eq(schema.accounts.provider, "local")))
+			.limit(1);
 		// Return sanitized user data
 		return {
 			authenticated: true,
@@ -99,6 +105,7 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 				role: user.role,
 				imageURL: user.imageURL,
 				createdAt: user.createdAt,
+				hasLocalAuth: !!localAccount,
 			},
 		};
 	});
