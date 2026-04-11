@@ -173,7 +173,7 @@ function confirmDelete(id: string) {
 			noteStore.deleteNote(id);
 		}
 	});
-}/
+}
 
 onMounted(() => {
 	if (noteStore.notesCount === 0) {
