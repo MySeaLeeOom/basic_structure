@@ -60,6 +60,7 @@ const navItems = computed(() => [
           <div class="relative">
             <UserAvatar
               :uuid="authStore.user!.id"
+              :imageURL="authStore.user?.imageURL"
               :size="32"
               class="cursor-pointer"
               aria-haspopup="true"

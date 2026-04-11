@@ -6,6 +6,7 @@ interface User {
 	email: string | null;
 	role: string | null;
 	loginName: string | null;
+	imageURL: string | null;
 	hasLocalAuth: boolean;
 }
 
@@ -183,6 +184,27 @@ export const useAuthStore = defineStore("auth", () => {
 		}
 	}
 
+	async function updateImageUrl(imageURL: string | null) {
+		loading.value = true;
+		error.value = null;
+		try {
+			const res = await fetch("/api/auth/change-image", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ imageURL }),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || data.error || "Image update failed");
+			await checkAuth(undefined, true);
+			return { success: true, message: data.message };
+		} catch (e: any) {
+			error.value = e.message;
+			return { success: false, message: e.message };
+		} finally {
+			loading.value = false;
+		}
+	}
+
 	async function changePassword(oldPassword: string, newPassword: string) {
 		loading.value = true;
 		error.value = null;
@@ -258,6 +280,7 @@ export const useAuthStore = defineStore("auth", () => {
 		registerLocal,
 		updateLoginName,
 		updateEmail,
+		updateImageUrl,
 		changePassword,
 		deleteAccount,
 		exportData,

@@ -61,6 +61,10 @@ const ChangePasswordSchema = Type.Object({
 	newPassword: Type.String({ minLength: 8 }),
 });
 
+const ChangeImageSchema = Type.Object({
+	imageURL: Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+});
+
 const ResolveUserSchema = Type.Object({
 	identifier: Type.String({ minLength: 3 }),
 });
@@ -68,6 +72,7 @@ const ResolveUserSchema = Type.Object({
 type ChangeLoginType = Static<typeof ChangeLoginSchema>;
 type ChangeEmailType = Static<typeof ChangeEmailSchema>;
 type ChangePasswordType = Static<typeof ChangePasswordSchema>;
+type ChangeImageType = Static<typeof ChangeImageSchema>;
 type ResolveUserType = Static<typeof ResolveUserSchema>;
 
 /**
@@ -188,6 +193,16 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			}
 			throw err;
 		}
+	});
+
+	/* PATCH /change-image: Sets or clears the profile picture URL. */
+	server.patch("/change-image", { schema: { body: ChangeImageSchema } }, async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const { imageURL } = request.body;
+		await server.db.update(schema.users).set({ imageURL }).where(eq(schema.users.id, session.userId));
+		return { message: "Profile picture updated.", user: { imageURL } };
 	});
 
 	/**
