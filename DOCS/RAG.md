@@ -25,6 +25,11 @@ The system consists of four decoupled services:
 4. **LLM Gateway (`llm-gateway`):** 
    A provider-agnostic proxy that manages communication with the LLM (Ollama). It handles request standardization and streaming responses.
 
+## Model Strategy
+The system utilizes a dual-model approach for optimal performance:
+- **Inference (Chat):** `llama3` (or similar) for reasoning and text generation.
+- **Embeddings (Search):** `mxbai-embed-large` for high-precision semantic retrieval.
+
 ## Data Flow
 1. **Indexing:** As a note is saved, `ai-ingest` segments the text and stores its mathematical representation in the vector database.
 2. **Querying:** When a user asks a question, `ai-rag` retrieves the most relevant fragments from the database.
