@@ -2,7 +2,7 @@
  * UI copy for the Nuxt app (nav, buttons, etc.). This is separate from the notes
  * service Fluent/FTL files: those only translate strings the API returns.
  */
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import ar from "~/locales/ar.json";
 import deDE from "~/locales/de-DE.json";
 import enUK from "~/locales/en-UK.json";
@@ -39,13 +39,6 @@ export function useUiI18n() {
 		if (locale.value !== normalized) {
 			locale.value = normalized;
 		}
-	});
-
-	useHead({
-		htmlAttrs: {
-			lang: computed(() => locale.value),
-			dir: computed(() => (locale.value === "ar" ? "rtl" : "ltr")),
-		},
 	});
 
 	const isRtl = computed(() => locale.value === "ar");

@@ -39,7 +39,7 @@ async function handleRegister() {
 </script>
 
 <template>
-	<div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+	<div class="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-900 p-4">
 		<Card class="w-full max-w-md">
 			<template #title>
 				<div class="text-center text-2xl font-bold mb-4">{{ t('login.welcome') }}</div>
