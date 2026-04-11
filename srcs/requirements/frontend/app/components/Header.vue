@@ -14,6 +14,9 @@ const avatarMenu = ref<InstanceType<typeof Menu> | null>(null);
 const avatarMenuItems = computed(() => [
   { label: `Hello, ${authStore.user?.loginName}!`, disabled: true },
   { separator: true },
+  { label: t('nav.home'), command: () => navigateTo('/home') },
+  { label: t('nav.notes'), command: () => navigateTo('/notes') },
+  { separator: true },
   { label: t('nav.account'), command: () => navigateTo('/profile') },
   { label: t('auth.logout'), command: () => authStore.logout() },
 ]);
@@ -35,7 +38,7 @@ const navItems = computed(() => [
     </template>
 
     <template #center>
-      <nav class="flex gap-1">
+      <nav class="hidden sm:flex gap-1">
         <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to"
           class="px-4 py-2 rounded-md text-sm font-medium text-muted-color hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
           active-class="!text-primary-500 bg-surface-100 dark:bg-surface-700">
@@ -47,12 +50,13 @@ const navItems = computed(() => [
     <template #end>
       <div class="flex items-center gap-2">
         <template v-if="authStore.isAuthenticated">
-          <NuxtLink to="/profile" class="no-underline text-inherit group">
+          <NuxtLink to="/account" class="no-underline text-inherit group hidden sm:block">
             <span v-if="authStore.user?.loginName"
-              class="text-sm flex items-center gap-1 group-hover:text-primary-500 transition-colors">
+              class="text-sm  font-medium text-muted-color  flex items-center gap-1 group-hover:text-primary-500 transition-colors">
               {{ authStore.user.loginName }}
             </span>
           </NuxtLink>
+
           <div class="relative">
             <UserAvatar
               :uuid="authStore.user!.id"
