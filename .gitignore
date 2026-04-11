@@ -36,3 +36,10 @@ CLAUDE.md
 copilot-instructions.md
 masha*.*
 crdt-migration-plan.md
+dist
+
+target
+grafana-prometheus-review.md
+.pnpm-store
+.DS_Store
+.pnpm-store

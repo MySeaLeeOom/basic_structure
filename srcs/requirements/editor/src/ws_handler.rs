@@ -30,16 +30,16 @@ pub async fn ws_route(
 			None => return StatusCode::UNAUTHORIZED.into_response(),
 		};
 
-	// Simple ownership check
-	if !db::check_ownership(&state.pool, note_id, user_id).await {
+	// Check ownership or share access
+	if !db::check_access(&state.pool, note_id, user_id).await {
 		return StatusCode::FORBIDDEN.into_response();
 	}
 
 	// Upgrade to WebSocket
-	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state))
+	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state, user_id))
 }
 
-async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
+async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, user_id: Uuid) {
 	// find or create room if not exists
 	let room = if let Some(existing_room) = state.rooms.get(&note_id) {
 		existing_room.clone()
@@ -54,9 +54,10 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
 				// spawn background task for periodic saving
 				let state_bg = state.clone();
 				let room_bg = new_room.clone();
+				let user_id_bg = user_id;
 				tokio::spawn(async move {
 					loop {
-						tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+						tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
 						// Check if the room still exists in the global state
 						if !state_bg.rooms.contains_key(&note_id) {
@@ -68,7 +69,7 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
 						if room_bg.dirty.load(Ordering::Acquire) {
 							tracing::debug!("Background save for note {}", note_id);
 							let doc_lock = room_bg.doc.read().await;
-							if db::save_note(&state_bg.pool, note_id, &doc_lock).await.is_ok() {
+							if db::save_note(&state_bg.pool, note_id, user_id_bg, &doc_lock).await.is_ok() {
 								room_bg.dirty.store(false, Ordering::Release);
 							}
 						}
@@ -150,7 +151,7 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>) {
 		tracing::info!("Last user left room {}. Saving to DB...", note_id);
 		
 		let doc_lock = room.doc.read().await;
-		if let Err(_) = db::save_note(&state.pool, note_id, &doc_lock).await {
+		if let Err(_) = db::save_note(&state.pool, note_id, user_id, &doc_lock).await {
 			tracing::error!("Failed to save note {} to DB upon closing.", note_id);
 		}
 		

@@ -1,15 +1,152 @@
 <script setup lang="ts">
-import { ref, onMounted, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
+import Dialog from "@/volt/Dialog.vue";
 import SidebarLayout from "@/components/layouts/SidebarLayout.vue";
 import NoteEditor from "@/components/notes/NoteEditor.vue";
+import ChatSidebar from "@/components/notes/ChatSidebar.vue";
 import { useConfirm } from "primevue/useconfirm";
 import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
+import { useUiI18n } from "~/composables/useUiI18n";
+import { useAuthStore } from "@/stores/authStore";
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
+const { t } = useUiI18n();
+const authStore = useAuthStore();
+
+const showInviteDialog = ref(false);
+const inviteNoteId = ref<string | null>(null);
+const selectedUsers = ref<string[]>([]);
+const allUsers = ref<{ id: string; loginName: string }[]>([]);
+const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
+const inviteError = ref('');
+const inviteSuccess = ref('');
+
+async function fetchUsers() {
+	try {
+		const res = await $fetch<{ users: { id: string; loginName: string }[] }>('/api/auth/users');
+		allUsers.value = res.users;
+	} catch {
+		allUsers.value = [];
+	}
+}
+
+async function fetchCollaborators(noteId: string) {
+	try {
+		collaborators.value = await $fetch(`/api/notes/collab/${noteId}`);
+	} catch {
+		collaborators.value = [];
+	}
+	const count = collaborators.value.length;
+	inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
+}
+
+function openInvite(noteId: string) {
+	inviteNoteId.value = noteId;
+	selectedUsers.value = [];
+	inviteError.value = '';
+	inviteSuccess.value = '';
+	showInviteDialog.value = true;
+	if (allUsers.value.length === 0) fetchUsers();
+	fetchCollaborators(noteId);
+}
+
+function toggleUser(userId: string) {
+	const idx = selectedUsers.value.indexOf(userId);
+	if (idx === -1) {
+		selectedUsers.value.push(userId);
+	} else {
+		selectedUsers.value.splice(idx, 1);
+	}
+}
+
+function usernameFor(userId: string | null) {
+	if (!userId) return 'Public link';
+	return allUsers.value.find(u => u.id === userId)?.loginName ?? userId.slice(0, 8);
+}
+
+// Users not already collaborators and not the current user
+const availableUsers = computed(() => {
+	const collabIds = new Set(collaborators.value.map(c => c.guest_id));
+	const currentUserId = authStore.user?.id;
+	return allUsers.value.filter(u => !collabIds.has(u.id) && u.id !== currentUserId);
+});
+
+async function revokeShare(shareId: string) {
+	inviteError.value = '';
+	try {
+		await $fetch(`/api/notes/collab/revoke/${shareId}`, { method: 'DELETE' });
+		collaborators.value = collaborators.value.filter(c => c.share_id !== shareId);
+		const count = collaborators.value.length;
+		inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
+	} catch {
+		inviteError.value = 'Failed to revoke access';
+	}
+}
+
+async function sendInvite() {
+	if (selectedUsers.value.length === 0 || !inviteNoteId.value) return;
+	inviteError.value = '';
+	inviteSuccess.value = '';
+
+	let shared = 0;
+	let skipped = 0;
+	for (const guestId of selectedUsers.value) {
+		try {
+			await $fetch('/api/notes/collab/', {
+				method: 'POST',
+				body: { note_id: inviteNoteId.value, guest_id: guestId, role: 'Edit' },
+			});
+			shared++;
+		} catch (e: any) {
+			if (e?.response?.status === 409) {
+				skipped++;
+			} else {
+				inviteError.value = 'Failed to share with some users';
+			}
+		}
+	}
+
+	if (shared > 0) inviteSuccess.value = `Shared with ${shared} user${shared > 1 ? 's' : ''}`;
+	if (skipped > 0) inviteSuccess.value += skipped === selectedUsers.value.length
+		? 'All selected users already have access'
+		: ` (${skipped} already had access)`;
+
+	selectedUsers.value = [];
+	if (inviteNoteId.value) fetchCollaborators(inviteNoteId.value);
+}
+
+// Shared notes
+const sharedNotes = ref<{ share_id: string; note_id: string; note_title: string; role: string; owner_id: string; created_at: string }[]>([]);
+const selectedSharedNote = ref<any>(null);
+
+async function fetchSharedNotes() {
+	try {
+		sharedNotes.value = await $fetch('/api/notes/collab/received');
+	} catch {
+		sharedNotes.value = [];
+	}
+}
+
+// When selecting in one list, deselect the other
+function selectOwnNote(note: any) {
+	noteStore.selectedNote = note;
+	selectedSharedNote.value = null;
+}
+
+function selectSharedNote(note: any) {
+	selectedSharedNote.value = note;
+	noteStore.selectedNote = null;
+}
+
+const activeNote = computed(() => {
+	if (noteStore.selectedNote) return noteStore.selectedNote;
+	if (selectedSharedNote.value) return { id: selectedSharedNote.value.note_id, title: selectedSharedNote.value.note_title };
+	return null;
+});
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
@@ -21,15 +158,15 @@ async function handleCreate() {
 
 function confirmDelete(id: string) {
 	confirm.require({
-		message: 'Are you sure you want to delete this note?',
-		header: 'Confirm Deletion',
+		message: t('notes.delete.confirmMessage'),
+		header: t('notes.delete.confirmHeader'),
 		icon: 'pi pi-trash',
 		acceptProps: {
-			label: 'Delete',
+			label: t('notes.delete.confirmAccept'),
 			severity: 'danger'
 		},
 		rejectProps: {
-			label: 'Cancel',
+			label: t('notes.delete.confirmReject'),
 			severity: 'secondary'
 		},
 		accept: () => {
@@ -46,6 +183,7 @@ onMounted(() => {
 			}
 		});
 	}
+	fetchSharedNotes();
 });
 
 onServerPrefetch(async () => {
@@ -64,32 +202,137 @@ onServerPrefetch(async () => {
 <template>
 	<SidebarLayout>
 		<template #sidebar>
-			<div class="flex items-center justify-between mb-4">
-				<h2 class="section-title !mb-0">Notes</h2>
+			<div class="flex items-center justify-between mb-1 px-2">
+				<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
 				<Button label="+" text rounded @click="handleCreate" />
 			</div>
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
 			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
-				Loading notes...
+				{{ t('notes.loading') }}
 			</div>
-			<Listbox v-else v-model="noteStore.selectedNote" :options="noteStore.notes" optionLabel="title" dataKey="id">
+			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
+				:options="noteStore.notes" optionLabel="title" dataKey="id"
+				pt:root:class="!border-0 !shadow-none !bg-transparent"
+				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
+				pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
-					<div class="flex items-center justify-between w-full group/item">
-						<span>{{ slotProps.option.title || "Untitled" }}</span>
-						<Button severity="danger" text rounded size="small"
-							class="opacity-0 group-hover/item:opacity-100 transition-opacity"
-							@click.stop="confirmDelete(slotProps.option.id)">
-							<TimesIcon class="w-2.5 h-2.5" />
-						</Button>
+					<div class="flex items-center justify-between w-full group/item gap-1">
+						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
+						<div class="flex items-center shrink-0"
+							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+								:class="noteStore.selectedNote?.id === slotProps.option.id
+									? 'text-white hover:bg-white/20'
+									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'"
+								@click.stop="openInvite(slotProps.option.id)">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+									<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
+								</svg>
+							</button>
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+								:class="noteStore.selectedNote?.id === slotProps.option.id
+									? 'text-white hover:text-red-300 hover:bg-white/20'
+									: 'text-surface-400 hover:text-red-400 hover:bg-surface-600'"
+								@click.stop="confirmDelete(slotProps.option.id)">
+								<TimesIcon class="w-2.5 h-2.5" />
+							</button>
+						</div>
 					</div>
 				</template>
 			</Listbox>
+
+			<div v-if="sharedNotes.length" class="flex items-center justify-between mt-4 mb-1 px-2">
+				<h2 class="section-title !mb-0">{{ t('notes.shared') }}</h2>
+			</div>
+			<Listbox v-if="sharedNotes.length" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
+				:options="sharedNotes" optionLabel="note_title" dataKey="note_id"
+				pt:root:class="!border-0 !shadow-none !bg-transparent"
+				pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
+				pt:option:class="!px-2 !py-1.5 !rounded-md">
+				<template #option="slotProps">
+					<div class="flex items-center justify-between w-full">
+						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
+						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.role }}</span>
+					</div>
+				</template>
+			</Listbox>
+
 		</template>
 
-		<NoteEditor
-			v-if="mounted && noteStore.selectedNote"
-			:note-id="noteStore.selectedNote.id"
-		/>
-		<div v-else-if="!noteStore.isLoading && !noteStore.selectedNote" class="empty-state">Select a note</div>
+		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
+			<NoteEditor
+				:note-id="activeNote.id"
+				class="flex-1"
+			/>
+			<ChatSidebar />
+		</div>
+		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
+
+		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
+			pt:root:class="w-full max-w-sm">
+			<div class="flex flex-col gap-3">
+				<!-- Current collaborators -->
+				<div v-if="collaborators.length">
+					<label class="text-sm text-surface-500 mb-1 block">Current access</label>
+					<div class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
+						<div v-for="collab in collaborators" :key="collab.share_id"
+							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
+							<div class="flex items-center gap-3 min-w-0">
+								<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
+									{{ usernameFor(collab.guest_id)?.charAt(0).toUpperCase() || "?" }}
+								</span>
+								<div class="min-w-0">
+									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
+									<div class="text-xs text-surface-500">{{ collab.role }}</div>
+								</div>
+							</div>
+							<button
+								class="w-6 h-6 rounded-full flex items-center justify-center text-surface-400 hover:text-red-400 hover:bg-surface-600 transition-colors shrink-0"
+								@click="revokeShare(collab.share_id)">
+								<TimesIcon class="w-2.5 h-2.5" />
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Selected users to invite -->
+				<div v-if="selectedUsers.length" class="flex flex-wrap gap-1.5">
+					<span v-for="uid in selectedUsers" :key="uid"
+						class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-500/15 text-primary-400">
+						{{ allUsers.find(u => u.id === uid)?.loginName ?? uid }}
+						<button class="hover:text-primary-300" @click="toggleUser(uid)">
+							<TimesIcon class="w-2 h-2" />
+						</button>
+					</span>
+				</div>
+
+				<!-- Available users to add -->
+				<label class="text-sm text-surface-500">{{ t('notes.invite.selectUsers') }}</label>
+				<div v-if="availableUsers.length" class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
+					<button v-for="user in availableUsers" :key="user.id"
+						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
+						:class="selectedUsers.includes(user.id)
+							? 'bg-primary-500/15 text-primary-400'
+							: 'hover:bg-surface-800 text-surface-300'"
+						@click="toggleUser(user.id)">
+						<span class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
+							{{ user.loginName?.charAt(0).toUpperCase() || "?" }}
+						</span>
+						<div class="min-w-0">
+							<div class="truncate">@{{ user.loginName }}</div>
+						</div>
+					</button>
+				</div>
+				<div v-else class="text-xs text-surface-500">All users already have access</div>
+
+				<span v-if="inviteError" class="text-xs text-red-500">{{ inviteError }}</span>
+				<span v-if="inviteSuccess" class="text-xs text-green-600">{{ inviteSuccess }}</span>
+			</div>
+			<template #footer>
+				<Button :label="t('notes.invite.send')" :disabled="selectedUsers.length === 0" @click="sendInvite" />
+			</template>
+		</Dialog>
 	</SidebarLayout>
 </template>

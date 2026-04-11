@@ -31,10 +31,12 @@ pub async fn process_binary_message(
 					let update = txn.encode_state_as_update_v1(&state_vector);
 					Message::Sync(SyncMessage::SyncStep2(update)).encode(&mut response_encoder);
 				}
-				SyncMessage::SyncStep2(update) | SyncMessage::Update(update) => {
-					let update = Update::decode_v1(&update)?;
+				SyncMessage::SyncStep2(update_data) | SyncMessage::Update(update_data) => {
+					let update = Update::decode_v1(&update_data)?;
 					txn.apply_update(update);
 					dirty.store(true, Ordering::Release);
+					// Re-broadcast the update to other clients
+					Message::Sync(SyncMessage::Update(update_data)).encode(&mut response_encoder);
 				}
 			}
 		}

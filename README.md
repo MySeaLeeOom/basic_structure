@@ -1,127 +1,179 @@
 # **Mycelium Notes**
 
-*This project has been created as part of the 42 curriculum by [adiler], [maahof], [myakoven], [pvasilan].* 
+*This project has been created as part of the 42 curriculum by [adiler], [grr-ace], [maahof], [myakoven], [pvasilan].*
+
+# Part 1: General README
 
 ## **I. Description**
 
-Clearly present the goal of your note-taking application.
-
-* **Goal**: Provide a brief overview of why this app exists (e.g., a poetry-focused markdown editor).
-- Excalidraw
-- 
-
-* **Key Features**: List your side-by-side editor, mindmap visualization, and custom organization.
-
-
+A modular open-source personal knowledge management system with built-in real-time collaboration.
 
 ## **II. Instructions**
 
-Provide a step-by-step guide for your peers and evaluators.
+### Prerequisites
 
-* **Prerequisites**: List Docker, Node.js version, etc.
+* Docker Engine with Compose v2 (`docker compose` subcommand).
+* A GitHub OAuth App for authentication (Client ID and Client Secret).
+* `make` (GNU Make).
 
+### Setup
 
-* **Setup**: Explain how to configure the `.env` file (referencing your `env.example`).
+1. **Environment variables** — Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
 
+```
+DB_USER=<postgres superuser>
+DB_PASSWORD=<postgres superuser password>
+DB_NAME=<main database name>
+AUTH_DB_USER=<auth service db user>
+AUTH_DB_NAME=<auth service db name>
+POSTGRES_ADDR=postgres
+POSTGRES_PORT=5432
+GITHUB_CLIENT_ID=<your GitHub OAuth app client ID>
+GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/github/callback
+AUTH_PORT=3000
+NOTES_ADDR=http://notes:3003
+NOTES_PORT=3003
+FRONTEND_ADDR=http://frontend:3000
+FRONTEND_PORT=3000
+WEBSITE_URL=http://localhost:8080
+```
 
-* **Execution**: Provide the single command to run the project (e.g., `docker-compose up --build`).
+2. **Secrets** — Copy the example secrets directory and fill in real values (one value per file):
 
+```bash
+cp -r srcs/secrets.example srcs/secrets
+```
 
+The following secret files must be populated: `auth_db_password`, `github_client_secret`, `session_secret_key`, `grafana_admin_user`, `grafana_admin_password`, `todo_db_password`.
 
-## **III. Team Information**
+### Execution
 
-Detail how the four of you reorganized after the member departure.
+```bash
+make up        # Build all images and start in detached mode
+make live      # Build and start in foreground (logs stream to terminal)
+make down      # Stop all containers
+make logs      # Follow logs (optionally: make logs service=auth)
+make clean     # Stop containers and remove images
+make cleanv    # clean + remove node_modules and frontend build cache volumes
+make fclean    # Destructive: removes everything including database volumes
+make re        # clean + rebuild
+```
 
-* **[Your Login]**: **Product Owner**. Responsible for feature prioritization, requirement validation, and the product backlog.
+The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
 
+## **III. Resources**
 
-* **[Member 2]**: **Technical Lead / Developer**. Responsible for Nginx architecture, SSR logic, and code quality.
+* List documentation and tutorials used.
 
+# Part 2: 42 Berlin defense documentation
 
-* **[Member 3]**: **Project Manager / Developer**. Responsible for task tracking and the Axum backend.
+## Team information
 
+Ahmed Diler - Principal Developer
 
-* **[Member 4]**: **Developer**. Responsible for AI/RAG integration and frontend components.
+Maarten Hoff - Technical Lead
 
+Masha Mashenkova - Product Owner
 
+Pavlos Vasilantonakis - Project Manager
 
-## **IV. Project Management**
+Grace Mullin - Manager of Development
+
+## **IV. Project management**
 
 Explain your workflow.
 
-* **Organization**: Describe your meeting schedule and how tasks were divided.
+* **Organization**: Features were decided early. The main sync-time was a weekly in-person meeting with additional video calls between subsets of the team. Team members expressed interest in specific subject modules early and were encouraged to take ownership. The product owner was tasked with mantaining a forward momentum, the technical lead was asked to solve any ties in relation to tech and the project lead attempted to partially disengage from the everyday coding in order to keep the rest of the team motivated.
 
+* **Tools**: 
+    Github Issues for matching commits to issues
+    Slack for everyday communication
+    Github projects for the gratification of the Project Manager
 
-* **Tools**: List GitHub Issues, Trello, or Discord.
+## **V. Technical stack**
 
+* **Frontend**: Nuxt 4 / Vue 3 with TailwindCSS, PrimeVue, and Pinia. TipTap provides the rich-text editor; Yjs and y-websocket handle real-time collaborative editing via CRDTs. Framework choice satisfies the 42 curriculum requirement.
+* **Auth service** (TypeScript): Fastify 5 with Drizzle ORM. Handles OAuth (GitHub, Google, 42) and local password auth (Argon2). Session-based authentication with cookie tokens. Exposes Prometheus metrics via `prom-client`.
+* **Notes service** (Rust): Axum + sqlx. CRUD API for note metadata. Chosen for low overhead on a high-frequency path.
+* **Editor service** (Rust): Axum with WebSocket support + Yrs/y-sync. Persists Yjs CRDT document state to PostgreSQL. Handles real-time sync between collaborating clients.
+* **Database**: PostgreSQL 16. Two logical databases in a single instance — one for auth (users, accounts, sessions), one for notes and document state. Relational model fits the structured data; UUID primary keys throughout.
+* **Infrastructure**: Docker Compose orchestrates 10 services behind an Nginx reverse proxy. Nginx gates `/api/notes` and `/ws/` routes through an `auth_request` subrequest to the auth service. Prometheus scrapes all application and infrastructure targets; Grafana provides pre-provisioned dashboards. Exporters for Nginx and PostgreSQL round out observability.
 
+## **VI. Database schema**
 
-## **V. Technical Stack**
+Two logical databases in a single PostgreSQL 16 instance.
 
-Justify your major technical choices.
+**Auth database** (Drizzle ORM, migrations in `auth/drizzle/`):
 
-* **Frontend**: Vue/Nuxt (Framework requirement).
+| Table | Columns | Notes |
+| --- | --- | --- |
+| `users` | `id` (UUID PK), `email` (unique), `login_name` (unique, not null), `image_url`, `role` (enum: user/admin), `status` (enum: active/blocked/suspended), `created_at` | Central identity table |
+| `accounts` | `id` (UUID PK), `user_id` (FK → users, cascade), `provider` (enum: github/local/google/42), `provider_account_id`, `password_hash` | Unique on (provider, provider_account_id). One user can have multiple provider accounts |
+| `sessions` | `id` (UUID PK), `user_id` (FK → users, cascade), `token` (UUID, unique), `expires_at`, `user_agent`, `ip_address` | Cookie-based session tracking |
 
+**Main database** (SQL init in `postgres/init/02-init.sql`):
 
-* **Backend**: Axum and FastAPI (Microservices architecture).
+| Table | Columns | Notes |
+| --- | --- | --- |
+| `notes` | `id` (UUID PK), `title` (varchar 255), `owner_id` (UUID), `created_at`, `updated_at` | Note metadata |
+| `note_states` | `note_id` (UUID PK, FK → notes, cascade), `state_vector` (BYTEA), `last_saved_at` | Persisted Yjs CRDT state, 1:1 with `notes` |
 
+**Key relations**: one user → many accounts (multi-provider auth), one user → many sessions, one note → one note_state. All foreign keys cascade on delete.
 
-* **Database**: PostgreSQL (Chosen for relational data and schema clarity).
+## **VII. Features list**
 
-
-
-## **VI. Database Schema**
-
-Provide a visual representation or description of your tables and their relationships.
-
-* **Tables**: Users, Notes, Chapters, etc.
-
-
-* **Relations**: e.g., One User has many Notes; One Note belongs to one Chapter.
-
-
-
-## **VII. Modules & Points**
+## **VIII. Modules & points**
 
 Calculate your path to the 14-point minimum.
 
 | Module | Category | Type | Points |
 | --- | --- | --- | --- |
-| Frameworks (Vue + Axum) | Web | Major | 2 
+| Frameworks (Vue + Axum) | Web | Major | 2 | 
+| Microservices | DevOps | Major | 2 |
+| Monitoring System with Grafana and Prometheus | DevOps | Major | 2 |
+| RAG System | AI | Major | 2 |
+| LLM System Interface | AI | Major | 2 |
+| Web-socket communication | Web | Major | 2 |
+| Real-time collaboration | Web | Minor | 1 |
+| Server-Side Rendering | Web | Minor | 1 |
+| Support for multiple languages | Accesibility | Minor | 1 |
+| Support for rtl | Accesibility | Minor | 1 |
+| Support for 2 additional browsers [Firefox, Konqueror] | Accesibility | Minor | 1 |
+| OAuth Authentication | User Management | Minor | 1 |
+|ORM system | Web | Minor | 1 |
+|Standard user management|User Management | Major | 2|
+| GDPR compliance | Data | Minor | 1 |
+| **Total estimated** | | | **18** |
 
- |
-| Microservices | Devops | Major | 2 
+## **IX. Individual contributions**
 
- |
-| RAG System | AI | Major | 2 
+Frameworks/Microservices: Ahmed, Maarten, Masha
 
- |
-| User Interaction (Chat/Friends) | Web | Major | 2 
+Web-Sockets: Ahmed, Maarten, Masha, Pavlos
 
- |
-| **Total Estimated** |  |  | <br>**14+** 
+Authentication: Masha
 
- |
+Monitoring/Browser Testing: Pavlos
 
-## **VIII. Individual Contributions**
+RAG/LLM: Maarten, Ahmed
 
-Be honest and detailed here; it is a critical part of the evaluation.
+Localization: Grace
 
-* **[Your Login]**: Implemented the markdown editor logic and the project management structure.
+## **X. AI usage**
+Pavlos: Used AI to research the pros and cons of different stacks, for detecting code smells, for changes that needed multi-file editing to make sure all contact points were adequately worked on and for the creation of tutorials and learning material for the project
+Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
 
+## **Future Features**
+What in-theory would be an obvious next step:
 
-* **Challenge**: Re-distributing roles after a team member quit; resolved by merging PM and Developer roles.
-
-
-
-## **IX. Resources**
-
-* List documentation and tutorials used.
-
-
-* **AI Usage**: Describe exactly how you used AI for coding or brainstorming.
-
-
+    user management with accounts
+    
+    extended dashboards
+    
+    sentiment analysis and semantic tagging
+    
+    friends and networks (?)
+    
+    backlinks
 
 ---
-

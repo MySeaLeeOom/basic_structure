@@ -24,7 +24,8 @@ services:
       - NODE_ENV=development
       - HOME=/tmp      # Fix for Corepack/pnpm permission issues
       - HOST=0.0.0.0  # For nuxt, so it knows
-      - PORT=${AUTH_PORT}   # For nuxt, so it knows          
+      - PORT=${AUTH_PORT}   # For nuxt, so it knows
+      - NODE_TLS_REJECT_UNAUTHORIZED=0  # Allow SSR with self-signed certificates
     depends_on:
       - auth
   
@@ -41,7 +42,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - transcendence
 
@@ -58,7 +60,8 @@ services:
         DB_PASSWORD: ${DB_PASSWORD}
         DB_NAME: ${DB_NAME}
       depends_on:
-        - postgres
+        postgres:
+          condition: service_healthy
       networks:
         - transcendence
 
@@ -109,10 +112,7 @@ services:
     networks:
       - transcendence
     ports:
-      - "0.0.0.0:8080:80"
-      - "0.0.0.0:8081:81"
-      - "0.0.0.0:8082:82"
-      - "0.0.0.0:8083:83"
+      - "8443:443"
     depends_on:
       - frontend
       - auth
@@ -152,13 +152,18 @@ services:
     image: grafana
     container_name: grafana
     restart: always
+    secrets:
+    - grafana_admin_user
+    - grafana_admin_password
     networks:
       - transcendence
-    ports:
-      - "0.0.0.0:3000:3000"
     environment:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/overview.json
       - GF_NEWS_NEWS_FEED_ENABLED=false
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ADMIN_USER__FILE=/run/secrets/grafana_admin_user
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
   prometheus:
     build:
       context: ./requirements/prometheus
@@ -176,6 +181,10 @@ services:
     build: ./requirements/nginx-exporter
     container_name: nginx-exporter
     restart: always
+    command:
+      - "--nginx.scrape-uri=http://nginx:8088/stub_status"
+    depends_on:
+      - nginx
     networks:
       - transcendence
   postgres-exporter:
@@ -189,6 +198,74 @@ services:
         condition: service_healthy
     networks:
       - transcendence
+
+  # --- AI & RAG Infrastructure ---
+  
+  vector-db:
+    build: ./requirements/vector-db
+    image: vector-db
+    container_name: vector-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: vector_db
+    volumes:
+      - vector_data:/var/lib/postgresql/data
+    networks:
+      - transcendence
+
+  ai-ingest:
+    build: ./requirements/ai-ingest
+    image: ai-ingest
+    container_name: ai-ingest
+    restart: always
+    environment:
+      VECTOR_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@vector-db:5432/vector_db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      LLM_BASE_URL: http://host.docker.internal:11434/v1
+      LLM_EMBEDDING_MODEL: mxbai-embed-large
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - vector-db
+    networks:
+      - transcendence
+
+  ai-rag:
+    build: ./requirements/ai-rag
+    image: ai-rag
+    container_name: ai-rag
+    restart: always
+    environment:
+      VECTOR_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@vector-db:5432/vector_db
+      MAIN_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      LLM_GATEWAY_URL: http://llm-gateway:8001/stream
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      LLM_BASE_URL: http://host.docker.internal:11434/v1
+      LLM_EMBEDDING_MODEL: mxbai-embed-large
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - vector-db
+      - llm-gateway
+    networks:
+      - transcendence
+
+  llm-gateway:
+    build: ./requirements/llm-gateway
+    image: llm-gateway
+    container_name: llm-gateway
+    restart: always
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      LLM_MODEL: llama3
+      LLM_BASE_URL: http://host.docker.internal:11434/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - transcendence
+
 volumes:
   frontend_node_modules:  # Persistent volume for frontend dependencies
   frontend_nuxt_hidden:   # Persistent volume for frontend nuxt build
@@ -196,6 +273,7 @@ volumes:
   frontend_manual_node_modules:  # Persistent volume for frontend dependencies
   auth_node_modules:      # Persistent volume for auth dependencies
   postgres_data:
+  vector_data:
 
 
 secrets:
@@ -205,6 +283,10 @@ secrets:
     file: ./secrets/github_client_secret #
   session_secret_key:  
     file: ./secrets/session_secret_key
+  grafana_admin_user:
+    file: ./secrets/grafana_admin_user
+  grafana_admin_password:
+    file: ./secrets/grafana_admin_password
 
 networks:
   transcendence:

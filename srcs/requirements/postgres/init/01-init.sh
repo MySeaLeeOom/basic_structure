@@ -4,6 +4,7 @@ if [ -f "/run/secrets/auth_db_password" ]; then
     AUTH_DB_PASSWORD=$(cat /run/secrets/auth_db_password)
 else
     echo "NO SECRET FOUND"
+    exit 1
 fi
 
 # Create User and Database (connected to maintenance DB 'postgres')

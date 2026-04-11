@@ -2,6 +2,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use yrs::{Doc, ReadTxn, StateVector, Transact, Update, updates::decoder::Decode};
 use crate::models::SavedNoteState;
+use base64::{Engine as _, engine::general_purpose};
+use serde_json;
 
 // loads state of a note from the database and applies it to a new yrs::Doc, which is then returned. This is called when a new client connects to load the current state of the document.
 pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
@@ -39,17 +41,23 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 	Ok(doc)
 }
 
-pub async fn check_ownership(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
-	sqlx::query("SELECT 1 FROM notes WHERE id = $1 AND owner_id = $2")
-		.bind(note_id)
-		.bind(user_id)
-		.fetch_optional(pool)
-		.await
-		.map(|r| r.is_some())
-		.unwrap_or(false)
+pub async fn check_access(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
+	// Owner OR shared guest (private share or public link)
+	sqlx::query(
+		"SELECT 1 FROM notes WHERE id = $1 AND owner_id = $2
+		 UNION ALL
+		 SELECT 1 FROM share WHERE note_id = $1 AND (guest_id = $2 OR guest_id IS NULL)
+		 LIMIT 1"
+	)
+	.bind(note_id)
+	.bind(user_id)
+	.fetch_optional(pool)
+	.await
+	.map(|r| r.is_some())
+	.unwrap_or(false)
 }
 
-pub async fn save_note(pool: &PgPool, note_id: Uuid, doc: &Doc) -> Result<(), ()> {
+pub async fn save_note(pool: &PgPool, note_id: Uuid, user_id: Uuid, doc: &Doc) -> Result<(), ()> {
 	// get state vector as blob
 	let state_blob = {
 		let txn = doc.transact();
@@ -69,6 +77,29 @@ pub async fn save_note(pool: &PgPool, note_id: Uuid, doc: &Doc) -> Result<(), ()
 		()
 	})?;
 
-	tracing::info!("Successfully saved note {} to database", note_id);
+	// AI Ingestion Hook
+	let base64_blob = general_purpose::STANDARD.encode(&state_blob);
+	let client = reqwest::Client::new();
+	let ai_service_url = "http://ai-ingest:8002/ingest";
+	
+	let payload = serde_json::json!({
+		"note_id": note_id,
+		"user_id": user_id,
+		"binary_data": base64_blob
+	});
+
+	// Fire and forget (don't block the editor save if AI is slow)
+	tokio::spawn(async move {
+		match client.post(ai_service_url).json(&payload).send().await {
+			Ok(resp) => {
+				if !resp.status().is_success() {
+					tracing::warn!("AI Ingestion failed with status: {}", resp.status());
+				}
+			}
+			Err(e) => tracing::error!("Failed to contact AI service: {}", e),
+		}
+	});
+
+	tracing::info!("Successfully saved note {} and triggered ingestion", note_id);
 	Ok(())
 }
