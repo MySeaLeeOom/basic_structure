@@ -57,6 +57,9 @@ re: clean up
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
+getlogs: 
+	$(COMPOSE) logs > all-docker-logs-$(shell date +%Y-%m-%d_%H-%M-%S).txt 2>&1
+	
 .PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
 
 # Docker commands
