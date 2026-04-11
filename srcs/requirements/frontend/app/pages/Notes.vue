@@ -207,6 +207,13 @@ onServerPrefetch(async () => {
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
 				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
 				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
+				<template #empty>
+					<button
+						class="px-2 py-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors w-full text-left"
+						@click="handleCreate">
+						{{ t('notes.createFirst') }}
+					</button>
+				</template>
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
 						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
