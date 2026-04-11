@@ -11,6 +11,7 @@ import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
 import { useUiI18n } from "~/composables/useUiI18n";
 import { useAuthStore } from "@/stores/authStore";
+import UserAvatar from "@/components/UserAvatar.vue";
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
@@ -20,18 +21,23 @@ const authStore = useAuthStore();
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
-const allUsers = ref<{ id: string; loginName: string }[]>([]);
+const allUsers = ref<{ id: string; loginName: string; imageURL: string | null }[]>([]);
 const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
 const inviteError = ref('');
 const inviteSuccess = ref('');
 
 async function fetchUsers() {
 	try {
-		const res = await $fetch<{ users: { id: string; loginName: string }[] }>('/api/auth/users');
+		const res = await $fetch<{ users: { id: string; loginName: string; imageURL: string | null }[] }>('/api/auth/users');
 		allUsers.value = res.users;
 	} catch {
 		allUsers.value = [];
 	}
+}
+
+function imageFor(userId: string | null): string | null {
+	if (!userId) return null;
+	return allUsers.value.find(u => u.id === userId)?.imageURL ?? null;
 }
 
 async function fetchCollaborators(noteId: string) {
@@ -274,10 +280,7 @@ onServerPrefetch(async () => {
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
 							<div class="flex items-center gap-3 min-w-0">
-								<span
-									class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
-									{{ usernameFor(collab.guest_id)?.charAt(0).toUpperCase() || "?" }}
-								</span>
+								<UserAvatar :uuid="collab.guest_id ?? ''" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 								<div class="min-w-0">
 									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
 									<div class="text-xs text-surface-500">{{ collab.role }}</div>
@@ -311,10 +314,7 @@ onServerPrefetch(async () => {
 						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors" :class="selectedUsers.includes(user.id)
 							? 'bg-primary-500/15 text-primary-400'
 							: 'hover:bg-surface-800 text-surface-300'" @click="toggleUser(user.id)">
-						<span
-							class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
-							{{ user.loginName?.charAt(0).toUpperCase() || "?" }}
-						</span>
+						<UserAvatar :uuid="user.id" :image-u-r-l="user.imageURL" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 						<div class="min-w-0">
 							<div class="truncate">@{{ user.loginName }}</div>
 						</div>

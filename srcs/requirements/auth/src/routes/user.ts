@@ -154,6 +154,7 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			.select({
 				id: schema.users.id,
 				loginName: schema.users.loginName,
+				imageURL: schema.users.imageURL,
 			})
 			.from(schema.users);
 
