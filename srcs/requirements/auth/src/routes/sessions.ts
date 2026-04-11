@@ -1,11 +1,11 @@
 import { eq, and } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import * as schema from "../db/schema";
 
 import { verifySession, revokeSession } from "../lib/session_helpers";
 import { getHomeURL, getOrigin } from "../lib/auth_utils";
 
-export const sessionRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+export const sessionRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// A simple endpoint to check "Who am I?"
 	server.get("/verify", async (request, reply) => {
 		request.log.info({

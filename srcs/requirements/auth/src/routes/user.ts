@@ -1,5 +1,5 @@
 import { eq, and, or } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import { verifySession } from "../lib/session_helpers";
@@ -74,7 +74,7 @@ type ResolveUserType = Static<typeof ResolveUserSchema>;
  * User Management Routes
  * Handles profile retrieval and (future) profile updates.
  */
-export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	/* Returns the full user profile (Id, Email, Role, etc.) */
 	server.get("/me", async (request, reply) => {
 		const session = await verifySession(request, server.db);
@@ -107,7 +107,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	 * GET /resolve: Look up a user by exact email or loginName.
 	 * Used by the Frontend to verify identity before creating a share.
 	 */
-	server.get<{ Querystring: ResolveUserType }>("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
+	server.get("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -149,7 +149,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
-	server.patch<{ Body: ChangeLoginType }>("/change-login", { schema: { body: ChangeLoginSchema } }, async (request, reply) => {
+	server.patch("/change-login", { schema: { body: ChangeLoginSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -167,7 +167,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	});
 
 	/* PATCH /change-email: Updates the private identity (email).*/
-	server.patch<{ Body: ChangeEmailType }>("/change-email", { schema: { body: ChangeEmailSchema } }, async (request, reply) => {
+	server.patch("/change-email", { schema: { body: ChangeEmailSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -187,7 +187,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	 * POST /change-password: Updates the password for the current user.
 	 * Look for a 'local' provider account in the accounts table.
 	 */
-	server.post<{ Body: ChangePasswordType }>("/change-password", { schema: { body: ChangePasswordSchema } }, async (request, reply) => {
+	server.post("/change-password", { schema: { body: ChangePasswordSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 

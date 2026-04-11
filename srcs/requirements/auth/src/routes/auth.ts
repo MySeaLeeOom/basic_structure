@@ -1,5 +1,6 @@
 import { or, eq, and } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import type { GithubUser } from "../types";
@@ -67,7 +68,7 @@ async function findAccount(db: any, provider: any, providerAccountId: string) {
 	return account;
 }
 
-export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// this function will receive the token from github (it is called by github)
 	// - needs to check if there is a user already with this info
 	// - needs to either create the user or give them a session
@@ -183,7 +184,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			return reply.redirect(getHomeURL(request)); // Already logged in! Avoid registering.
 		}
 
-		const { loginName, email, password } = request.body as RegisterType;
+		const { loginName, email, password } = request.body;
 
 		// Check for existing users — must be two separate lookups since loginName || email
 		// always evaluates to loginName (TypeBox ensures it's always truthy).
@@ -239,7 +240,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			return reply.redirect(getHomeURL(request)); // Already logged in! Avoid registering.
 		}
 
-		const { identifier, password } = request.body as LoginType;
+		const { identifier, password } = request.body;
 
 		const user = await findUserByIdentifier(server.db, identifier);
 		if (!user) {
