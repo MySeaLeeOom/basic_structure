@@ -2,6 +2,7 @@
 	"nav.home": "Inicio",
 	"nav.notes": "Notas",
 	"nav.brand": "Mycelium",
+	"nav.account": "Cuenta",
 	"nav.light": "Cambiar a modo claro",
 	"nav.dark": "Cambiar a modo oscuro",
 	"auth.login": "Entrar",
