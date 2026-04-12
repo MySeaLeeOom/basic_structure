@@ -97,7 +97,6 @@ export const useNoteStore = defineStore("notes", () => {
 
 	async function createNote() {
 		error.value = null;
-		// isLoading.value = true;
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
@@ -114,14 +113,11 @@ export const useNoteStore = defineStore("notes", () => {
 			const errorMsg = catchError instanceof Error ? catchError.message : "Create failed";
 			error.value = errorMsg;
 			console.error("Failed to create note:", errorMsg);
-		} finally {
-			isLoading.value = false;
 		}
 	}
 
 	async function deleteNote(id: string) {
 		error.value = null;
-		isLoading.value = true;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "DELETE",
@@ -137,8 +133,6 @@ export const useNoteStore = defineStore("notes", () => {
 			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
 			error.value = errorMsg;
 			console.error("Failed to delete note:", errorMsg);
-		} finally {
-			isLoading.value = false;
 		}
 	}
 
