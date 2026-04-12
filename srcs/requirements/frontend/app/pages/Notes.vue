@@ -203,7 +203,12 @@ async function handleCreate() {
 	isCreating.value = false;
 }
 
-function confirmDelete(id: string) {
+async function confirmDelete(id: string) {
+	if (noteStore.selectedNote?.id === id && noteEditorRef.value?.isEmpty) {
+		await noteStore.deleteNote(id);
+		return;
+	}
+
 	confirm.require({
 		message: t('notes.delete.confirmMessage'),
 		header: t('notes.delete.confirmHeader'),
