@@ -57,6 +57,12 @@ async function handleRegister() {
 								<InputText v-model="password" type="password" :placeholder="t('login.password')" fluid />
 								<Button type="submit" :label="t('login.signin')" fluid />
 
+								<div class="text-center text-sm mt-1">
+									<NuxtLink to="/forgot-password" class="text-primary hover:underline text-sm">
+										{{ t('login.forgotPassword') }}
+									</NuxtLink>
+								</div>
+
 								<div class="text-center text-sm text-gray-500 my-2">{{ t('login.or') }}</div>
 
 								<a href="/api/auth/login/github" class="w-full">

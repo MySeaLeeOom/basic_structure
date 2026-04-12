@@ -10,6 +10,7 @@ import { prometheusRegister } from "./metrics";
 import { authRoutes } from "./routes/auth"; // all routes
 import { sessionRoutes } from "./routes/sessions"; // verification logic
 import { userManagementRoutes } from "./routes/user"; // profile logic
+import { passwordResetRoutes } from "./routes/passwordReset"; // forgot/reset password
 
 /**
  * Declaration Merging (Module Augmentation): typescript
@@ -111,6 +112,7 @@ export const buildServer = async (config: AppConfig) => {
     await server.register(authRoutes);
     await server.register(sessionRoutes);
     await server.register(userManagementRoutes);
+    await server.register(passwordResetRoutes);
 
     server.get("/ping", async (request, reply) => {
         return "pong\n";

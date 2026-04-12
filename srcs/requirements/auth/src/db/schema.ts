@@ -71,12 +71,24 @@ export const sessions = pgTable("sessions", {
 }
 )
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	userId: uuid("user_id")
+		.references(() => users.id, { onDelete: "cascade" })
+		.notNull(),
+	token: text("token").unique().notNull(),
+	expiresAt: timestamp("expires_at").notNull(),
+	usedAt: timestamp("used_at"),
+	createdAt: timestamp("created_at").defaultNow(),
+});
+
 // 2. Export the Types
 
 // Type for READING form the DB (includes all fields like ID and createdAt)
 export type User = InferSelectModel<typeof users>;
 export type Account = InferSelectModel<typeof accounts>;
 export type Session = InferSelectModel<typeof sessions>;
+export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;
 
 // Type for INSERTING into the DB (ID and createdAt are optional b/c they have defaults)
 export type NewUser = InferInsertModel<typeof users>;
