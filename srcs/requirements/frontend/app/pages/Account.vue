@@ -168,7 +168,7 @@ function extractPlainTextFromXml(xml: string): string {
 	if (!xml) return '';
 	const withBreaks = xml.replace(/<\/?(p|div|h[1-6]|li|br|tr|td)[^>]*>/gi, '\n');
 	const stripped = withBreaks.replace(/<[^>]+>/g, '');
-	return stripped.replace(/\n{3,}/g, ' ').trim();
+	return stripped.replace(/\n{2,}/g, '\n\n').trim();
 }
 
 function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
