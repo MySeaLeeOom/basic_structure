@@ -69,19 +69,17 @@ The application is accessible at `http://localhost:8080`. Grafana dashboards are
 
 ## Team information
 
-Ahmed Diler - Principal Developer
+Ahmed Diler - Developer
 
-Maarten Hoff - Technical Lead
+Maarten Hoff - Technical Lead, Developer
 
-Masha Mashenkova - Product Owner
+Masha Yakovenko - Product Owner, Developer
 
 Pavlos Vasilantonakis - Project Manager
 
-Grace Mullin - Manager of Development
+Grace Mullin - Developer
 
 ## **IV. Project management**
-
-Explain your workflow.
 
 * **Organization**: Features were decided early. The main sync-time was a weekly in-person meeting with additional video calls between subsets of the team. Team members expressed interest in specific subject modules early and were encouraged to take ownership. The product owner was tasked with mantaining a forward momentum, the technical lead was asked to solve any ties in relation to tech and the project lead attempted to partially disengage from the everyday coding in order to keep the rest of the team motivated.
 
@@ -117,8 +115,10 @@ Two logical databases in a single PostgreSQL 16 instance.
 | --- | --- | --- |
 | `notes` | `id` (UUID PK), `title` (varchar 255), `owner_id` (UUID), `created_at`, `updated_at` | Note metadata |
 | `note_states` | `note_id` (UUID PK, FK → notes, cascade), `state_vector` (BYTEA), `last_saved_at` | Persisted Yjs CRDT state, 1:1 with `notes` |
+| `share` | `id` (UUID PK), `note_id` (UUID, FK → notes, cascade), `guest_id` (UUID), `role` (varchar 50, default 'View'), `created_at`, `updated_at` | Note sharing; unique (note_id, guest_id) |
 
-**Key relations**: one user → many accounts (multi-provider auth), one user → many sessions, one note → one note_state. All foreign keys cascade on delete.
+
+**Key relations**: one user → many accounts (multi-provider auth), one user → one session, one note → one note_state, one note -> many share. All foreign keys cascade on delete.
 
 ## **VII. Features list**
 
@@ -153,6 +153,10 @@ Web-Sockets: Ahmed, Maarten, Masha, Pavlos
 
 Authentication: Masha
 
+Frontend and SSR: Masha, Ahmed, Grace
+
+Notes API: Maarten, Masha
+
 Monitoring/Browser Testing: Pavlos
 
 RAG/LLM: Maarten, Ahmed
@@ -162,6 +166,7 @@ Localization: Grace
 ## **X. AI usage**
 Pavlos: Used AI to research the pros and cons of different stacks, for detecting code smells, for changes that needed multi-file editing to make sure all contact points were adequately worked on and for the creation of tutorials and learning material for the project
 Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
+Masha: Used AI for research, writing repetetive code, assistance with learning frameworks like Fastify, tutorials, assistance with tricky styling issues, keeping track of refactors and changes that needed multifile editing, particularly for UI bugs.
 
 ## **Future Features**
 What in-theory would be an obvious next step:
