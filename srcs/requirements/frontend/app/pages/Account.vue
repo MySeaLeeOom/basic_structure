@@ -11,12 +11,13 @@ import { useUiI18n } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
 const { t } = useUiI18n();
-const isSubmitting = ref(false);
-const activeForm = ref<'login' | 'email' | 'password' | null>(null);
+const activeAction = ref<'login' | 'email' | 'image' | 'removeImage' | 'password' | 'delete' | 'export' | 'logout' | null>(null);
 const successMessage = ref('');
 
 async function handleLogout() {
+	activeAction.value = 'logout';
 	await auth.logout();
+	activeAction.value = null;
 }
 
 const formLogin = ref('');
@@ -44,46 +45,42 @@ onMounted(() => {
 async function handleUpdateLogin() {
 	if (!formLogin.value || formLogin.value === auth.user?.loginName) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'login';
+	activeAction.value = 'login';
 	errors.login = '';
 	successMessage.value = '';
 
 	const result = await auth.updateLoginName(formLogin.value);
 
 	if (!result.success) {
-		errors.login = result.message; // Display error strictly under the field
+		errors.login = result.message;
 	} else {
-		formLogin.value = ''; // Clear the field on success
+		formLogin.value = '';
 		successMessage.value = t('profile.success.username');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleUpdateEmail() {
 	if (formEmail.value === auth.user?.email) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'email';
+	activeAction.value = 'email';
 	errors.email = '';
 	successMessage.value = '';
 
 	const result = await auth.updateEmail(formEmail.value);
 
 	if (!result.success) {
-		errors.email = result.message; // Display error strictly under the field
+		errors.email = result.message;
 	} else {
 		successMessage.value = t('profile.success.email');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleUpdateImage() {
-	isSubmitting.value = true;
+	activeAction.value = 'image';
 	errors.image = '';
 	successMessage.value = '';
 
@@ -96,11 +93,11 @@ async function handleUpdateImage() {
 		successMessage.value = t('profile.success.image');
 	}
 
-	isSubmitting.value = false;
+	activeAction.value = null;
 }
 
 async function handleRemoveImage() {
-	isSubmitting.value = true;
+	activeAction.value = 'removeImage';
 	errors.image = '';
 	successMessage.value = '';
 
@@ -113,7 +110,7 @@ async function handleRemoveImage() {
 		successMessage.value = t('profile.success.image');
 	}
 
-	isSubmitting.value = false;
+	activeAction.value = null;
 }
 
 async function handleChangePassword() {
@@ -129,8 +126,7 @@ async function handleChangePassword() {
 		return;
 	}
 
-	isSubmitting.value = true;
-	activeForm.value = 'password';
+	activeAction.value = 'password';
 	errors.password = '';
 	successMessage.value = '';
 
@@ -145,15 +141,14 @@ async function handleChangePassword() {
 		successMessage.value = t('profile.success.password');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleDeleteAccount() {
 	const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
 	if (!confirmed) return;
 
-	isSubmitting.value = true;
+	activeAction.value = 'delete';
 	successMessage.value = '';
 	errors.login = '';
 	errors.email = '';
@@ -162,7 +157,7 @@ async function handleDeleteAccount() {
 	const result = await auth.deleteAccount();
 	if (!result.success) {
 		errors.password = result.message;
-		isSubmitting.value = false;
+		activeAction.value = null;
 		return;
 	}
 
@@ -171,9 +166,9 @@ async function handleDeleteAccount() {
 
 function extractPlainTextFromXml(xml: string): string {
 	if (!xml) return '';
-	const parser = new DOMParser();
-	const parsed = parser.parseFromString(`<div>${xml}</div>`, 'text/html');
-	return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
+	const withBreaks = xml.replace(/<\/?(p|div|h[1-6]|li|br|tr|td)[^>]*>/gi, '\n');
+	const stripped = withBreaks.replace(/<[^>]+>/g, '');
+	return stripped.replace(/\n{3,}/g, ' ').trim();
 }
 
 function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
@@ -211,7 +206,7 @@ function buildReadableExportPayload(rawData: any) {
 }
 
 async function handleExportData() {
-	isSubmitting.value = true;
+	activeAction.value = 'export';
 	successMessage.value = '';
 	errors.login = '';
 	errors.email = '';
@@ -220,7 +215,7 @@ async function handleExportData() {
 	const result = await auth.exportData();
 	if (!result.success) {
 		errors.password = result.message || "Data export failed";
-		isSubmitting.value = false;
+		activeAction.value = null;
 		return;
 	}
 
@@ -238,7 +233,7 @@ async function handleExportData() {
 	URL.revokeObjectURL(url);
 
 	successMessage.value = "Data exported successfully";
-	isSubmitting.value = false;
+	activeAction.value = null;
 }
 </script>
 
@@ -261,7 +256,7 @@ async function handleExportData() {
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
 							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
 							<Button :label="t('profile.button.updateUsername')" type="submit"
-								:disabled="isSubmitting || !formLogin || formLogin === (auth.user?.loginName || '')"
+								:disabled="activeAction === 'login' || !formLogin || formLogin === (auth.user?.loginName || '')"
 								fluid />
 							<small v-if="errors.login" class="text-red-500">{{ errors.login }}</small>
 						</form>
@@ -273,7 +268,7 @@ async function handleExportData() {
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
 							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
 							<Button :label="t('profile.button.updateEmail')" type="submit"
-								:disabled="isSubmitting || formEmail === (auth.user?.email || '')" fluid />
+								:disabled="activeAction === 'email' || formEmail === (auth.user?.email || '')" fluid />
 							<small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
 						</form>
 					</div>
@@ -286,10 +281,10 @@ async function handleExportData() {
 						</div>
 						<div class="flex flex-col gap-2">
 							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" fluid />
-							<Button :label="t('profile.button.updateImage')" :disabled="isSubmitting || !formImageUrl"
+							<Button :label="t('profile.button.updateImage')" :disabled="activeAction === 'image' || !formImageUrl"
 								fluid @click="handleUpdateImage" />
 							<Button v-if="auth.user?.imageURL" :label="t('profile.button.removeImage')"
-								severity="secondary" :disabled="isSubmitting" fluid @click="handleRemoveImage" />
+								severity="secondary" :disabled="activeAction === 'removeImage'" fluid @click="handleRemoveImage" />
 							<small v-if="errors.image" class="text-red-500">{{ errors.image }}</small>
 						</div>
 					</div>
@@ -305,21 +300,21 @@ async function handleExportData() {
 							<Button
 								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
 								type="submit"
-								:disabled="isSubmitting || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+								:disabled="activeAction === 'password' || !newPassword || !confirmPassword || newPassword !== confirmPassword"
 								fluid />
 							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
 						</form>
 					</div>
 				<div class="flex flex-col gap-2 pt-2">
-					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="activeAction === 'export'"
 						@click="handleExportData" />
-					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="activeAction === 'logout'"
 						@click="handleLogout" />
 				</div>
 
 				<div class="flex flex-col gap-2 pt-4">
 					<h3 class="font-bold text-red-500">{{ t('profile.section.danger') }}</h3>
-					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="activeAction === 'delete'"
 						@click="handleDeleteAccount" />
 				</div>
 				</div>
