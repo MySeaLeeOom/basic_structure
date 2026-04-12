@@ -20,6 +20,7 @@ const confirm = useConfirm();
 const { t } = useUiI18n();
 const authStore = useAuthStore();
 
+const isMobile = useMediaQuery('(max-width: 767px)');
 const sidebarOpen = ref(true);
 
 const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
@@ -155,11 +156,13 @@ async function selectOwnNote(note: any) {
 	await checkAndClean();
 	noteStore.selectedNote = note;
 	selectedSharedNote.value = null;
+	if (isMobile.value) sidebarOpen.value = false;
 }
 
 function selectSharedNote(note: any) {
 	selectedSharedNote.value = note;
 	noteStore.selectedNote = null;
+	if (isMobile.value) sidebarOpen.value = false;
 }
 
 const activeNote = computed(() => {
@@ -181,9 +184,7 @@ async function handleEsc(e: KeyboardEvent) {
 onMounted(() => {
 	mounted.value = true;
 	document.addEventListener('keydown', handleEsc);
-	if (window.innerWidth < 768) {
-		sidebarOpen.value = false;
-	}
+	if (isMobile.value) sidebarOpen.value = false;
 });
 onBeforeUnmount(async () => {
 	document.removeEventListener('keydown', handleEsc);
