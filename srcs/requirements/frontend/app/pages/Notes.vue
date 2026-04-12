@@ -241,6 +241,16 @@ onServerPrefetch(async () => {
 
 <template>
 	<SidebarLayout v-model:sidebar-open="sidebarOpen">
+		<template #collapsed-actions>
+			<button
+				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+				:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+				@click="chatOpen = !chatOpen"
+			>
+				<IconSparkles class="w-4 h-4" />
+			</button>
+		</template>
+
 		<template #sidebar>
 			<!-- Toolbar row -->
 			<div class="flex items-center gap-1 mb-2">
@@ -286,11 +296,7 @@ onServerPrefetch(async () => {
 								:class="noteStore.selectedNote?.id === slotProps.option.id
 									? 'text-white hover:bg-white/20'
 									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'" @click.stop="openInvite(slotProps.option.id)">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-									class="w-3.5 h-3.5">
-									<path
-										d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
-								</svg>
+								<IconUserPlus class="w-3.5 h-3.5" />
 							</button>
 							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
 								:class="noteStore.selectedNote?.id === slotProps.option.id

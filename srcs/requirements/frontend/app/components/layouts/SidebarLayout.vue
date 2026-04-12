@@ -10,14 +10,19 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { default: true });
       <slot name="sidebar" />
     </aside>
 
-    <button
+    <div
       v-if="!sidebarOpen"
-      class="absolute top-3 start-3 z-10 w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-      title="Show sidebar"
-      @click="sidebarOpen = true"
+      class="absolute top-3 start-3 z-10 flex flex-col gap-1"
     >
-      <IconBars class="w-4 h-4" />
-    </button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+        title="Show sidebar"
+        @click="sidebarOpen = true"
+      >
+        <IconBars class="w-4 h-4" />
+      </button>
+      <slot name="collapsed-actions" />
+    </div>
 
     <main
       class="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-surface-200 dark:bg-surface-950 overflow-hidden min-h-0">
