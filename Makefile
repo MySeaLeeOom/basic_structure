@@ -53,7 +53,7 @@ fclean: getuser
 
 re: clean up
 
-# ex: make rebuild service=frontend 
+# ex: make rebuild service=frontend
 rebuild: getuser
 	$(COMPOSE) up -d --build --no-deps $(service)
 
