@@ -25,10 +25,13 @@ const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 
+const formImageUrl = ref('');
+
 const errors = reactive({
 	login: '',
 	email: '',
-	password: ''
+	password: '',
+	image: ''
 });
 
 onMounted(() => {
@@ -79,8 +82,47 @@ async function handleUpdateEmail() {
 	activeForm.value = null;
 }
 
+async function handleUpdateImage() {
+	isSubmitting.value = true;
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(formImageUrl.value || null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	isSubmitting.value = false;
+}
+
+async function handleRemoveImage() {
+	isSubmitting.value = true;
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	isSubmitting.value = false;
+}
+
 async function handleChangePassword() {
-	if (!oldPassword.value || !newPassword.value) return;
+	if (!newPassword.value) return;
+
+	if (auth.user?.hasLocalAuth && !oldPassword.value) {
+		errors.password = t('profile.error.oldPasswordRequired');
+		return;
+	}
 
 	if (newPassword.value !== confirmPassword.value) {
 		errors.password = t('profile.error.passwordMismatch');
@@ -237,15 +279,33 @@ async function handleExportData() {
 					</div>
 
 					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">{{ t('profile.section.avatar') }}</h3>
+						<div v-if="auth.user?.imageURL" class="flex items-center gap-3">
+							<img :src="auth.user.imageURL" alt="Profile picture" class="w-12 h-12 rounded-full object-cover" />
+							<span class="text-sm text-muted-color truncate max-w-[160px]">{{ auth.user.imageURL }}</span>
+						</div>
+						<div class="flex flex-col gap-2">
+							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" fluid />
+							<Button :label="t('profile.button.updateImage')" :disabled="isSubmitting || !formImageUrl"
+								fluid @click="handleUpdateImage" />
+							<Button v-if="auth.user?.imageURL" :label="t('profile.button.removeImage')"
+								severity="secondary" :disabled="isSubmitting" fluid @click="handleRemoveImage" />
+							<small v-if="errors.image" class="text-red-500">{{ errors.image }}</small>
+						</div>
+					</div>
+
+					<div class="flex flex-col gap-2">
 						<h3 class="font-bold">{{ t('profile.section.security') }}</h3>
 						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
 							<Password v-model="oldPassword" :placeholder="t('profile.placeholder.currentPassword')" :feedback="false" toggleMask
-								fluid />
+								fluid :disabled="!auth.user?.hasLocalAuth" />
 							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid />
 							<Password v-model="confirmPassword" :placeholder="t('profile.placeholder.confirmNewPassword')" :feedback="false"
 								toggleMask fluid />
-							<Button :label="t('profile.button.changePassword')" type="submit"
-								:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+							<Button
+								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
+								type="submit"
+								:disabled="isSubmitting || !newPassword || !confirmPassword || newPassword !== confirmPassword"
 								fluid />
 							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
 						</form>

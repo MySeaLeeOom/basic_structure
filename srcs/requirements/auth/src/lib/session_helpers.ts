@@ -24,7 +24,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 	reply.setCookie("session_id", session.token, {
 		path: "/",
 		httpOnly: true, //this is javascript cant do anything to the cookie
-		secure: false, // Set to TRUE when using real HTTPS
+		secure: true,
 		sameSite: "lax",
 		expires: expiresAt,
 		signed: true,
@@ -50,8 +50,9 @@ export async function verifySession(request: FastifyRequest, db: NodePgDatabase<
 	const [session] = await db.select().from(schema.sessions).where(eq(schema.sessions.token, sessionUUID)).limit(1);
 	if (!session) return null;
 
-	// Expiry Check
+	// Expiry Check — delete the stale row so it doesn't accumulate
 	if (session.expiresAt < new Date()) {
+		await db.delete(schema.sessions).where(eq(schema.sessions.token, sessionUUID));
 		return null;
 	}
 

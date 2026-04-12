@@ -38,12 +38,13 @@ clean: getuser
 	$(COMPOSE) down --rmi all $(FLAGS)
 	@$(MAKE) cleanv
 
-# Removes all artifacts and dev containers, does not remove the databases
+# Removes all artifacts and dev containers, does not remove the notes databases
 cleanv: 
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
 	@echo "Cleaning frontend build cache..."
 	-docker volume rm $(FRONTEND_CACHE_VOLUMES)
+	@docker image prune -f
 
 # Destructive: will destroy databases, both notes and users
 fclean: getuser
@@ -55,7 +56,7 @@ re: clean up
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
+getlogs: 
+	$(COMPOSE) logs > all-docker-logs-$(shell date +%Y-%m-%d_%H-%M-%S).txt 2>&1
+	
 .PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
-
-# Docker commands
-# docker volume rm $(docker volume ls -q)
