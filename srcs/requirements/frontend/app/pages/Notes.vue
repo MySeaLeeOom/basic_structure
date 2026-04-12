@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
@@ -11,27 +11,37 @@ import TimesIcon from "@primevue/icons/times";
 import { useNoteStore } from "@/stores/noteStore";
 import { useUiI18n } from "~/composables/useUiI18n";
 import { useAuthStore } from "@/stores/authStore";
+import UserAvatar from "@/components/UserAvatar.vue";
+
+type ShareUser = { id: string; loginName: string; imageURL: string | null };
 
 const noteStore = useNoteStore();
 const confirm = useConfirm();
 const { t } = useUiI18n();
 const authStore = useAuthStore();
 
+const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
+
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
-const allUsers = ref<{ id: string; loginName: string }[]>([]);
+const allUsers = ref<ShareUser[]>([]);
 const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
 const inviteError = ref('');
 const inviteSuccess = ref('');
 
 async function fetchUsers() {
 	try {
-		const res = await $fetch<{ users: { id: string; loginName: string }[] }>('/api/auth/users');
+		const res = await $fetch<{ users: ShareUser[] }>('/api/auth/users');
 		allUsers.value = res.users;
 	} catch {
 		allUsers.value = [];
 	}
+}
+
+function imageFor(userId: string | null): string | null {
+	if (!userId) return null;
+	return allUsers.value.find(u => u.id === userId)?.imageURL ?? null;
 }
 
 async function fetchCollaborators(noteId: string) {
@@ -131,8 +141,16 @@ async function fetchSharedNotes() {
 	}
 }
 
+async function checkAndClean() {
+	const note = noteStore.selectedNote;
+	if (note && noteEditorRef.value?.isEmpty) {
+		await noteStore.deleteNote(note.id);
+	}
+}
+
 // When selecting in one list, deselect the other
-function selectOwnNote(note: any) {
+async function selectOwnNote(note: any) {
+	await checkAndClean();
 	noteStore.selectedNote = note;
 	selectedSharedNote.value = null;
 }
@@ -150,10 +168,32 @@ const activeNote = computed(() => {
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
-onMounted(() => { mounted.value = true; });
 
+async function handleEsc(e: KeyboardEvent) {
+	if (e.key !== 'Escape' || !activeNote.value) return;
+	await checkAndClean();
+	noteStore.selectedNote = null;
+	selectedSharedNote.value = null;
+}
+
+onMounted(() => {
+	mounted.value = true;
+	document.addEventListener('keydown', handleEsc);
+});
+onBeforeUnmount(async () => {
+	document.removeEventListener('keydown', handleEsc);
+	await checkAndClean();
+});
+
+const isCreating = ref(false);
 async function handleCreate() {
+	if (isCreating.value) return;
+	isCreating.value = true;
+	await checkAndClean();
 	await noteStore.createNote();
+	await nextTick();
+	noteEditorRef.value?.focusTitle();
+	isCreating.value = false;
 }
 
 function confirmDelete(id: string) {
@@ -200,10 +240,7 @@ onServerPrefetch(async () => {
 				<Button label="+" text rounded @click="handleCreate" />
 			</div>
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
-			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
-				{{ t('notes.loading') }}
-			</div>
-			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
+			<Listbox :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
 				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
 				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
@@ -259,10 +296,10 @@ onServerPrefetch(async () => {
 		</template>
 
 		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
-			<NoteEditor :note-id="activeNote.id" class="flex-1" />
+			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
 			<ChatSidebar />
 		</div>
-		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
+		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
 		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
 			pt:root:class="w-full max-w-sm">
@@ -274,10 +311,7 @@ onServerPrefetch(async () => {
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
 							<div class="flex items-center gap-3 min-w-0">
-								<span
-									class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
-									{{ usernameFor(collab.guest_id)?.charAt(0).toUpperCase() || "?" }}
-								</span>
+								<UserAvatar v-if="collab.guest_id" :uuid="collab.guest_id" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 								<div class="min-w-0">
 									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
 									<div class="text-xs text-surface-500">{{ collab.role }}</div>
@@ -311,10 +345,7 @@ onServerPrefetch(async () => {
 						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors" :class="selectedUsers.includes(user.id)
 							? 'bg-primary-500/15 text-primary-400'
 							: 'hover:bg-surface-800 text-surface-300'" @click="toggleUser(user.id)">
-						<span
-							class="w-7 h-7 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-200 shrink-0">
-							{{ user.loginName?.charAt(0).toUpperCase() || "?" }}
-						</span>
+						<UserAvatar :uuid="user.id" :image-u-r-l="user.imageURL" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 						<div class="min-w-0">
 							<div class="truncate">@{{ user.loginName }}</div>
 						</div>
