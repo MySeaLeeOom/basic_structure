@@ -185,8 +185,15 @@ onBeforeUnmount(async () => {
 	await checkAndClean();
 });
 
+const isCreating = ref(false);
 async function handleCreate() {
+	if (isCreating.value) return;
+	isCreating.value = true;
+	await checkAndClean();
 	await noteStore.createNote();
+	await nextTick();
+	noteEditorRef.value?.focusTitle();
+	isCreating.value = false;
 }
 
 function confirmDelete(id: string) {
@@ -233,10 +240,7 @@ onServerPrefetch(async () => {
 				<Button label="+" text rounded @click="handleCreate" />
 			</div>
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
-			<div v-if="noteStore.isLoading" class="text-center text-gray-500">
-				{{ t('notes.loading') }}
-			</div>
-			<Listbox v-else :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
+			<Listbox :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
 				:options="noteStore.notes" optionLabel="title" dataKey="id"
 				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
 				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
@@ -295,7 +299,7 @@ onServerPrefetch(async () => {
 			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
 			<ChatSidebar />
 		</div>
-		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>
+		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
 		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
 			pt:root:class="w-full max-w-sm">
