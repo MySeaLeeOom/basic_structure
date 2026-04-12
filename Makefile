@@ -53,6 +53,10 @@ fclean: getuser
 
 re: clean up
 
+# ex: make rebuild service=frontend 
+rebuild: getuser
+	$(COMPOSE) up -d --build --no-deps $(service)
+
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 

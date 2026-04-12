@@ -208,7 +208,7 @@ async function confirmDelete(id: string) {
 		await noteStore.deleteNote(id);
 		return;
 	}
-
+""
 	confirm.require({
 		message: t('notes.delete.confirmMessage'),
 		header: t('notes.delete.confirmHeader'),
@@ -227,20 +227,14 @@ async function confirmDelete(id: string) {
 	});
 }
 
-onMounted(() => {
-	if (noteStore.notesCount === 0) {
-		noteStore.fetchNotes();
-	}
-	fetchSharedNotes();
-});
-
-onServerPrefetch(async () => {
-	const headers = useRequestHeaders(['cookie']);
-	const serverCookie = headers.cookie;
-
+await useAsyncData('notes', async () => {
 	if (noteStore.notesCount === 0) {
 		await noteStore.fetchNotes();
 	}
+});
+
+onMounted(() => {
+	fetchSharedNotes();
 });
 </script>
 
