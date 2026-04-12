@@ -20,6 +20,8 @@ const confirm = useConfirm();
 const { t } = useUiI18n();
 const authStore = useAuthStore();
 
+const sidebarOpen = ref(true);
+
 const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
 
 const showInviteDialog = ref(false);
@@ -179,6 +181,9 @@ async function handleEsc(e: KeyboardEvent) {
 onMounted(() => {
 	mounted.value = true;
 	document.addEventListener('keydown', handleEsc);
+	if (window.innerWidth < 768) {
+		sidebarOpen.value = false;
+	}
 });
 onBeforeUnmount(async () => {
 	document.removeEventListener('keydown', handleEsc);
@@ -233,11 +238,22 @@ onServerPrefetch(async () => {
 </script>
 
 <template>
-	<SidebarLayout>
+	<SidebarLayout v-model:sidebar-open="sidebarOpen">
 		<template #sidebar>
 			<div class="flex items-center justify-between mb-1 px-2">
 				<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
-				<Button label="+" text rounded @click="handleCreate" />
+				<div class="flex items-center gap-1">
+					<button
+						class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+						title="Hide sidebar"
+						@click="sidebarOpen = false"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+							<path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 10.5a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Z" clip-rule="evenodd" />
+						</svg>
+					</button>
+					<Button label="+" text rounded @click="handleCreate" />
+				</div>
 			</div>
 			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
 			<Listbox :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
