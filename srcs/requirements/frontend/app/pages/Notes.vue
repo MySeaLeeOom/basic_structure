@@ -22,6 +22,7 @@ const authStore = useAuthStore();
 
 const isMobile = useMediaQuery('(max-width: 767px)');
 const sidebarOpen = ref(true);
+const chatOpen = ref(true);
 
 const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
 
@@ -248,11 +249,15 @@ onServerPrefetch(async () => {
 					:title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
 					@click="sidebarOpen = !sidebarOpen"
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-						<path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 10.5a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Z" clip-rule="evenodd" />
-					</svg>
+					<IconBars class="w-4 h-4" />
 				</button>
-				<!-- AI toggle placeholder — add here -->
+				<button
+					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+					:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+					@click="chatOpen = !chatOpen"
+				>
+					<IconSparkles class="w-4 h-4" />
+				</button>
 			</div>
 
 			<template v-if="sidebarOpen">
@@ -320,7 +325,7 @@ onServerPrefetch(async () => {
 
 		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
 			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
-			<ChatSidebar />
+			<ChatSidebar v-show="chatOpen" />
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
