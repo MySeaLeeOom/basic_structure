@@ -32,7 +32,7 @@ const navItems = computed(() => [
   <Toolbar dir="ltr" class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
       <div class="flex items-center gap-2">
-        <NuxtLink to="/" class="text-xl font-bold text-primary-500 no-underline mr-2">{{ t('nav.brand') }}</NuxtLink>
+        <NuxtLink to="/notes" class="text-xl font-bold text-primary-500 no-underline mr-2">{{ t('nav.brand') }}</NuxtLink>
         <DarkModeToggle />
         <LangSelector />
       </div>

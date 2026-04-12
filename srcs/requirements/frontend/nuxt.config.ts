@@ -25,6 +25,9 @@ export default defineNuxtConfig({
 			},
 		},
 	},
+	components: [
+		{ path: '~/components', pathPrefix: false }
+	],
 	future: {
 		compatibilityVersion: 4,
 	},

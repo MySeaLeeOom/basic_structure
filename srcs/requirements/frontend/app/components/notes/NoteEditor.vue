@@ -54,8 +54,9 @@ watchEffect((onCleanup) => {
   onCleanup(() => ed.destroy());
 });
 
+// make sure the editor is connected
 const isEmpty = computed(() =>
-  !titleText.value.trim() && (!editor.value || editor.value.isEmpty)
+  !!ydoc.value && !titleText.value.trim() && (!editor.value || editor.value.isEmpty)
 );
 
 const titleInput = ref<HTMLInputElement | null>(null);

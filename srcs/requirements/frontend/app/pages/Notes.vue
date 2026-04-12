@@ -20,6 +20,10 @@ const confirm = useConfirm();
 const { t } = useUiI18n();
 const authStore = useAuthStore();
 
+const isMobile = useMediaQuery('(max-width: 767px)');
+const sidebarOpen = ref(true);
+const chatOpen = ref(true);
+
 const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
 
 const showInviteDialog = ref(false);
@@ -153,11 +157,13 @@ async function selectOwnNote(note: any) {
 	await checkAndClean();
 	noteStore.selectedNote = note;
 	selectedSharedNote.value = null;
+	if (isMobile.value) sidebarOpen.value = false;
 }
 
 function selectSharedNote(note: any) {
 	selectedSharedNote.value = note;
 	noteStore.selectedNote = null;
+	if (isMobile.value) sidebarOpen.value = false;
 }
 
 const activeNote = computed(() => {
@@ -179,6 +185,7 @@ async function handleEsc(e: KeyboardEvent) {
 onMounted(() => {
 	mounted.value = true;
 	document.addEventListener('keydown', handleEsc);
+	if (isMobile.value) sidebarOpen.value = false;
 });
 onBeforeUnmount(async () => {
 	document.removeEventListener('keydown', handleEsc);
@@ -196,7 +203,12 @@ async function handleCreate() {
 	isCreating.value = false;
 }
 
-function confirmDelete(id: string) {
+async function confirmDelete(id: string) {
+	if (noteStore.selectedNote?.id === id && noteEditorRef.value?.isEmpty) {
+		await noteStore.deleteNote(id);
+		return;
+	}
+""
 	confirm.require({
 		message: t('notes.delete.confirmMessage'),
 		header: t('notes.delete.confirmHeader'),
@@ -215,26 +227,49 @@ function confirmDelete(id: string) {
 	});
 }
 
-onMounted(() => {
-	if (noteStore.notesCount === 0) {
-		noteStore.fetchNotes();
-	}
-	fetchSharedNotes();
-});
-
-onServerPrefetch(async () => {
-	const headers = useRequestHeaders(['cookie']);
-	const serverCookie = headers.cookie;
-
+await useAsyncData('notes', async () => {
 	if (noteStore.notesCount === 0) {
 		await noteStore.fetchNotes();
 	}
 });
+
+onMounted(() => {
+	fetchSharedNotes();
+});
 </script>
 
 <template>
-	<SidebarLayout>
+	<SidebarLayout v-model:sidebar-open="sidebarOpen">
+		<template #collapsed-actions>
+			<button
+				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+				:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+				@click="chatOpen = !chatOpen"
+			>
+				<IconSparkles class="w-4 h-4" />
+			</button>
+		</template>
+
 		<template #sidebar>
+			<!-- Toolbar row -->
+			<div class="flex items-center gap-1 mb-2">
+				<button
+					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+					:title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
+					@click="sidebarOpen = !sidebarOpen"
+				>
+					<IconBars class="w-4 h-4" />
+				</button>
+				<button
+					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+					:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+					@click="chatOpen = !chatOpen"
+				>
+					<IconSparkles class="w-4 h-4" />
+				</button>
+			</div>
+
+			<template v-if="sidebarOpen">
 			<div class="flex items-center justify-between mb-1 px-2">
 				<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
 				<Button label="+" text rounded @click="handleCreate" />
@@ -260,11 +295,7 @@ onServerPrefetch(async () => {
 								:class="noteStore.selectedNote?.id === slotProps.option.id
 									? 'text-white hover:bg-white/20'
 									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'" @click.stop="openInvite(slotProps.option.id)">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-									class="w-3.5 h-3.5">
-									<path
-										d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM2.046 15.253c-.058.468.172.92.57 1.175A9.953 9.953 0 0 0 8 18c1.982 0 3.83-.578 5.384-1.573.398-.254.628-.707.57-1.175a6.001 6.001 0 0 0-11.908 0ZM15.75 8.5a.75.75 0 0 0-1.5 0v2h-2a.75.75 0 0 0 0 1.5h2v2a.75.75 0 0 0 1.5 0v-2h2a.75.75 0 0 0 0-1.5h-2v-2Z" />
-								</svg>
+								<IconUserPlus class="w-3.5 h-3.5" />
 							</button>
 							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
 								:class="noteStore.selectedNote?.id === slotProps.option.id
@@ -295,9 +326,11 @@ onServerPrefetch(async () => {
 
 		</template>
 
+		</template>
+
 		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
 			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
-			<ChatSidebar />
+			<ChatSidebar v-show="chatOpen" />
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 

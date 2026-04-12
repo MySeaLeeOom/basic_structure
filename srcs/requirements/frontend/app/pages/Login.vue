@@ -52,26 +52,25 @@ async function handleRegister() {
 					</TabList>
 					<TabPanels>
 						<TabPanel value="0">
-							<div class="flex flex-col gap-4 mt-4">
+							<form class="flex flex-col gap-4 mt-4" @submit.prevent="handleLogin">
 								<InputText v-model="identifier" :placeholder="t('login.identifier')" fluid />
 								<InputText v-model="password" type="password" :placeholder="t('login.password')" fluid />
-								<Button :label="t('login.signin')" @click="handleLogin" :loading="authStore.loading" fluid />
+								<Button type="submit" :label="t('login.signin')" fluid />
 
 								<div class="text-center text-sm text-gray-500 my-2">{{ t('login.or') }}</div>
 
 								<a href="/api/auth/login/github" class="w-full">
 									<Button :label="t('login.github')" icon="pi pi-github" severity="secondary" fluid />
 								</a>
-							</div>
+							</form>
 						</TabPanel>
 						<TabPanel value="1">
-							<div class="flex flex-col gap-4 mt-4">
+							<form class="flex flex-col gap-4 mt-4" @submit.prevent="handleRegister">
 								<InputText v-model="regLogin" :placeholder="t('login.username')" fluid />
 								<InputText v-model="regEmail" :placeholder="t('login.email')" fluid />
 								<InputText v-model="regPassword" type="password" :placeholder="t('login.password')" fluid />
-								<Button :label="t('login.create')" @click="handleRegister" :loading="authStore.loading"
-									fluid />
-							</div>
+								<Button type="submit" :label="t('login.create')" fluid />
+							</form>
 						</TabPanel>
 					</TabPanels>
 				</Tabs>

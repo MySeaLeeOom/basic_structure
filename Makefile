@@ -1,15 +1,16 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
+
 FLAGS   := --remove-orphans
 
 # Project and volume names
 PROJECT_NAME   := srcs
 
-# 1. Frontend Build Artifacts (Safe to delete, just re-builds next time)
+# Frontend Build Artifacts (Safe to delete, just re-builds next time)
 FRONTEND_CACHE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_nuxt_hidden \
 	$(PROJECT_NAME)_frontend_output_hidden
 
-# 2. Dependency Volumes (Safe to delete, just re-installs next time)
+# Dependency Volumes (Safe to delete, just re-installs next time)
 MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
@@ -52,6 +53,13 @@ fclean: getuser
 	$(COMPOSE) down -v --rmi all $(FLAGS)	
 
 re: clean up
+
+dev: getuser
+	docker compose -f srcs/docker-compose-dev.yml up -d --build $(FLAGS)
+
+# ex: make rebuild service=frontend
+rebuild: getuser
+	$(COMPOSE) up -d --build --no-deps $(service)
 
 logs: getuser
 	$(COMPOSE) logs -f $(service)
