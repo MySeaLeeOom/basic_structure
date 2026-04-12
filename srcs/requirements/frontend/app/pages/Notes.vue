@@ -13,6 +13,8 @@ import { useUiI18n } from "~/composables/useUiI18n";
 import { useAuthStore } from "@/stores/authStore";
 import UserAvatar from "@/components/UserAvatar.vue";
 
+type ShareUser = { id: string; loginName: string; imageURL: string | null };
+
 const noteStore = useNoteStore();
 const confirm = useConfirm();
 const { t } = useUiI18n();
@@ -21,14 +23,14 @@ const authStore = useAuthStore();
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
-const allUsers = ref<{ id: string; loginName: string; imageURL: string | null }[]>([]);
+const allUsers = ref<ShareUser[]>([]);
 const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
 const inviteError = ref('');
 const inviteSuccess = ref('');
 
 async function fetchUsers() {
 	try {
-		const res = await $fetch<{ users: { id: string; loginName: string; imageURL: string | null }[] }>('/api/auth/users');
+		const res = await $fetch<{ users: ShareUser[] }>('/api/auth/users');
 		allUsers.value = res.users;
 	} catch {
 		allUsers.value = [];
@@ -280,7 +282,7 @@ onServerPrefetch(async () => {
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
 							<div class="flex items-center gap-3 min-w-0">
-								<UserAvatar :uuid="collab.guest_id ?? ''" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
+								<UserAvatar v-if="collab.guest_id" :uuid="collab.guest_id" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 								<div class="min-w-0">
 									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
 									<div class="text-xs text-surface-500">{{ collab.role }}</div>
