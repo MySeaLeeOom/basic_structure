@@ -12,7 +12,11 @@ const langMenuItems = computed(() => [
   { label: t('lang.en'), command: () => { locale.value = 'en-UK' as LocaleId; } },
   { label: t('lang.de'), command: () => { locale.value = 'de-DE' as LocaleId; } },
   { label: t('lang.es'), command: () => { locale.value = 'es-ES' as LocaleId; } },
+  { label: t('lang.ie'), command: () => { locale.value = 'ie-IE' as LocaleId; } },
+  { label: t('lang.el'), command: () => { locale.value = 'el-GR' as LocaleId; } },
+  { label: t('lang.tr'), command: () => { locale.value = 'tr-TR' as LocaleId; } },
   { label: t('lang.ar'), command: () => { locale.value = 'ar' as LocaleId; } },
+  { label: t('lang.ru'), command: () => { locale.value = 'ru-RU' as LocaleId; } },
 ]);
 
 function toggle(event: Event) {

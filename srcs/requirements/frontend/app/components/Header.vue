@@ -26,41 +26,6 @@ const navItems = computed(() => [
   { to: '/notes', label: t('nav.notes') },
 ]);
 
-const langMenuItems = computed(() => [
-  {
-    label: t('lang.en'),
-    command: () => setLocale('en-UK'),
-  },
-  {
-    label: t('lang.de'),
-    command: () => setLocale('de-DE'),
-  },
-  {
-    label: t('lang.es'),
-    command: () => setLocale('es-ES'),
-  },
-  {
-    label: t('lang.ie'),
-    command: () => setLocale('ie-IE'),
-  },
-  {
-    label: t('lang.el'),
-    command: () => setLocale('el-GR'),
-  },
-  {
-    label: t('lang.tr'),
-    command: () => setLocale('tr-TR'),
-  },
-  {
-    label: t('lang.ar'),
-    command: () => setLocale('ar'),
-  },
-  {
-    label: t('lang.ru'),
-    command: () => setLocale('ru-RU'),
-  },
-]);
-
 </script>
 
 <template>
