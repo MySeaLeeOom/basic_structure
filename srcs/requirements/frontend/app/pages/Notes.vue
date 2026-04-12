@@ -240,8 +240,8 @@ onServerPrefetch(async () => {
 <template>
 	<SidebarLayout v-model:sidebar-open="sidebarOpen">
 		<template #sidebar>
-			<!-- Toolbar row: always visible when sidebar is any width -->
-			<div class="flex items-center gap-1 mb-2" :class="sidebarOpen ? 'px-2' : 'justify-center'">
+			<!-- Toolbar row -->
+			<div class="flex items-center gap-1 mb-2">
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
 					:title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
