@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, onServerPrefetch } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
@@ -19,6 +19,8 @@ const noteStore = useNoteStore();
 const confirm = useConfirm();
 const { t } = useUiI18n();
 const authStore = useAuthStore();
+
+const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
 
 const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
@@ -139,8 +141,16 @@ async function fetchSharedNotes() {
 	}
 }
 
+async function checkAndClean() {
+	const note = noteStore.selectedNote;
+	if (note && noteEditorRef.value?.isEmpty) {
+		await noteStore.deleteNote(note.id);
+	}
+}
+
 // When selecting in one list, deselect the other
-function selectOwnNote(note: any) {
+async function selectOwnNote(note: any) {
+	await checkAndClean();
 	noteStore.selectedNote = note;
 	selectedSharedNote.value = null;
 }
@@ -158,7 +168,22 @@ const activeNote = computed(() => {
 
 // SSR guard — NoteEditor creates WebSocket in setup, which crashes Node
 const mounted = ref(false);
-onMounted(() => { mounted.value = true; });
+
+async function handleEsc(e: KeyboardEvent) {
+	if (e.key !== 'Escape' || !activeNote.value) return;
+	await checkAndClean();
+	noteStore.selectedNote = null;
+	selectedSharedNote.value = null;
+}
+
+onMounted(() => {
+	mounted.value = true;
+	document.addEventListener('keydown', handleEsc);
+});
+onBeforeUnmount(async () => {
+	document.removeEventListener('keydown', handleEsc);
+	await checkAndClean();
+});
 
 async function handleCreate() {
 	await noteStore.createNote();
@@ -267,7 +292,7 @@ onServerPrefetch(async () => {
 		</template>
 
 		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
-			<NoteEditor :note-id="activeNote.id" class="flex-1" />
+			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
 			<ChatSidebar />
 		</div>
 		<div v-else-if="!noteStore.isLoading && !activeNote" class="empty-state">{{ t('notes.empty') }}</div>

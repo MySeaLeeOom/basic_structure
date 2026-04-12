@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, watch, watchEffect } from "vue";
+import { shallowRef, computed, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -53,6 +53,12 @@ watchEffect((onCleanup) => {
   editor.value = ed;
   onCleanup(() => ed.destroy());
 });
+
+const isEmpty = computed(() =>
+  !titleText.value.trim() && (!editor.value || editor.value.isEmpty)
+);
+
+defineExpose({ isEmpty });
 
 function focusEditorEnd(event: MouseEvent) {
   const target = event.target as HTMLElement;
