@@ -18,6 +18,12 @@ export default defineNuxtConfig({
 	},
 	vite: {
 		plugins: [tailwindcss() as any],
+		server: {
+			watch: {
+				usePolling: true,
+				interval: 1000, // ms
+			},
+		},
 	},
 	future: {
 		compatibilityVersion: 4,

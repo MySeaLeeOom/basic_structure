@@ -39,7 +39,7 @@ const theme = ref<MenuPassThroughOptions>({
         group-hover:text-surface-500 dark:group-hover:text-surface-400`,
     itemLabel: ``,
     submenuLabel: `bg-transparent px-3 py-2 text-surface-500 dark:text-surface-400 font-semibold`,
-    separator: `border-t border-surface-200 dark:border-surface-700`,
+    separator: `border-t border-surface-200 dark:border-surface-700 my-1`,
     transition: {
         enterFromClass: 'opacity-0 scale-y-75',
         enterActiveClass: 'transition duration-120 ease-[cubic-bezier(0,0,0.2,1)]',

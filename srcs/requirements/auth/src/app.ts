@@ -1,4 +1,5 @@
 import fastify, { type FastifyInstance } from "fastify";
+import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import postgres from "@fastify/postgres";
 import fastifyCookie from "@fastify/cookie";
 import fastifyOauth2, { type OAuth2Namespace } from "@fastify/oauth2";
@@ -18,6 +19,7 @@ declare module "fastify" {
     interface FastifyInstance {
         githubOAuth2: OAuth2Namespace;
         db: NodePgDatabase<typeof schema>;
+        frontendUrl: string;
     }
 }
 
@@ -28,12 +30,13 @@ export interface AppConfig {
     githubClientSecret: string;
     sessionSecret: string;
     callbackUri: string;
+    frontendUrl: string;
     runMigrations?: boolean;
 }
 
 // Factory function to create the server (The Recipe)
-export const buildServer = async (config: AppConfig): Promise<FastifyInstance> => {
-    
+export const buildServer = async (config: AppConfig) => {
+
     // FASTIFY INSTANCE
     const server = fastify({
         logger: {
@@ -44,7 +47,9 @@ export const buildServer = async (config: AppConfig): Promise<FastifyInstance> =
             },
         },
         trustProxy: true, // so we can check the ip of the user, not just nginx (nginx adds this)
-    });
+    }).withTypeProvider<TypeBoxTypeProvider>();
+
+    server.decorate("frontendUrl", config.frontendUrl);
 
     server.get("/metrics", async (_request, reply) => {
         reply.header("Content-Type", prometheusRegister.contentType);

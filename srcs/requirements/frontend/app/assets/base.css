@@ -78,10 +78,11 @@ html.theme-transition *::after {
 	color: var(--p-text-color);
 	background: transparent;
 	border: none;
+	border-bottom: 1px solid var(--p-surface-200);
 	outline: none;
 	width: 100%;
-	padding: 0;
-	margin-bottom: 1.5rem;
+	padding: 0 0 1rem 0;
+	margin-bottom: 1rem;
 }
 
 .editor-title::placeholder {
@@ -177,6 +178,7 @@ html.theme-transition *::after {
 
 .dark .editor-title {
 	color: var(--p-surface-0);
+	border-bottom-color: var(--p-surface-700);
 }
 
 .dark .tiptap-editor .tiptap {

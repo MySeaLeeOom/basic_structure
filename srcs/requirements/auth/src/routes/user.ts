@@ -1,5 +1,5 @@
 import { eq, and, or } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import { verifySession } from "../lib/session_helpers";
@@ -61,6 +61,10 @@ const ChangePasswordSchema = Type.Object({
 	newPassword: Type.String({ minLength: 8 }),
 });
 
+const ChangeImageSchema = Type.Object({
+	imageURL: Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+});
+
 const ResolveUserSchema = Type.Object({
 	identifier: Type.String({ minLength: 3 }),
 });
@@ -68,13 +72,14 @@ const ResolveUserSchema = Type.Object({
 type ChangeLoginType = Static<typeof ChangeLoginSchema>;
 type ChangeEmailType = Static<typeof ChangeEmailSchema>;
 type ChangePasswordType = Static<typeof ChangePasswordSchema>;
+type ChangeImageType = Static<typeof ChangeImageSchema>;
 type ResolveUserType = Static<typeof ResolveUserSchema>;
 
 /**
  * User Management Routes
  * Handles profile retrieval and (future) profile updates.
  */
-export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	/* Returns the full user profile (Id, Email, Role, etc.) */
 	server.get("/me", async (request, reply) => {
 		const session = await verifySession(request, server.db);
@@ -89,6 +94,12 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			return reply.status(404).send({ error: "User profile not found." });
 		}
 		authMeTotal.labels("200").inc();
+		// Check if user has a local password account
+		const [localAccount] = await server.db
+			.select({ id: schema.accounts.id })
+			.from(schema.accounts)
+			.where(and(eq(schema.accounts.userId, user.id), eq(schema.accounts.provider, "local")))
+			.limit(1);
 		// Return sanitized user data
 		return {
 			authenticated: true,
@@ -99,6 +110,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 				role: user.role,
 				imageURL: user.imageURL,
 				createdAt: user.createdAt,
+				hasLocalAuth: !!localAccount,
 			},
 		};
 	});
@@ -107,7 +119,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	 * GET /resolve: Look up a user by exact email or loginName.
 	 * Used by the Frontend to verify identity before creating a share.
 	 */
-	server.get<{ Querystring: ResolveUserType }>("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
+	server.get("/resolve", { schema: { querystring: ResolveUserSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -142,6 +154,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			.select({
 				id: schema.users.id,
 				loginName: schema.users.loginName,
+				imageURL: schema.users.imageURL,
 			})
 			.from(schema.users);
 
@@ -149,7 +162,7 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 	});
 
 	/* PATCH /change-login: Updates the public identity (loginName). */
-	server.patch<{ Body: ChangeLoginType }>("/change-login", { schema: { body: ChangeLoginSchema } }, async (request, reply) => {
+	server.patch("/change-login", { schema: { body: ChangeLoginSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -159,15 +172,17 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			await server.db.update(schema.users).set({ loginName }).where(eq(schema.users.id, session.userId));
 			return { message: "Username updated successfully.", user: { loginName } };
 		} catch (err: any) {
-			if (err.code === "23505") {
+			const pgCode = err.code ?? err.cause?.code;
+			if (pgCode === "23505") {
 				return reply.status(409).send({ error: "Username already taken." });
 			}
-			throw err;
+			server.log.error(err);
+			return reply.status(500).send({ error: "Failed to update username." });
 		}
 	});
 
 	/* PATCH /change-email: Updates the private identity (email).*/
-	server.patch<{ Body: ChangeEmailType }>("/change-email", { schema: { body: ChangeEmailSchema } }, async (request, reply) => {
+	server.patch("/change-email", { schema: { body: ChangeEmailSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 
@@ -176,18 +191,30 @@ export const userManagementRoutes: FastifyPluginAsync = async (server: FastifyIn
 			await server.db.update(schema.users).set({ email }).where(eq(schema.users.id, session.userId));
 			return { message: "Email updated successfully.", user: { email } };
 		} catch (err: any) {
-			if (err.code === "23505") {
+			const pgCode = err.code ?? err.cause?.code;
+			if (pgCode === "23505") {
 				return reply.status(409).send({ error: "Email already in use." });
 			}
-			throw err;
+			server.log.error(err);
+			return reply.status(500).send({ error: "Failed to update email." });
 		}
+	});
+
+	/* PATCH /change-image: Sets or clears the profile picture URL. */
+	server.patch("/change-image", { schema: { body: ChangeImageSchema } }, async (request, reply) => {
+		const session = await verifySession(request, server.db);
+		if (!session) return reply.status(401).send({ error: "Unauthorized" });
+
+		const { imageURL } = request.body;
+		await server.db.update(schema.users).set({ imageURL }).where(eq(schema.users.id, session.userId));
+		return { message: "Profile picture updated.", user: { imageURL } };
 	});
 
 	/**
 	 * POST /change-password: Updates the password for the current user.
 	 * Look for a 'local' provider account in the accounts table.
 	 */
-	server.post<{ Body: ChangePasswordType }>("/change-password", { schema: { body: ChangePasswordSchema } }, async (request, reply) => {
+	server.post("/change-password", { schema: { body: ChangePasswordSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (!session) return reply.status(401).send({ error: "Unauthorized" });
 

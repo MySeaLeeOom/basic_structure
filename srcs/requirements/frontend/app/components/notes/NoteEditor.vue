@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, watch, watchEffect } from "vue";
+import { shallowRef, ref, computed, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -54,6 +54,18 @@ watchEffect((onCleanup) => {
   onCleanup(() => ed.destroy());
 });
 
+const isEmpty = computed(() =>
+  !titleText.value.trim() && (!editor.value || editor.value.isEmpty)
+);
+
+const titleInput = ref<HTMLInputElement | null>(null);
+
+function focusTitle() {
+  titleInput.value?.focus();
+}
+
+defineExpose({ isEmpty, focusTitle });
+
 function focusEditorEnd(event: MouseEvent) {
   const target = event.target as HTMLElement;
   if (target.closest(".editor-scroll")) return;
@@ -71,6 +83,7 @@ function focusEditorEnd(event: MouseEvent) {
         ref="titleInput"
         :value="titleText"
         @input="updateTitle(($event.target as HTMLInputElement).value)"
+        @keydown.enter.prevent="editor?.commands.focus('start')"
         :placeholder="t('noteEditor.untitled')"
         class="editor-title"
       />
