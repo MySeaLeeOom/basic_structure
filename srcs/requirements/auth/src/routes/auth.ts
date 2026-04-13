@@ -39,6 +39,7 @@ async function createUserAndAccount(db: any, user: schema.NewUser, account: Omit
 		await tx.insert(schema.accounts).values({
 			...account,
 			userId: insertedUser.id,
+			providerAccountId: account.provider === "local" ? insertedUser.id : account.providerAccountId,
 		});
 		return insertedUser;
 	});
