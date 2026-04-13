@@ -3,11 +3,7 @@ services:
   frontend:
     build:
       context: ./requirements/frontend
-      dockerfile: Dockerfile.dev
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    userns_mode: "host"                     # Disable user namespace remapping
+      dockerfile: Dockerfile
     image: frontend
     container_name: frontend
     restart: always
@@ -61,11 +57,7 @@ services:
   auth:
     build:
       context: ./requirements/auth
-      dockerfile: Dockerfile.dev
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    userns_mode: "host"                # Disable user namespace remapping
+      dockerfile: Dockerfile
     image: auth
     container_name: auth
     volumes:
