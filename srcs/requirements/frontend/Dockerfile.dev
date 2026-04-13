@@ -20,6 +20,9 @@ ARG GID=1000
 # This ensures that when these folders are mounted as volumes, the non-root user can still write to them. Added with nuxt. 
 RUN mkdir -p /app/.nuxt /app/.output && chmod -R 777 /app/.nuxt /app/.output
 
+RUN chown -R ${UID}:${GID} /app/node_modules 
+# make the user own node modules (permissions on Linux)
+
 # Port for the SSR server
 EXPOSE 3000
 
