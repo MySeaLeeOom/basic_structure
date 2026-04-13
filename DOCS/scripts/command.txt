@@ -1,0 +1,3 @@
+#Run
+
+export OLLAMA_MODELS="/sgoinfre/goinfre/Perso/<INTRANAME>"
