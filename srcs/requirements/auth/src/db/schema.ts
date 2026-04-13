@@ -3,7 +3,7 @@ import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 import { time } from "node:console";
 
 export const providerEnum = pgEnum("provider_type", ["github", "local", "google", "42"]);
-export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const roleEnum = pgEnum("user_role", ["user", "admin"]);
 export const userStatusEnum = pgEnum("status", ["active", "blocked", "suspended"]);
 
 /*
@@ -21,7 +21,7 @@ export const users = pgTable("users", {
 	email: text("email").unique(), //unique
 	loginName: text("login_name").unique().notNull(),
 	imageURL: text("image_url"),
-	role: roleEnum("role").notNull().default("user"), // we created a new enum for the role
+	userRole: roleEnum("user_role").notNull().default("user"),
 	status: userStatusEnum("status").notNull().default("active"),
 	createdAt: timestamp("created_at").defaultNow(),
 });

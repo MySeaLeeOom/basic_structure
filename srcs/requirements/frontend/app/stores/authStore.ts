@@ -4,7 +4,7 @@ import { ref, computed } from "vue";
 interface User {
 	id: string;
 	email: string | null;
-	role: string | null;
+	userRole: string | null;
 	loginName: string | null;
 	imageURL: string | null;
 	hasLocalAuth: boolean;

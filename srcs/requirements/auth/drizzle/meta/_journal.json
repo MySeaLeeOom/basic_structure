@@ -8,6 +8,13 @@
       "when": 1773597360956,
       "tag": "0000_lean_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776045403533,
+      "tag": "0001_yummy_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }
