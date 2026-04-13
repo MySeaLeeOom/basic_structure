@@ -11,12 +11,13 @@ import { useUiI18n } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
 const { t } = useUiI18n();
-const isSubmitting = ref(false);
-const activeForm = ref<'login' | 'email' | 'password' | null>(null);
+const activeAction = ref<'login' | 'email' | 'image' | 'removeImage' | 'password' | 'delete' | 'export' | 'logout' | null>(null);
 const successMessage = ref('');
 
 async function handleLogout() {
+	activeAction.value = 'logout';
 	await auth.logout();
+	activeAction.value = null;
 }
 
 const formLogin = ref('');
@@ -25,10 +26,13 @@ const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 
+const formImageUrl = ref('');
+
 const errors = reactive({
 	login: '',
 	email: '',
-	password: ''
+	password: '',
+	image: ''
 });
 
 onMounted(() => {
@@ -41,54 +45,88 @@ onMounted(() => {
 async function handleUpdateLogin() {
 	if (!formLogin.value || formLogin.value === auth.user?.loginName) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'login';
+	activeAction.value = 'login';
 	errors.login = '';
 	successMessage.value = '';
 
 	const result = await auth.updateLoginName(formLogin.value);
 
 	if (!result.success) {
-		errors.login = result.message; // Display error strictly under the field
+		errors.login = result.message;
 	} else {
-		formLogin.value = ''; // Clear the field on success
+		formLogin.value = '';
 		successMessage.value = t('profile.success.username');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleUpdateEmail() {
 	if (formEmail.value === auth.user?.email) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'email';
+	activeAction.value = 'email';
 	errors.email = '';
 	successMessage.value = '';
 
 	const result = await auth.updateEmail(formEmail.value);
 
 	if (!result.success) {
-		errors.email = result.message; // Display error strictly under the field
+		errors.email = result.message;
 	} else {
 		successMessage.value = t('profile.success.email');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
+}
+
+async function handleUpdateImage() {
+	activeAction.value = 'image';
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(formImageUrl.value || null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	activeAction.value = null;
+}
+
+async function handleRemoveImage() {
+	activeAction.value = 'removeImage';
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	activeAction.value = null;
 }
 
 async function handleChangePassword() {
-	if (!oldPassword.value || !newPassword.value) return;
+	if (!newPassword.value) return;
+
+	if (auth.user?.hasLocalAuth && !oldPassword.value) {
+		errors.password = t('profile.error.oldPasswordRequired');
+		return;
+	}
 
 	if (newPassword.value !== confirmPassword.value) {
 		errors.password = t('profile.error.passwordMismatch');
 		return;
 	}
 
-	isSubmitting.value = true;
-	activeForm.value = 'password';
+	activeAction.value = 'password';
 	errors.password = '';
 	successMessage.value = '';
 
@@ -103,15 +141,14 @@ async function handleChangePassword() {
 		successMessage.value = t('profile.success.password');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleDeleteAccount() {
 	const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
 	if (!confirmed) return;
 
-	isSubmitting.value = true;
+	activeAction.value = 'delete';
 	successMessage.value = '';
 	errors.login = '';
 	errors.email = '';
@@ -120,7 +157,7 @@ async function handleDeleteAccount() {
 	const result = await auth.deleteAccount();
 	if (!result.success) {
 		errors.password = result.message;
-		isSubmitting.value = false;
+		activeAction.value = null;
 		return;
 	}
 
@@ -129,9 +166,9 @@ async function handleDeleteAccount() {
 
 function extractPlainTextFromXml(xml: string): string {
 	if (!xml) return '';
-	const parser = new DOMParser();
-	const parsed = parser.parseFromString(`<div>${xml}</div>`, 'text/html');
-	return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
+	const withBreaks = xml.replace(/<\/?(p|div|h[1-6]|li|br|tr|td)[^>]*>/gi, '\n');
+	const stripped = withBreaks.replace(/<[^>]+>/g, '');
+	return stripped.replace(/\n{2,}/g, '\n\n').trim();
 }
 
 function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
@@ -169,7 +206,7 @@ function buildReadableExportPayload(rawData: any) {
 }
 
 async function handleExportData() {
-	isSubmitting.value = true;
+	activeAction.value = 'export';
 	successMessage.value = '';
 	errors.login = '';
 	errors.email = '';
@@ -178,7 +215,7 @@ async function handleExportData() {
 	const result = await auth.exportData();
 	if (!result.success) {
 		errors.password = result.message || "Data export failed";
-		isSubmitting.value = false;
+		activeAction.value = null;
 		return;
 	}
 
@@ -196,7 +233,7 @@ async function handleExportData() {
 	URL.revokeObjectURL(url);
 
 	successMessage.value = "Data exported successfully";
-	isSubmitting.value = false;
+	activeAction.value = null;
 }
 </script>
 
@@ -219,7 +256,7 @@ async function handleExportData() {
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
 							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
 							<Button :label="t('profile.button.updateUsername')" type="submit"
-								:disabled="isSubmitting || !formLogin || formLogin === (auth.user?.loginName || '')"
+								:disabled="activeAction === 'login' || !formLogin || formLogin === (auth.user?.loginName || '')"
 								fluid />
 							<small v-if="errors.login" class="text-red-500">{{ errors.login }}</small>
 						</form>
@@ -231,35 +268,53 @@ async function handleExportData() {
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
 							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
 							<Button :label="t('profile.button.updateEmail')" type="submit"
-								:disabled="isSubmitting || formEmail === (auth.user?.email || '')" fluid />
+								:disabled="activeAction === 'email' || formEmail === (auth.user?.email || '')" fluid />
 							<small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
 						</form>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">{{ t('profile.section.avatar') }}</h3>
+						<div v-if="auth.user?.imageURL" class="flex items-center gap-3">
+							<img :src="auth.user.imageURL" alt="Profile picture" class="w-12 h-12 rounded-full object-cover" />
+							<span class="text-sm text-muted-color truncate max-w-[160px]">{{ auth.user.imageURL }}</span>
+						</div>
+						<div class="flex flex-col gap-2">
+							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" fluid />
+							<Button :label="t('profile.button.updateImage')" :disabled="activeAction === 'image' || !formImageUrl"
+								fluid @click="handleUpdateImage" />
+							<Button v-if="auth.user?.imageURL" :label="t('profile.button.removeImage')"
+								severity="secondary" :disabled="activeAction === 'removeImage'" fluid @click="handleRemoveImage" />
+							<small v-if="errors.image" class="text-red-500">{{ errors.image }}</small>
+						</div>
 					</div>
 
 					<div class="flex flex-col gap-2">
 						<h3 class="font-bold">{{ t('profile.section.security') }}</h3>
 						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
 							<Password v-model="oldPassword" :placeholder="t('profile.placeholder.currentPassword')" :feedback="false" toggleMask
-								fluid />
+								fluid :disabled="!auth.user?.hasLocalAuth" />
 							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid />
 							<Password v-model="confirmPassword" :placeholder="t('profile.placeholder.confirmNewPassword')" :feedback="false"
 								toggleMask fluid />
-							<Button :label="t('profile.button.changePassword')" type="submit"
-								:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+							<Button
+								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
+								type="submit"
+								:disabled="activeAction === 'password' || !newPassword || !confirmPassword || newPassword !== confirmPassword"
 								fluid />
 							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
 						</form>
 					</div>
 				<div class="flex flex-col gap-2 pt-2">
-					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="activeAction === 'export'"
 						@click="handleExportData" />
-					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="activeAction === 'logout'"
 						@click="handleLogout" />
 				</div>
 
 				<div class="flex flex-col gap-2 pt-4">
 					<h3 class="font-bold text-red-500">{{ t('profile.section.danger') }}</h3>
-					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="activeAction === 'delete'"
 						@click="handleDeleteAccount" />
 				</div>
 				</div>

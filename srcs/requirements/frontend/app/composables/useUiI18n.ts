@@ -2,23 +2,31 @@
  * UI copy for the Nuxt app (nav, buttons, etc.). This is separate from the notes
  * service Fluent/FTL files: those only translate strings the API returns.
  */
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import ar from "~/locales/ar.json";
 import deDE from "~/locales/de-DE.json";
 import enUK from "~/locales/en-UK.json";
 import esES from "~/locales/es-ES.json";
+import ieIE from "~/locales/ie-IE.json";
+import elGR from "~/locales/el-GR.json";
+import ruRU from "~/locales/ru-RU.json";
+import trTR from "~/locales/tr-TR.json";
 
-export type LocaleId = "en-UK" | "de-DE" | "es-ES" | "ar";
+export type LocaleId = "en-UK" | "de-DE" | "es-ES" | "ie-IE" | "tr-TR" | "el-GR" | "ru-RU" | "ar";
 
 const BUNDLES: Record<LocaleId, Record<string, string>> = {
 	"en-UK": enUK,
 	"de-DE": deDE,
 	"es-ES": esES,
+	"ie-IE": ieIE,
+	"tr-TR": trTR,
+	"el-GR": elGR,
+	"ru-RU": ruRU,
 	"ar": ar,
 };
 
 function normalizeLocale(value: string | null | undefined): LocaleId {
-	if (value === "de-DE" || value === "es-ES" || value === "en-UK" || value === "ar") {
+	if (value === "de-DE" || value === "es-ES" || value === "en-UK" || value === "ie-IE" || value === "tr-TR" || value === "el-GR" || value === "ru-RU" || value === "ar") {
 		return value;
 	}
 	return "en-UK";
@@ -39,13 +47,6 @@ export function useUiI18n() {
 		if (locale.value !== normalized) {
 			locale.value = normalized;
 		}
-	});
-
-	useHead({
-		htmlAttrs: {
-			lang: computed(() => locale.value),
-			dir: computed(() => (locale.value === "ar" ? "rtl" : "ltr")),
-		},
 	});
 
 	const isRtl = computed(() => locale.value === "ar");

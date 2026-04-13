@@ -37,6 +37,7 @@ copilot-instructions.md
 masha*.*
 crdt-migration-plan.md
 dist
+.claudeignore
 
 target
 grafana-prometheus-review.md

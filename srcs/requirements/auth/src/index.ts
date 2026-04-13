@@ -1,7 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { buildServer, type AppConfig } from "./app";
 import { databaseUrl } from "./db/connections";
-import { getBaseURI } from "./lib/auth_utils";
 // Function to load configuration from environment and secrets
 const loadConfig = (): AppConfig => {
 	// 1. GITHUB CLIENT ID
@@ -13,6 +12,11 @@ const loadConfig = (): AppConfig => {
 	const githubCallbackURL = process.env.GITHUB_CALLBACK_URL;
 	if (!githubCallbackURL) {
 		throw new Error("CRITICAL: GITHUB_CALLBACK_URL is missing from the environment!");
+	}
+
+	const websiteUrl = process.env.WEBSITE_URL;
+	if (!websiteUrl) {
+		throw new Error("CRITICAL: WEBSITE_URL is missing from the environment!");
 	}
 
 	// 2. GITHUB CLIENT SECRET
@@ -39,7 +43,8 @@ const loadConfig = (): AppConfig => {
 		githubClientId: clientIdGit,
 		githubClientSecret: clientSecretGit,
 		sessionSecret: sessionSecret,
-		callbackUri: `${githubCallbackURL}`, // THIS NEEDS TO MATCH GITHUB APP SETUP
+		callbackUri: githubCallbackURL, // THIS NEEDS TO MATCH GITHUB APP SETUP
+		frontendUrl: websiteUrl,
 		runMigrations: true,
 	};
 };

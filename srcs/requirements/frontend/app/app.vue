@@ -1,13 +1,16 @@
 <script lang="ts" setup>
-import { onMounted } from 'vue';
+import { computed } from 'vue';
 import Header from "./components/Header.vue"
 import VoltConfirmDialog from "./volt/ConfirmDialog.vue"
-import { useAuthStore } from './stores/authStore';
+import { useUiI18n } from './composables/useUiI18n';
 
-const authStore = useAuthStore();
+const { locale } = useUiI18n();
 
-onMounted(() => {
-	authStore.checkAuth();
+useHead({
+	htmlAttrs: {
+		lang: computed(() => locale.value),
+		dir: computed(() => locale.value === 'ar' ? 'rtl' : 'ltr'),
+	},
 });
 </script>
 

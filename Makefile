@@ -1,15 +1,16 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml
+
 FLAGS   := --remove-orphans
 
 # Project and volume names
 PROJECT_NAME   := srcs
 
-# 1. Frontend Build Artifacts (Safe to delete, just re-builds next time)
+# Frontend Build Artifacts (Safe to delete, just re-builds next time)
 FRONTEND_CACHE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_nuxt_hidden \
 	$(PROJECT_NAME)_frontend_output_hidden
 
-# 2. Dependency Volumes (Safe to delete, just re-installs next time)
+# Dependency Volumes (Safe to delete, just re-installs next time)
 MODULE_VOLUMES := \
 	$(PROJECT_NAME)_frontend_node_modules \
 	$(PROJECT_NAME)_auth_node_modules
@@ -17,7 +18,6 @@ MODULE_VOLUMES := \
 # Tear down first so volumes are not still mounted by running containers.
 all: getuser
 	$(COMPOSE) down $(FLAGS)
-	@$(MAKE) cleanv
 	@$(MAKE) up
 
 getuser:
@@ -39,12 +39,13 @@ clean: getuser
 	$(COMPOSE) down --rmi all $(FLAGS)
 	@$(MAKE) cleanv
 
-# Removes all artifacts and dev containers, does not remove the databases
+# Removes all artifacts and dev containers, does not remove the notes databases
 cleanv: 
 	@echo "Removing only node_modules volumes..."
 	-docker volume rm $(MODULE_VOLUMES)
 	@echo "Cleaning frontend build cache..."
 	-docker volume rm $(FRONTEND_CACHE_VOLUMES)
+	@docker image prune -f
 
 # Destructive: will destroy databases, both notes and users
 fclean: getuser
@@ -53,10 +54,17 @@ fclean: getuser
 
 re: clean up
 
+dev: getuser
+	docker compose -f srcs/docker-compose-dev.yml up -d --build $(FLAGS)
+
+# ex: make rebuild service=frontend
+rebuild: getuser
+	$(COMPOSE) up -d --build --no-deps $(service)
+
 logs: getuser
 	$(COMPOSE) logs -f $(service)
 
+getlogs: 
+	$(COMPOSE) logs > all-docker-logs-$(shell date +%Y-%m-%d_%H-%M-%S).txt 2>&1
+	
 .PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
-
-# Docker commands
-# docker volume rm $(docker volume ls -q)

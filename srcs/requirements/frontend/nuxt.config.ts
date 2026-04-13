@@ -18,7 +18,16 @@ export default defineNuxtConfig({
 	},
 	vite: {
 		plugins: [tailwindcss() as any],
+		server: {
+			watch: {
+				usePolling: true,
+				interval: 1000, // ms
+			},
+		},
 	},
+	components: [
+		{ path: '~/components', pathPrefix: false }
+	],
 	future: {
 		compatibilityVersion: 4,
 	},
