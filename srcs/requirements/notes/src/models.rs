@@ -16,7 +16,7 @@ pub struct Note {
 
 // Role Enum
 #[derive(Serialize, Deserialize, sqlx::Type, Debug)]
-#[sqlx(type_name = "varchar")]
+#[sqlx(type_name = "text")]
 pub enum Role {
     View,
     Edit,
