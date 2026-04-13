@@ -39,6 +39,7 @@ async function createUserAndAccount(db: any, user: schema.NewUser, account: Omit
 		await tx.insert(schema.accounts).values({
 			...account,
 			userId: insertedUser.id,
+			providerAccountId: account.provider === "local" ? insertedUser.id : account.providerAccountId,
 		});
 		return insertedUser;
 	});
@@ -59,7 +60,7 @@ async function findUserByIdentifier(db: any, identifier: string) {
 /**
  * Helper: Find an account by its external provider identity.
  */
-async function findAccount(db: any, provider: any, providerAccountId: string) {
+async function findAccountByProviderAccountId(db: any, provider: any, providerAccountId: string) {
 	const [account] = await db
 		.select()
 		.from(schema.accounts)
@@ -126,7 +127,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 			const emailConflict = await findUserByIdentifier(server.db, buildUser.email);
 
 			if (emailConflict) {
-				const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+				const existingAccount = await findAccountByProviderAccountId(server.db, "github", githubUser.id.toString());
 				
 				if (existingAccount && existingAccount.userId !== emailConflict.id) {
 					authGithubCallbackTotal.labels("conflict_email").inc();
@@ -137,7 +138,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 
 		// Find or Create User/Account
 		let user;
-		const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+		const existingAccount = await findAccountByProviderAccountId(server.db, "github", githubUser.id.toString());
 
 		let githubOutcome: "success_returning" | "success_new_user";
 		if (existingAccount) {
