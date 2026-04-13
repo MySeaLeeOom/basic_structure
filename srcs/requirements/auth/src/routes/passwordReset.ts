@@ -111,7 +111,7 @@ export const passwordResetRoutes: FastifyPluginAsyncTypebox = async (server) => 
 		await upsertAccount(server, {
 			userId: user.id,
 			provider: "local",
-			providerAccountId: user.loginName,
+			providerAccountId: user.id,
 			passwordHash: newHash,
 		});
 
