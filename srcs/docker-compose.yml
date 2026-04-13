@@ -61,11 +61,9 @@ services:
     image: auth
     container_name: auth
     volumes:
-      - ./requirements/auth:/app:z
-      - auth_node_modules:/app/node_modules
-      - ./secrets/auth_db_password:/run/secrets/auth_db_password:ro,Z
-      - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro,Z
-      - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro,Z
+      - ./secrets/auth_db_password:/run/secrets/auth_db_password:ro
+      - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro
+      - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro
     restart: always
     depends_on:
       postgres:
@@ -157,7 +155,7 @@ services:
     container_name: prometheus
     restart: always
     volumes:
-      - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command: 
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
@@ -252,7 +250,6 @@ services:
       - transcendence
 
 volumes:
-  auth_node_modules:      # Persistent volume for auth dependencies
   postgres_data:
   vector_data:
 
