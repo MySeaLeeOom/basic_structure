@@ -82,6 +82,13 @@ function usernameFor(userId: string | null) {
 	return allUsers.value.find(u => u.id === userId)?.loginName ?? userId.slice(0, 8);
 }
 
+function displayTitle(title: string | null | undefined) {
+	const value = (title ?? '').trim();
+	if (!value) return t('notes.untitled');
+	if (value.toLowerCase() === 'untitled') return t('notes.untitled');
+	return value;
+}
+
 // Users not already collaborators and not the current user
 const availableUsers = computed(() => {
 	const collabIds = new Set(collaborators.value.map(c => c.guest_id));
@@ -242,11 +249,11 @@ onMounted(() => {
 	<SidebarLayout v-model:sidebar-open="sidebarOpen">
 		<template #collapsed-actions>
 			<button
-				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
 				:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
 				@click="chatOpen = !chatOpen"
 			>
-				<IconSparkles class="w-4 h-4" />
+				<IconChatBubble class="w-5 h-5" />
 			</button>
 		</template>
 
@@ -262,10 +269,10 @@ onMounted(() => {
 				</button>
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-					:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+					:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'" 
 					@click="chatOpen = !chatOpen"
 				>
-					<IconSparkles class="w-4 h-4" />
+					<IconChatBubble class="w-5 h-5" />
 				</button>
 			</div>
 
@@ -288,7 +295,7 @@ onMounted(() => {
 				</template>
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
-						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
+						<span class="truncate text-sm">{{ displayTitle(slotProps.option.title) }}</span>
 						<div class="flex items-center shrink-0"
 							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
 							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
@@ -318,7 +325,7 @@ onMounted(() => {
 				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full">
-						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
+						<span class="truncate text-sm">{{ displayTitle(slotProps.option.note_title) }}</span>
 						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.role }}</span>
 					</div>
 				</template>
