@@ -61,7 +61,7 @@ services:
       args:
         - UID=${UID:-1000}
         - GID=${GID:-1000}
-    user: "${UID:-1000}:${GID:-1000}" # <--- The Linux Fix (Safe on Mac too)
+    userns_mode: "host"                # Disable user namespace remapping
     image: auth
     container_name: auth
     volumes:
