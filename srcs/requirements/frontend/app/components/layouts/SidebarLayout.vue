@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useUiI18n } from '~/composables/useUiI18n';
+
 const sidebarOpen = defineModel<boolean>('sidebarOpen', { default: true });
+const { t } = useUiI18n();
 </script>
 
 <template>
@@ -16,7 +19,7 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { default: true });
     >
       <button
         class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-        title="Show sidebar"
+        :title="t('notes.sidebar.show')"
         @click="sidebarOpen = true"
       >
         <IconBars class="w-4 h-4" />
