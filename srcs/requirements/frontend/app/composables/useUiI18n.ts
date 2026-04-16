@@ -51,9 +51,14 @@ export function useUiI18n() {
 
 	const isRtl = computed(() => locale.value === "ar");
 
-	function t(key: string): string {
+	function t(key: string, params?: Record<string, string | number>): string {
 		const id = normalizeLocale(locale.value);
-		return BUNDLES[id]?.[key] ?? BUNDLES["en-UK"][key] ?? key;
+		const raw = BUNDLES[id]?.[key] ?? BUNDLES["en-UK"][key] ?? key;
+		if (!params) return raw;
+		return raw.replace(/\{(\w+)\}/g, (_, token: string) => {
+			const value = params[token];
+			return value === undefined ? `{${token}}` : String(value);
+		});
 	}
 
 	return { t, locale, isRtl };
