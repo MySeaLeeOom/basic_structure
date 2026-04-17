@@ -150,9 +150,13 @@ services:
     image: grafana
     container_name: grafana
     restart: always
+    depends_on:
+      - prometheus
     secrets:
     - grafana_admin_user
     - grafana_admin_password
+    volumes:
+      - grafana_data:/var/lib/grafana
     networks:
       - transcendence
     environment:
@@ -171,6 +175,7 @@ services:
     restart: always
     volumes:
       - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - prometheus_data:/prometheus
     command: 
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
@@ -268,6 +273,10 @@ volumes:
     name: mycelium_db
   vector_data:
     name: mycelium_vector
+  prometheus_data:
+    name: mycelium_prometheus
+  grafana_data:
+    name: mycelium_grafana
 
 
 

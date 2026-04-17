@@ -35,4 +35,18 @@ export const authMeTotal = new Counter({
 	registers: [prometheusRegister],
 });
 
+export const authVerifyTotal = new Counter({
+	name: "auth_verify_total",
+	help: "GET /verify session verification outcomes.",
+	labelNames: ["result"],
+	registers: [prometheusRegister],
+});
+
+export const authLogoutTotal = new Counter({
+	name: "auth_logout_total",
+	help: "POST /logout outcomes.",
+	labelNames: ["result"],
+	registers: [prometheusRegister],
+});
+
 export { prometheusRegister };
