@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 interface User {
 	id: string;
@@ -11,6 +12,7 @@ interface User {
 }
 
 export const useAuthStore = defineStore("auth", () => {
+	const { t } = useUiI18n();
 	const user = ref<User | null>(null);
 	const loading = ref(false);
 	const error = ref<string | null>(null);
@@ -100,7 +102,7 @@ export const useAuthStore = defineStore("auth", () => {
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.message || data.error || "Login failed");
+				throw new Error(data.message || data.error || t("auth.error.loginFailed"));
 			}
 
 			// success
@@ -126,7 +128,7 @@ export const useAuthStore = defineStore("auth", () => {
 
 			if (!res.ok) {
 				const data = await res.json();
-				throw new Error(data.message || data.error || "Registration failed");
+				throw new Error(data.message || data.error || t("auth.error.registrationFailed"));
 			}
 
 			// success
@@ -150,7 +152,7 @@ export const useAuthStore = defineStore("auth", () => {
 				body: JSON.stringify({ loginName: newLogin }),
 			});
 			const data = await res.json();
-			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.updateFailed"));
 
 			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
@@ -172,7 +174,7 @@ export const useAuthStore = defineStore("auth", () => {
 				body: JSON.stringify({ email: newEmail }),
 			});
 			const data = await res.json();
-			if (!res.ok) throw new Error(data.message || data.error || "Update failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.updateFailed"));
 
 			await checkAuth(undefined, true); // Refresh profile
 			return { success: true, message: data.message };
@@ -194,7 +196,7 @@ export const useAuthStore = defineStore("auth", () => {
 				body: JSON.stringify({ imageURL }),
 			});
 			const data = await res.json();
-			if (!res.ok) throw new Error(data.message || data.error || "Image update failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.imageUpdateFailed"));
 			await checkAuth(undefined, true);
 			return { success: true, message: data.message };
 		} catch (e: any) {
@@ -215,7 +217,7 @@ export const useAuthStore = defineStore("auth", () => {
 				body: JSON.stringify({ oldPassword, newPassword }),
 			});
 			const data = await res.json();
-			if (!res.ok) throw new Error(data.message || data.error || "Password change failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.passwordChangeFailed"));
 			return { success: true, message: data.message };
 		} catch (e: any) {
 			error.value = e.message;
@@ -231,7 +233,7 @@ export const useAuthStore = defineStore("auth", () => {
 		try {
 			const res = await fetch("/api/auth/delete-account", { method: "DELETE" });
 			const data = await res.json().catch(() => ({}));
-			if (!res.ok) throw new Error(data.message || data.error || "Account deletion failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.accountDeletionFailed"));
 
 			resetStore();
 			try {
@@ -242,7 +244,7 @@ export const useAuthStore = defineStore("auth", () => {
 				console.error("Failed to reset note store", err);
 			}
 
-			return { success: true, message: data.message || "Account deleted successfully." };
+			return { success: true, message: data.message || t("auth.success.accountDeleted") };
 		} catch (e: any) {
 			error.value = e.message;
 			return { success: false, message: e.message };
@@ -257,7 +259,7 @@ export const useAuthStore = defineStore("auth", () => {
 		try {
 			const res = await fetch("/api/auth/export-data", { method: "GET" });
 			const data = await res.json().catch(() => ({}));
-			if (!res.ok) throw new Error(data.message || data.error || "Data export failed");
+			if (!res.ok) throw new Error(data.message || data.error || t("auth.error.dataExportFailed"));
 			return { success: true, data };
 		} catch (e: any) {
 			error.value = e.message;

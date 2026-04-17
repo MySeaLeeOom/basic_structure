@@ -42,7 +42,7 @@ watchEffect((onCleanup) => {
       CollaborationCaret.configure({
         provider: prov,
         user: {
-          name: authStore.user?.loginName ?? "Anonymous",
+          name: authStore.user?.loginName ?? t('noteEditor.anonymous'),
           color: userColor(authStore.user?.id),
         },
         render: renderCaret,
@@ -85,7 +85,7 @@ function focusEditorEnd(event: MouseEvent) {
         :value="titleText"
         @input="updateTitle(($event.target as HTMLInputElement).value)"
         @keydown.enter.prevent="editor?.commands.focus('start')"
-        :placeholder="t('noteEditor.untitled')"
+        :placeholder="t('notes.untitled')"
         class="editor-title"
       />
       <EditorContent :editor="editor" class="tiptap-editor" />

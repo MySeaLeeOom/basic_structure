@@ -57,19 +57,13 @@ services:
   auth:
     build:
       context: ./requirements/auth
-      dockerfile: Dockerfile.dev
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    user: "${UID:-1000}:${GID:-1000}" # <--- The Linux Fix (Safe on Mac too)
+      dockerfile: Dockerfile
     image: auth
     container_name: auth
     volumes:
-      - ./requirements/auth:/app:z
-      - auth_node_modules:/app/node_modules
-      - ./secrets/auth_db_password:/run/secrets/auth_db_password:ro,Z
-      - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro,Z
-      - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro,Z
+      - ./secrets/auth_db_password:/run/secrets/auth_db_password:ro
+      - ./secrets/github_client_secret:/run/secrets/github_client_secret:ro
+      - ./secrets/session_secret_key:/run/secrets/session_secret_key:ro
     restart: always
     depends_on:
       postgres:
@@ -166,7 +160,7 @@ services:
     container_name: prometheus
     restart: always
     volumes:
-      - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./requirements/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command: 
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
@@ -217,10 +211,8 @@ services:
     environment:
       VECTOR_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@vector-db:5432/vector_db
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
-      LLM_BASE_URL: http://host.docker.internal:11434/v1
+      LLM_BASE_URL: ${LLM_BASE_URL}
       LLM_EMBEDDING_MODEL: mxbai-embed-large
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       - vector-db
     networks:
@@ -236,10 +228,8 @@ services:
       MAIN_DB_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       LLM_GATEWAY_URL: http://llm-gateway:8001/stream
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
-      LLM_BASE_URL: http://host.docker.internal:11434/v1
+      LLM_BASE_URL: ${LLM_BASE_URL}
       LLM_EMBEDDING_MODEL: mxbai-embed-large
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       - vector-db
       - llm-gateway
@@ -254,16 +244,15 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
       LLM_MODEL: llama3
-      LLM_BASE_URL: http://host.docker.internal:11434/v1
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      LLM_BASE_URL: ${LLM_BASE_URL}
     networks:
       - transcendence
 
 volumes:
-  auth_node_modules:      # Persistent volume for auth dependencies
   postgres_data:
+    name: mycelium_db
   vector_data:
+    name: mycelium_vector
 
 
 secrets:

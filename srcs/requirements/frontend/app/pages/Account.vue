@@ -145,7 +145,7 @@ async function handleChangePassword() {
 }
 
 async function handleDeleteAccount() {
-	const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
+	const confirmed = window.confirm(t('profile.delete.confirm'));
 	if (!confirmed) return;
 
 	activeAction.value = 'delete';
@@ -197,7 +197,7 @@ function buildReadableExportPayload(rawData: any) {
 		const { state_vector, ...rest } = note || {};
 		return {
 			...rest,
-			title: decoded?.title || rest.title || 'Untitled',
+			title: decoded?.title || rest.title || t('notes.untitled'),
 			content: decoded?.content || '',
 		};
 	});
@@ -214,7 +214,7 @@ async function handleExportData() {
 
 	const result = await auth.exportData();
 	if (!result.success) {
-		errors.password = result.message || "Data export failed";
+		errors.password = result.message || t('auth.error.dataExportFailed');
 		activeAction.value = null;
 		return;
 	}
@@ -232,7 +232,7 @@ async function handleExportData() {
 	document.body.removeChild(anchor);
 	URL.revokeObjectURL(url);
 
-	successMessage.value = "Data exported successfully";
+	successMessage.value = t('profile.export.success');
 	activeAction.value = null;
 }
 </script>
@@ -251,7 +251,7 @@ async function handleExportData() {
 				<div class="flex flex-col gap-6">
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.username') }}</h3>
+						<h3 class="font-bold">{{ t('login.username') }}</h3>
 						<p v-if="auth.user?.loginName">{{ t('profile.currentPrefix') }} <strong>{{ auth.user.loginName }}</strong></p>
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
 							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
@@ -263,7 +263,7 @@ async function handleExportData() {
 					</div>
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.email') }}</h3>
+						<h3 class="font-bold">{{ t('login.email') }}</h3>
 						<p>{{ t('profile.currentPrefix') }} <strong>{{ auth.user?.email || t('profile.none') }}</strong></p>
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
 							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
@@ -276,7 +276,7 @@ async function handleExportData() {
 					<div class="flex flex-col gap-2">
 						<h3 class="font-bold">{{ t('profile.section.avatar') }}</h3>
 						<div v-if="auth.user?.imageURL" class="flex items-center gap-3">
-							<img :src="auth.user.imageURL" alt="Profile picture" class="w-12 h-12 rounded-full object-cover" />
+							<img :src="auth.user.imageURL" :alt="t('profile.avatar.alt')" class="w-12 h-12 rounded-full object-cover" />
 							<span class="text-sm text-muted-color truncate max-w-[160px]">{{ auth.user.imageURL }}</span>
 						</div>
 						<div class="flex flex-col gap-2">

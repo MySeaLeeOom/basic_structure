@@ -12,7 +12,7 @@ const { t } = useUiI18n();
 const avatarMenu = ref<InstanceType<typeof Menu> | null>(null);
 
 const avatarMenuItems = computed(() => [
-  { label: `Hello, ${authStore.user?.loginName}!`, disabled: true },
+  { label: t('nav.helloUser', { name: authStore.user?.loginName ?? '' }), disabled: true },
   { separator: true },
   { label: t('nav.home'), command: () => navigateTo('/home') },
   { label: t('nav.notes'), command: () => navigateTo('/notes') },
