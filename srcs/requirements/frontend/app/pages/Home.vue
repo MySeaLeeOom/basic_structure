@@ -20,6 +20,26 @@ const homeGreeting = computed(() => {
       <div class="hero-background"></div>
       <div class="hero-content">
         <h1 class="hero-title">{{ homeGreeting }}</h1>
+
+        <div class="reactive-stack">
+          <article class="reactive-card reactive-card--definition">
+            <h2 class="card-title">mycelium</h2>
+            <p class="card-ipa">/maɪˈsiː.li.əm/</p>
+            <p class="card-copy">
+              a thread-like structure of very small interwoven filamentous hyphae that spread out from a eukaryotic organism, such as a fungus.
+            </p>
+            <p class="card-copy">
+              Permeating the earth with every fiber they generate, these networks are the true force of what they sustain above the ground.
+            </p>
+          </article>
+
+          <article class="reactive-card reactive-card--welcome">
+            <h3 class="card-header">Welcome to Mycelium</h3>
+            <p class="card-copy">
+              mycelium is a place to sow your thoughts, allow them to grow and interweave, before finally evolving into something brilliant
+            </p>
+          </article>
+        </div>
       </div>
     </div>
   </div>
@@ -103,21 +123,102 @@ const homeGreeting = computed(() => {
 .hero-content {
   position: relative;
   z-index: 10;
-  width: min(92vw, 52rem);
+  width: min(94vw, 64rem);
   padding: 0 1rem;
   text-align: center;
+  transform: translateY(-7vh);
 }
 
 .hero-title {
-  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+  font-size: clamp(1.9rem, 4.2vw, 3rem);
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: #ffffff;
-  margin: 0;
+  margin: 0 0 1.4rem;
   text-shadow:
     0 8px 28px rgba(0, 0, 0, 0.45),
     0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.reactive-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+  width: 100%;
+}
+
+.reactive-card {
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  color: rgba(244, 249, 255, 0.95);
+  border: 1px solid rgba(209, 231, 255, 0.36);
+  background:
+    linear-gradient(132deg, rgba(216, 236, 255, 0.26), rgba(179, 212, 243, 0.12));
+  backdrop-filter: blur(16px) saturate(135%);
+  box-shadow:
+    0 18px 40px rgba(2, 14, 26, 0.33),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  border-radius: 18px;
+  animation: cardFloat 9s ease-in-out infinite;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.reactive-card::before {
+  content: '';
+  position: absolute;
+  inset: -15% -20% auto auto;
+  width: 65%;
+  height: 75%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 68%);
+  transform: rotate(15deg);
+  pointer-events: none;
+  animation: sheenDrift 12s linear infinite;
+}
+
+.reactive-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 24px 48px rgba(2, 14, 26, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.reactive-card--definition {
+  padding: 1.35rem 1.5rem;
+  animation-delay: -1.2s;
+}
+
+.reactive-card--welcome {
+  padding: 1.2rem 1.4rem;
+  animation-delay: -4.2s;
+}
+
+.card-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  text-transform: lowercase;
+}
+
+.card-ipa {
+  margin: 0.2rem 0 0.8rem;
+  font-size: 0.95rem;
+  color: rgba(221, 239, 255, 0.92);
+}
+
+.card-header {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+  color: #ffffff;
+}
+
+.card-copy {
+  margin: 0.45rem 0 0;
+  line-height: 1.5;
+  color: rgba(233, 245, 255, 0.95);
 }
 
 .dark .hero-title {
@@ -127,15 +228,54 @@ const homeGreeting = computed(() => {
     0 3px 12px rgba(0, 0, 0, 0.45);
 }
 
+.dark .reactive-card {
+  border-color: rgba(176, 208, 238, 0.3);
+  background:
+    linear-gradient(132deg, rgba(36, 58, 82, 0.42), rgba(20, 33, 50, 0.28));
+}
+
 @media (max-width: 768px) {
   .hero-content {
     width: min(94vw, 32rem);
     padding: 0 1rem;
+    transform: translateY(-4vh);
   }
 
   .hero-title {
     font-size: clamp(1.3rem, 7.2vw, 2rem);
     letter-spacing: 0.008em;
+    margin-bottom: 1rem;
+  }
+
+  .reactive-card {
+    border-radius: 14px;
+  }
+
+  .reactive-card--definition,
+  .reactive-card--welcome {
+    padding: 1rem;
+  }
+}
+
+@keyframes cardFloat {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+
+@keyframes sheenDrift {
+  0% {
+    transform: rotate(15deg) translateX(0);
+  }
+  50% {
+    transform: rotate(15deg) translateX(-10%);
+  }
+  100% {
+    transform: rotate(15deg) translateX(0);
   }
 }
 
