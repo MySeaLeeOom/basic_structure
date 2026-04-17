@@ -40,18 +40,28 @@ pub async fn ws_route(
 }
 
 async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, user_id: Uuid) {
-	// find or create room if not exists
+	// Find existing room, or load from DB and atomically insert via the entry API
+	// to prevent a race where two connections both create a room for the same note.
 	let room = if let Some(existing_room) = state.rooms.get(&note_id) {
 		existing_room.clone()
 	} else {
-		// load data from db
-		match db::load_note(&state.pool, note_id).await {
-			Ok(doc) => {
+		let doc = match db::load_note(&state.pool, note_id).await {
+			Ok(doc) => doc,
+			Err(_) => {
+				tracing::error!("Failed to load document {}", note_id);
+				return;
+			}
+		};
+
+		match state.rooms.entry(note_id) {
+			dashmap::mapref::entry::Entry::Occupied(e) => {
+				e.get().clone()
+			}
+			dashmap::mapref::entry::Entry::Vacant(e) => {
 				tracing::info!("Loaded note {} from database", note_id);
 				let new_room = Arc::new(DocumentRoom::new(doc));
-				state.rooms.insert(note_id, new_room.clone());
+				e.insert(new_room.clone());
 
-				// spawn background task for periodic saving
 				let state_bg = state.clone();
 				let room_bg = new_room.clone();
 				let user_id_bg = user_id;
@@ -59,13 +69,11 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 					loop {
 						tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
-						// Check if the room still exists in the global state
 						if !state_bg.rooms.contains_key(&note_id) {
 							tracing::debug!("Background task for note {} exiting (room no longer exists)", note_id);
 							break;
 						}
 
-						// If dirty, acquire a read lock and save to DB
 						if room_bg.dirty.load(Ordering::Acquire) {
 							tracing::debug!("Background save for note {}", note_id);
 							let doc_lock = room_bg.doc.read().await;
@@ -77,10 +85,6 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 				});
 
 				new_room
-			}
-			Err(_) => {
-				tracing::error!("Failed to load document {}", note_id);
-				return;
 			}
 		}
 	};
