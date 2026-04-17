@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import Card from "@/volt/Card.vue";
 import Button from "@/volt/Button.vue";
 import InputText from "@/volt/InputText.vue";
+import Checkbox from "@/volt/Checkbox.vue";
 import Tabs from "@/volt/Tabs.vue";
 import TabList from "@/volt/TabList.vue";
 import Tab from "@/volt/Tab.vue";
@@ -21,8 +22,18 @@ const password = ref("");
 const regLogin = ref("");
 const regEmail = ref("");
 const regPassword = ref("");
+const consentAccepted = ref(false);
 
 async function handleLogin() {
+	authStore.error = null;
+	if (!identifier.value.trim()) {
+		authStore.error = t("login.validation.identifierRequired");
+		return;
+	}
+	if (password.value.length < 4) {
+		authStore.error = t("login.validation.passwordMin");
+		return;
+	}
 	const success = await authStore.loginLocal(identifier.value, password.value);
 	if (success) {
 		router.push("/");
@@ -30,6 +41,23 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
+	authStore.error = null;
+	if (!consentAccepted.value) {
+		authStore.error = t("login.consent.required");
+		return;
+	}
+	if (!regLogin.value.trim()) {
+		authStore.error = t("login.validation.usernameRequired");
+		return;
+	}
+	if (!regEmail.value.trim() || !regEmail.value.includes("@")) {
+		authStore.error = t("login.validation.emailInvalid");
+		return;
+	}
+	if (regPassword.value.length < 4) {
+		authStore.error = t("login.validation.passwordMin");
+		return;
+	}
 	const success = await authStore.registerLocal(regLogin.value, regEmail.value, regPassword.value);
 	if (success) {
 		router.push("/");
@@ -69,7 +97,18 @@ async function handleRegister() {
 								<InputText v-model="regLogin" :placeholder="t('login.username')" fluid />
 								<InputText v-model="regEmail" :placeholder="t('login.email')" fluid />
 								<InputText v-model="regPassword" type="password" :placeholder="t('login.password')" fluid />
-								<Button type="submit" :label="t('login.create')" fluid />
+
+								<p class="text-xs text-gray-500 dark:text-gray-400">
+									{{ t('login.consent.info') }}
+								</p>
+								<div class="flex items-start gap-2">
+									<Checkbox v-model="consentAccepted" :binary="true" input-id="consent" />
+									<label for="consent" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+										{{ t('login.consent.label') }}
+									</label>
+								</div>
+
+								<Button type="submit" :label="t('login.create')" :disabled="!consentAccepted" fluid />
 							</form>
 						</TabPanel>
 					</TabPanels>
@@ -78,6 +117,10 @@ async function handleRegister() {
 				<div v-if="authStore.error" class="text-red-500 text-sm mt-4 text-center">
 					{{ authStore.error }}
 				</div>
+
+				<p class="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">
+					{{ t('login.cookieNotice') }}
+				</p>
 			</template>
 		</Card>
 	</div>

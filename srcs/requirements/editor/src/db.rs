@@ -41,6 +41,24 @@ pub async fn load_note(pool: &PgPool, note_id: Uuid) -> Result<Doc, ()> {
 	Ok(doc)
 }
 
+// Fetch the owner of a note. Called once per room so that persistence and
+// AI ingestion are always attributed to the owner, not to whichever user
+// happens to be connected at save time.
+pub async fn get_owner_id(pool: &PgPool, note_id: Uuid) -> Result<Uuid, ()> {
+	sqlx::query_scalar::<_, Uuid>("SELECT owner_id FROM notes WHERE id = $1")
+		.bind(note_id)
+		.fetch_optional(pool)
+		.await
+		.map_err(|e| {
+			tracing::error!("DB Error fetching owner for note {}: {}", note_id, e);
+			()
+		})?
+		.ok_or_else(|| {
+			tracing::error!("No owner found for note {}", note_id);
+			()
+		})
+}
+
 pub async fn check_access(pool: &PgPool, note_id: Uuid, user_id: Uuid) -> bool {
 	// Owner OR shared guest (private share or public link)
 	sqlx::query(

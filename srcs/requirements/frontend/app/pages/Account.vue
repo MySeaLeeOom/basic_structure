@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
-import * as Y from 'yjs';
+import { useConfirm } from 'primevue/useconfirm';
 import { useAuthStore } from '../stores/authStore';
 import Card from '../volt/Card.vue';
 import Divider from '../volt/Divider.vue';
@@ -10,6 +10,7 @@ import Button from '../volt/Button.vue';
 import { useUiI18n } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
+const confirm = useConfirm();
 const { t } = useUiI18n();
 const activeAction = ref<'login' | 'email' | 'image' | 'removeImage' | 'password' | 'delete' | 'export' | 'logout' | null>(null);
 const successMessage = ref('');
@@ -144,24 +145,36 @@ async function handleChangePassword() {
 	activeAction.value = null;
 }
 
-async function handleDeleteAccount() {
-	const confirmed = window.confirm(t('profile.delete.confirm'));
-	if (!confirmed) return;
+function handleDeleteAccount() {
+	confirm.require({
+		message: t('profile.delete.confirm'),
+		header: t('profile.section.danger'),
+		icon: 'pi pi-exclamation-triangle',
+		acceptProps: {
+			label: t('profile.button.deleteAccount'),
+			severity: 'danger'
+		},
+		rejectProps: {
+			label: t('notes.delete.confirmReject'),
+			severity: 'secondary'
+		},
+		accept: async () => {
+			activeAction.value = 'delete';
+			successMessage.value = '';
+			errors.login = '';
+			errors.email = '';
+			errors.password = '';
 
-	activeAction.value = 'delete';
-	successMessage.value = '';
-	errors.login = '';
-	errors.email = '';
-	errors.password = '';
+			const result = await auth.deleteAccount();
+			if (!result.success) {
+				errors.password = result.message;
+				activeAction.value = null;
+				return;
+			}
 
-	const result = await auth.deleteAccount();
-	if (!result.success) {
-		errors.password = result.message;
-		activeAction.value = null;
-		return;
-	}
-
-	window.location.href = '/';
+			window.location.href = '/';
+		}
+	});
 }
 
 function extractPlainTextFromXml(xml: string): string {
@@ -171,12 +184,13 @@ function extractPlainTextFromXml(xml: string): string {
 	return stripped.replace(/\n{2,}/g, '\n\n').trim();
 }
 
-function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
+async function decodeStateVector(stateVector: unknown): Promise<{ title: string; content: string } | null> {
 	if (!Array.isArray(stateVector)) return null;
 	const bytes = Uint8Array.from(stateVector.filter((v) => Number.isInteger(v) && v >= 0 && v <= 255));
 	if (bytes.length === 0) return null;
 
 	try {
+		const Y = await import('yjs');
 		const doc = new Y.Doc();
 		Y.applyUpdate(doc, bytes);
 		const title = doc.getText('title').toString();
@@ -188,19 +202,19 @@ function decodeStateVector(stateVector: unknown): { title: string; content: stri
 	}
 }
 
-function buildReadableExportPayload(rawData: any) {
+async function buildReadableExportPayload(rawData: Record<string, unknown>) {
 	if (!rawData || typeof rawData !== 'object') return rawData;
 	if (!Array.isArray(rawData.notes)) return rawData;
 
-	const notes = rawData.notes.map((note: any) => {
-		const decoded = decodeStateVector(note?.state_vector);
+	const notes = await Promise.all(rawData.notes.map(async (note: Record<string, unknown>) => {
+		const decoded = await decodeStateVector(note?.state_vector);
 		const { state_vector, ...rest } = note || {};
 		return {
 			...rest,
 			title: decoded?.title || rest.title || t('notes.untitled'),
 			content: decoded?.content || '',
 		};
-	});
+	}));
 
 	return { ...rawData, notes };
 }
@@ -219,7 +233,7 @@ async function handleExportData() {
 		return;
 	}
 
-	const payloadData = buildReadableExportPayload(result.data);
+	const payloadData = await buildReadableExportPayload(result.data as Record<string, unknown>);
 	const payload = JSON.stringify(payloadData, null, 2);
 	const blob = new Blob([payload], { type: 'application/json' });
 	const url = URL.createObjectURL(blob);

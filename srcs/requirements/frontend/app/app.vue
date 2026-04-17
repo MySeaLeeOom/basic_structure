@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import Header from "./components/Header.vue"
+import Footer from "./components/Footer.vue"
 import VoltConfirmDialog from "./volt/ConfirmDialog.vue"
 import { useUiI18n } from './composables/useUiI18n';
 
@@ -20,6 +21,7 @@ useHead({
 	<div class="flex flex-col h-screen overflow-hidden">
 		<Header />
 		<NuxtPage class="flex-1 min-h-0" />
+		<Footer />
 	</div>
 	<VoltConfirmDialog />
 </template>

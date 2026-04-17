@@ -1,26 +1,57 @@
-## flow of editor service 
-(I named the collab service - editor because I think it's more accurate since you can edit the docs on your own as well)
+# Editor Service
 
+Collaborative note editing backend built with Rust, Axum, and Yjs (via `yrs` / `y-sync`). Exposes a WebSocket endpoint per note, maintains an in-memory CRDT document for each active room, and persists state to PostgreSQL.
 
-(rest api is used for displaying titles -> this is what we see now + maybe permissions already)
+---
 
+## Endpoint
 
-on click on a title -> frontend creates the websocket connection by calling /ws/ from nginx.  
-Once this reaches the editor service we have to make a check if this is the first User - create room(query Postgres) + load blob into RAM(yrs::Doc). If it is the second User we don't have to query db/ create the room -> it already exists + already on RAM.  
-After that we send the current state of the file (binary state vector from RAM). The user's local yjs syncs that data with the existing one.  
-Then the live editing - on every keystroke the UI is updated immediately and a tiny binary payload gets sent back to the editor service, where in RAM it is being applied to the yrs::Doc. Then this update gets sent back to all users (tiny binary payload and their yjs syncs it).  
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| **GET** | `/ws/{id}` | WebSocket upgrade for collaborative editing on note `id` (UUID). |
 
+Authentication is handled by Nginx: the `X-User-Id` header (UUID) must be set by the reverse proxy. The service verifies ownership or share access against the `notes` / `share` tables before upgrading the connection.
 
-Now how do we save things in the db? -> option one user stops typing for x seconds -> then save, option two last user disconnects -> save.
-How the update works -> when a save is supposed to happen, first we lock the room in the RAM, then we extract the fully combined binary state from the RAM and we update the db with UPDATE note_states ...  
-If we saved because last user left we free up the RAM.  
+---
 
+## Environment Variables
 
-Mouse awareness -> frontend sends awareness message (user id, color and cursor pos) to editor service, editor sends it right back to all users. (Note: It is temporarily stored in RAM so new users joining get the current cursor positions, but it is NEVER applied to the yrs::Doc and NEVER saved to the DB).
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `DB_USER` | — | PostgreSQL username. |
+| `DB_PASSWORD` | — | PostgreSQL password. |
+| `DB_NAME` | — | PostgreSQL database name. |
+| `DB_HOST` | `postgres` | PostgreSQL hostname. |
+| `PORT` | `3004` | Port the service listens on. |
 
+---
 
-here are some new concepts:
-DashMap instead of HashMap(with RwLock) it is thread safe no manual lock needed.
-different approach on when to save to db (its called debounced save loop). from saving on every MSG_SYNC payload -> saving with timer.
-yrs::Doc  holds the in-memory collaborative CRDT state for each room.
-y-sync instead of manual byte parsing. It automatically handles the synchronization protocol between clients.
+## How It Works
+
+On click of a note title the frontend opens a WebSocket connection via Nginx to `/ws/{id}`.
+
+When the first client connects, the service loads the persisted binary state from `note_states` in Postgres, applies it to a new `yrs::Doc`, and creates a `DocumentRoom` in a `DashMap` (thread-safe concurrent map). Subsequent clients joining the same note reuse the existing room without a DB query.
+
+Each client receives the current state vector and awareness info on connect. Live edits arrive as binary y-sync messages, are applied to the in-memory Doc, and broadcast to all other clients in the room.
+
+### Persistence
+
+A background task runs a debounced save loop (every 5 seconds) for each active room. If the document has been modified (`dirty` flag), it encodes the full CRDT state and writes it back to `note_states`. When the last client disconnects, a final save is triggered and the room is removed from memory.
+
+After each save, the service fires a non-blocking POST to the AI ingest service with the binary state (base64-encoded).
+
+### Awareness
+
+Cursor positions, user colors, and selection state are relayed between clients via y-sync awareness messages. These are held in memory for new joiners but are never applied to the CRDT document and never persisted.
+
+---
+
+## Dependencies
+
+- [axum](https://github.com/tokio-rs/axum) (WebSocket + HTTP)
+- [tokio](https://tokio.rs/) (async runtime)
+- [sqlx](https://github.com/launchbadge/sqlx) (PostgreSQL)
+- [yrs](https://github.com/y-crdt/y-crdt) / [y-sync](https://github.com/y-crdt/y-crdt) (Yjs CRDT)
+- [dashmap](https://github.com/xacrimon/dashmap) (concurrent room map)
+- [reqwest](https://github.com/seanmonstar/reqwest) (AI ingest HTTP client)
+- [tracing](https://github.com/tokio-rs/tracing) (structured logging)

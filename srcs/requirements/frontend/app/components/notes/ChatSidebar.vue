@@ -28,11 +28,13 @@ const sendMessage = async () => {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        query: userQuery
-      })
+      body: JSON.stringify({ query: userQuery })
     });
+
+    if (!response.ok) {
+      assistantMessage.value.content = t('chat.error.connect');
+      return;
+    }
 
     const reader = response.body?.getReader();
     if (!reader) return;

@@ -4,10 +4,7 @@ import Button from '@/volt/Button.vue';
 import { useUiI18n } from '~/composables/useUiI18n';
 
 const { t } = useUiI18n();
-const isDark = ref(typeof document !== 'undefined'
-    ? document.documentElement.classList.contains('dark')                                                 
-    : true
-  ); 
+const isDark = ref(false);
 const iconButtonClass = '!w-7 !h-7 !p-0 !bg-surface-100 dark:!bg-surface-950 !border-surface-300 dark:!border-surface-600 !text-muted-color hover:!bg-surface-200 dark:hover:!bg-surface-900';
 
 onMounted(() => {

@@ -8,6 +8,7 @@ import * as argon2 from "argon2";
 import { authMeTotal } from "../metrics";
 
 const notesServiceBaseUrl = process.env.NOTES_SERVICE_URL ?? "http://notes:3003";
+const aiIngestServiceBaseUrl = process.env.AI_INGEST_SERVICE_URL ?? "http://ai-ingest:8002";
 
 type NotesExportItem = {
 	id: string;
@@ -241,7 +242,7 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			await upsertAccount(server, {
 				userId: session.userId,
 				provider: "local",
-				providerAccountId: user.email,
+				providerAccountId: user.loginName,
 				passwordHash: newHash,
 			});
 			return { message: "Local account created and password set." };
@@ -257,7 +258,7 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 		await upsertAccount(server, {
 			userId: session.userId,
 			provider: "local",
-			providerAccountId: user.email,
+			providerAccountId: user.loginName,
 			passwordHash: newHash,
 		});
 
@@ -280,6 +281,24 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 		}
 
 		const notes = Array.isArray(notesResponse.body) ? (notesResponse.body as NotesExportItem[]) : [];
+
+		const accounts = await server.db
+			.select({
+				provider: schema.accounts.provider,
+				providerAccountId: schema.accounts.providerAccountId,
+			})
+			.from(schema.accounts)
+			.where(eq(schema.accounts.userId, session.userId));
+
+		const sessions = await server.db
+			.select({
+				expiresAt: schema.sessions.expiresAt,
+				userAgent: schema.sessions.userAgent,
+				ipAddress: schema.sessions.ipAddress,
+			})
+			.from(schema.sessions)
+			.where(eq(schema.sessions.userId, session.userId));
+
 		return {
 			exportedAt: new Date().toISOString(),
 			user: {
@@ -291,6 +310,15 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 				imageURL: user.imageURL,
 				createdAt: user.createdAt,
 			},
+			linkedAccounts: accounts.map((a) => ({
+				provider: a.provider,
+				providerAccountId: a.providerAccountId,
+			})),
+			activeSessions: sessions.map((s) => ({
+				expiresAt: s.expiresAt,
+				userAgent: s.userAgent,
+				ipAddress: s.ipAddress,
+			})),
 			notes,
 		};
 	});
@@ -305,6 +333,12 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 				error: "Failed to delete user notes.",
 				upstreamStatus: deleteNotesResponse.status || undefined,
 			});
+		}
+
+		try {
+			await fetch(`${aiIngestServiceBaseUrl}/embeddings/by-user/${session.userId}`, { method: "DELETE" });
+		} catch (_err) {
+			server.log.warn("Could not reach ai-ingest to delete embeddings for user %s", session.userId);
 		}
 
 		await server.db.delete(schema.users).where(eq(schema.users.id, session.userId));
