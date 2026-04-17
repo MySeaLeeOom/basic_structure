@@ -4,6 +4,48 @@ This guide covers the end-to-end process for making a schema change in the auth 
 
 ---
 
+## Step-by-step: making an initial drizzle migration file
+
+This is a one-time process — only needed when the `drizzle/` folder does not exist yet (i.e. a fresh checkout or a new service).
+
+### Step 1 — Write `src/db/schema.ts`
+
+Define all your tables, enums, and constraints in TypeScript. This file is the source of truth. See the **"making a schema change"** section below for syntax examples.
+
+### Step 2 — Run the generator
+
+```bash
+cd srcs/requirements/auth
+pnpm run db:generate
+```
+
+Because no previous snapshot exists, `drizzle-kit` treats the entire `schema.ts` as the initial state and creates:
+
+```
+drizzle/
+  0000_<random-tag>.sql     ← the full CREATE TABLE / CREATE TYPE SQL
+  meta/
+    _journal.json           ← records which migrations have been applied
+    0000_snapshot.json      ← snapshot of the schema at this point in time
+```
+
+The random tag (e.g. `0000_lean_flatman`) is cosmetic — the index `0000` is what matters.
+
+### Step 4 — Read the generated SQL
+
+Open `drizzle/0000_*.sql` and verify every table and enum matches your intent. This is plain SQL — there is no magic.
+
+### Step 5 — Commit all three files
+
+```bash
+git add src/db/schema.ts drizzle/
+git commit -m "feat(auth-db): initial drizzle schema and migration"
+```
+
+Commit the `drizzle/meta/` folder too — without it, Drizzle loses track of which migrations have run and will regenerate everything from scratch.
+
+---
+
 
 ## Step-by-step: making a schema change
 
@@ -42,7 +84,7 @@ From inside the `auth/` directory:
 
 ```bash
 cd srcs/requirements/auth
-npm run db:generate
+pnpm run db:generate
 ```
 
 This runs `drizzle-kit generate`. It will:
@@ -75,7 +117,7 @@ If you want to apply it without restarting the whole stack, you can run:
 
 ```bash
 # from inside the auth container or with a direct DB connection
-npm run db:push
+pnpm run db:push
 ```
 
 > ⚠️ `db:push` bypasses the migration system entirely and pushes schema changes directly. It does **not** create a migration file. Use it only during local prototyping — never on a shared or production DB, and never as a substitute for `db:generate`.
@@ -134,7 +176,7 @@ if (config.runMigrations !== false) {
 
 ---
 
-## The `runMigrations` toggle
+## The `runMigrations` toggle AUTOMATICALLY UPDATE DB
 
 `runMigrations` is a field on the `AppConfig` interface:
 

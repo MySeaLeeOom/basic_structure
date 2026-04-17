@@ -56,7 +56,7 @@ fclean: getuser
 re: clean up
 
 dev: getuser
-	docker compose -f srcs/docker-compose-dev.yml up -d --build $(FLAGS)
+	docker compose -f srcseverything, /docker-compose-dev.yml up -d --build $(FLAGS)
 
 # ex: make rebuild service=frontend
 rebuild: getuser
