@@ -1,19 +1,22 @@
 <script lang="ts" setup>
 import { RouterLink } from 'vue-router';
 import Toolbar from '@/volt/Toolbar.vue';
+import { useUiI18n } from '~/composables/useUiI18n';
+
+const { t } = useUiI18n();
 
 const navItems = [
-  { to: '/', label: 'Home' },
-  { to: '/notes', label: 'Notes' },
+  { to: '/', label: t('nav.home') },
+  { to: '/notes', label: t('nav.notes') },
 ];
 
 </script>
 
 <template>
-  <a href="/api/auth/login/github">loginGit</a>
+  <a href="/api/auth/login/github">{{ t('login.github') }}</a>
   <Toolbar class="!rounded-none !border-x-0 !border-t-0 dark:!bg-surface-900 dark:!border-surface-700">
     <template #start>
-      <RouterLink to="/" class="text-xl font-bold text-primary-500 no-underline">Mycelium</RouterLink>
+      <RouterLink to="/" class="text-xl font-bold text-primary-500 no-underline">{{ t('nav.brand') }}</RouterLink>
     </template>
     <template #center>
       <nav class="flex gap-1">

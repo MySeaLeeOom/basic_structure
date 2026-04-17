@@ -1,4 +1,4 @@
-note-created = TODO: translate (ie-IE) - Note created successfully
-note-not-found = TODO: translate (ie-IE) - Note not found
-unauthorized = TODO: translate (ie-IE) - Unauthorized
-internal-error = TODO: translate (ie-IE) - Internal server error
+note-created = Nóta cruthaithe go rathúil
+note-not-found = Níor thángthas ar an nóta
+unauthorized = : Neamhúdaraithe
+internal-error = : Earráid freastalaí inmheánach

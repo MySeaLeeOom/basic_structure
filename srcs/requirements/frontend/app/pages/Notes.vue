@@ -54,8 +54,6 @@ async function fetchCollaborators(noteId: string) {
 	} catch {
 		collaborators.value = [];
 	}
-	const count = collaborators.value.length;
-	inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
 }
 
 function openInvite(noteId: string) {
@@ -78,8 +76,15 @@ function toggleUser(userId: string) {
 }
 
 function usernameFor(userId: string | null) {
-	if (!userId) return 'Public link';
+	if (!userId) return t('notes.publicLink');
 	return allUsers.value.find(u => u.id === userId)?.loginName ?? userId.slice(0, 8);
+}
+
+function displayTitle(title: string | null | undefined) {
+	const value = (title ?? '').trim();
+	if (!value) return t('notes.untitled');
+	if (value.toLowerCase() === 'untitled') return t('notes.untitled');
+	return value;
 }
 
 // Users not already collaborators and not the current user
@@ -94,10 +99,9 @@ async function revokeShare(shareId: string) {
 	try {
 		await $fetch(`/api/notes/collab/revoke/${shareId}`, { method: 'DELETE' });
 		collaborators.value = collaborators.value.filter(c => c.share_id !== shareId);
-		const count = collaborators.value.length;
-		inviteSuccess.value = count > 0 ? `Shared with ${count} user${count > 1 ? 's' : ''}` : '';
+		inviteSuccess.value = t('notes.invite.revoked');
 	} catch {
-		inviteError.value = 'Failed to revoke access';
+		inviteError.value = t('notes.invite.error.revokeFailed');
 	}
 }
 
@@ -116,18 +120,24 @@ async function sendInvite() {
 			});
 			shared++;
 		} catch (e: any) {
-			if (e?.response?.status === 409) {
+			const status = e?.response?.status ?? e?.status ?? e?.statusCode;
+			if (status === 409) {
 				skipped++;
 			} else {
-				inviteError.value = 'Failed to share with some users';
+				const errorDetail = e?.data?.message || e?.data?.error || e?.message || e?.toString() || 'Unknown error';
+				inviteError.value = `${t('notes.invite.error.shareSomeFailed')} (${status}): ${errorDetail}`;
 			}
 		}
 	}
 
-	if (shared > 0) inviteSuccess.value = `Shared with ${shared} user${shared > 1 ? 's' : ''}`;
+	if (shared > 0) {
+		inviteSuccess.value = shared === 1
+			? t('notes.invite.sharedCountSingle', { count: shared })
+			: t('notes.invite.sharedCountPlural', { count: shared });
+	}
 	if (skipped > 0) inviteSuccess.value += skipped === selectedUsers.value.length
-		? 'All selected users already have access'
-		: ` (${skipped} already had access)`;
+		? ` ${t('notes.invite.allSelectedAlreadyHaveAccess')}`
+		: ` ${t('notes.invite.someAlreadyHadAccess', { count: skipped })}`;
 
 	selectedUsers.value = [];
 	if (inviteNoteId.value) fetchCollaborators(inviteNoteId.value);
@@ -242,11 +252,11 @@ onMounted(() => {
 	<SidebarLayout v-model:sidebar-open="sidebarOpen">
 		<template #collapsed-actions>
 			<button
-				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-				:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
+				:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
 				@click="chatOpen = !chatOpen"
 			>
-				<IconSparkles class="w-4 h-4" />
+				<IconChatBubble class="w-5 h-5" />
 			</button>
 		</template>
 
@@ -255,17 +265,17 @@ onMounted(() => {
 			<div class="flex items-center gap-1 mb-2">
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-					:title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
+					:title="sidebarOpen ? t('notes.sidebar.hide') : t('notes.sidebar.show')"
 					@click="sidebarOpen = !sidebarOpen"
 				>
 					<IconBars class="w-4 h-4" />
 				</button>
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-					:title="chatOpen ? 'Hide AI chat' : 'Show AI chat'"
+					:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')" 
 					@click="chatOpen = !chatOpen"
 				>
-					<IconSparkles class="w-4 h-4" />
+					<IconChatBubble class="w-5 h-5" />
 				</button>
 			</div>
 
@@ -288,7 +298,7 @@ onMounted(() => {
 				</template>
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full group/item gap-1">
-						<span class="truncate text-sm">{{ slotProps.option.title || t('notes.untitled') }}</span>
+						<span class="truncate text-sm">{{ displayTitle(slotProps.option.title) }}</span>
 						<div class="flex items-center shrink-0"
 							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
 							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
@@ -334,12 +344,12 @@ onMounted(() => {
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
-		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
+		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false" :dismissableMask="false"
 			pt:root:class="w-full max-w-sm">
 			<div class="flex flex-col gap-3">
 				<!-- Current collaborators -->
 				<div v-if="collaborators.length">
-					<label class="text-sm text-surface-500 mb-1 block">Current access</label>
+					<label class="text-sm text-surface-500 mb-1 block">{{ t('notes.invite.currentAccess') }}</label>
 					<div class="flex flex-col rounded-md border border-surface-700 overflow-hidden">
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
@@ -384,7 +394,7 @@ onMounted(() => {
 						</div>
 					</button>
 				</div>
-				<div v-else class="text-xs text-surface-500">All users already have access</div>
+				<div v-else class="text-xs text-surface-500">{{ t('notes.invite.allUsersHaveAccess') }}</div>
 
 				<span v-if="inviteError" class="text-xs text-red-500">{{ inviteError }}</span>
 				<span v-if="inviteSuccess" class="text-xs text-green-600">{{ inviteSuccess }}</span>

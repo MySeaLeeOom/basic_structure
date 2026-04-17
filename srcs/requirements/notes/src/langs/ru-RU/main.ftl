@@ -1,4 +1,4 @@
-note-created = TODO: translate (ru-RU) - Note created successfully
-note-not-found = TODO: translate (ru-RU) - Note not found
-unauthorized = TODO: translate (ru-RU) - Unauthorized
-internal-error = TODO: translate (ru-RU) - Internal server error
+note-created = Заметка создана успешно
+note-not-found = Примечание не найдено
+unauthorized = : Несанкционированный
+internal-error = : Внутренняя ошибка сервера

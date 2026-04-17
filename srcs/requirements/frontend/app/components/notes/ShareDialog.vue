@@ -4,9 +4,11 @@ import Dialog from '@/volt/Dialog.vue';
 import Button from '@/volt/Button.vue';
 import InputText from '@/volt/InputText.vue';
 import SelectButton from '@/volt/SelectButton.vue';
+import { useUiI18n } from '~/composables/useUiI18n';
 
 const props = defineProps<{ noteId: string }>();
 const visible = defineModel<boolean>('visible', { required: true });
+const { t } = useUiI18n();
 
 const userInput = ref('');
 const resolvedUser = ref<{ id: string; username: string } | null>(null);
@@ -33,7 +35,7 @@ async function resolveUser(identifier: string) {
 		});
 		resolvedUser.value = { id: res.user.id, username: res.user.loginName };
 	} catch {
-		resolveError.value = 'User not found';
+		resolveError.value = t('notes.share.error.userNotFound');
 	}
 }
 
@@ -50,14 +52,14 @@ async function createShare() {
 				role: shareRole.value,
 			},
 		});
-		success.value = `Shared with ${resolvedUser.value.username}`;
+		success.value = t('notes.share.success.sharedWithUser', { username: resolvedUser.value.username });
 		userInput.value = '';
 		resolvedUser.value = null;
 	} catch (e: any) {
 		if (e?.response?.status === 409) {
-			resolveError.value = 'This user already has access';
+			resolveError.value = t('notes.share.error.alreadyHasAccess');
 		} else {
-			resolveError.value = e?.data?.message ?? 'Failed to create share';
+			resolveError.value = e?.data?.message ?? t('notes.share.error.createFailed');
 		}
 	}
 }
@@ -72,22 +74,22 @@ function onHide() {
 </script>
 
 <template>
-	<Dialog v-model:visible="visible" header="Share note" modal :style="{ width: '26rem' }" @hide="onHide">
+	<Dialog v-model:visible="visible" :header="t('notes.share.header')" modal :style="{ width: '26rem' }" @hide="onHide">
 		<div class="flex flex-col gap-4">
 
 			<div class="flex flex-col gap-1">
-				<label class="text-sm">Share with user</label>
-				<InputText v-model="userInput" placeholder="Username or email" class="w-full" />
-				<span v-if="resolvedUser" class="text-xs text-green-600">Found: {{ resolvedUser.username }}</span>
+				<label class="text-sm">{{ t('notes.share.shareWithUser') }}</label>
+				<InputText v-model="userInput" :placeholder="t('notes.share.userPlaceholder')" class="w-full" />
+				<span v-if="resolvedUser" class="text-xs text-green-600">{{ t('notes.share.foundUser', { username: resolvedUser.username }) }}</span>
 				<span v-else-if="resolveError" class="text-xs text-red-500">{{ resolveError }}</span>
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<label class="text-sm">Permission</label>
+				<label class="text-sm">{{ t('notes.share.permissionLabel') }}</label>
 				<SelectButton v-model="shareRole" :options="roleOptions" :allow-empty="false" />
 			</div>
 
-			<Button label="Share" :disabled="!resolvedUser" @click="createShare" />
+			<Button :label="t('notes.share.shareButton')" :disabled="!resolvedUser" @click="createShare" />
 
 			<span v-if="success" class="text-xs text-green-600">{{ success }}</span>
 		</div>
