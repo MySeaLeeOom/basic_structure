@@ -9,12 +9,15 @@ CREATE TABLE IF NOT EXISTS notes (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- enum type for share roles
+CREATE TYPE access_type AS ENUM ('View', 'Edit', 'Owner');
+
 -- table for managing shares - shared with users or public
 CREATE TABLE IF NOT EXISTS share (
 	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
 	guest_id UUID,
-	role VARCHAR(50) NOT NULL DEFAULT 'View',
+	access_role access_type NOT NULL DEFAULT 'View',
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	CONSTRAINT unique_share UNIQUE NULLS NOT DISTINCT (note_id, guest_id)

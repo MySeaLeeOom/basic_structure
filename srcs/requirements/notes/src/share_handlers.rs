@@ -10,7 +10,7 @@ pub async fn shared_with_me(State(state): State<AppState>, headers: HeaderMap) -
 	let user_id = get_user_id(&headers).map_err(|_| StatusCode::UNAUTHORIZED)?;
 	tracing::debug!("Fetching all notes shared with user {}", user_id);
 	let shared_notes = sqlx::query_as::<_, ReceivedShareItem>(
-		"SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.role, n.owner_id, s.created_at
+		"SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.access_role, n.owner_id, s.created_at
 		 FROM notes n
 		 INNER JOIN share s ON n.id = s.note_id
 		 WHERE s.guest_id = $1
@@ -62,7 +62,7 @@ pub async fn my_shares(State(state): State<AppState>, headers: HeaderMap) -> Res
     tracing::debug!("Fetching all shares managed by user {}", owner_id);
 
     let managed_shares = sqlx::query_as::<_, ManagedShareItem>(
-        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.role, s.created_at
+        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.access_role, s.created_at
          FROM share s
          INNER JOIN notes n ON s.note_id = n.id
          WHERE n.owner_id = $1
@@ -85,7 +85,7 @@ pub async fn note_collaborators(State(state): State<AppState>, Path(note_id): Pa
     tracing::debug!("Fetching all shares for note {} by user {}", note_id, owner_id);
 
     let note_shares = sqlx::query_as::<_, ManagedShareItem>(
-        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.role, s.created_at
+        "SELECT s.id as share_id, n.id as note_id, n.title as note_title, s.guest_id, s.access_role, s.created_at
          FROM share s
          INNER JOIN notes n ON s.note_id = n.id
          WHERE n.id = $1 AND n.owner_id = $2
@@ -132,9 +132,9 @@ pub async fn create_share(State(state): State<AppState>, headers: HeaderMap, Jso
     let current_time = Utc::now();
 
     let new_share = sqlx::query_as::<_, Share>(
-        "INSERT INTO share (note_id, guest_id, role, created_at, updated_at)
+        "INSERT INTO share (note_id, guest_id, access_role, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, note_id, guest_id, role, created_at, updated_at"
+         RETURNING id, note_id, guest_id, access_role, created_at, updated_at"
     )
     .bind(payload.note_id)
     .bind(payload.guest_id)
@@ -153,7 +153,7 @@ pub async fn create_share(State(state): State<AppState>, headers: HeaderMap, Jso
     })?;
 
     tracing::info!("Share {} created for note {}. Guest ID: {:?}, Role: {:?}",
-                   new_share.id, new_share.note_id, new_share.guest_id, new_share.role);
+                   new_share.id, new_share.note_id, new_share.guest_id, new_share.access_role);
 
     Ok(Json(new_share))
 }

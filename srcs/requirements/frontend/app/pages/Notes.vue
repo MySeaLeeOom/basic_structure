@@ -30,7 +30,7 @@ const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
 const allUsers = ref<ShareUser[]>([]);
-const collaborators = ref<{ share_id: string; guest_id: string | null; role: string; created_at: string }[]>([]);
+const collaborators = ref<{ share_id: string; guest_id: string | null; access_role: string; created_at: string }[]>([]);
 const inviteError = ref('');
 const inviteSuccess = ref('');
 
@@ -134,7 +134,7 @@ async function sendInvite() {
 }
 
 // Shared notes
-const sharedNotes = ref<{ share_id: string; note_id: string; note_title: string; role: string; owner_id: string; created_at: string }[]>([]);
+const sharedNotes = ref<{ share_id: string; note_id: string; note_title: string; access_role: string; owner_id: string; created_at: string }[]>([]);
 const selectedSharedNote = ref<any>(null);
 
 async function fetchSharedNotes() {
@@ -319,7 +319,7 @@ onMounted(() => {
 				<template #option="slotProps">
 					<div class="flex items-center justify-between w-full">
 						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
-						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.role }}</span>
+						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.access_role }}</span>
 					</div>
 				</template>
 			</Listbox>
@@ -347,7 +347,7 @@ onMounted(() => {
 								<UserAvatar v-if="collab.guest_id" :uuid="collab.guest_id" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
 								<div class="min-w-0">
 									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
-									<div class="text-xs text-surface-500">{{ collab.role }}</div>
+									<div class="text-xs text-surface-500">{{ collab.access_role }}</div>
 								</div>
 							</div>
 							<button
