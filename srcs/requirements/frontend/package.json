@@ -7,9 +7,10 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "node scripts/patch-liquid-glass.mjs && nuxt prepare"
   },
   "dependencies": {
+    "@wxperia/liquid-glass-vue": "^1.0.9",
     "@pinia/nuxt": "^0.11.3",
     "@primevue/icons": "^4.5.4",
     "@primevue/nuxt-module": "^4.5.4",

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@wxperia/liquid-glass-vue": "^1.0.9"
+  }
+}

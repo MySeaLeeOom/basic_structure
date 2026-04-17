@@ -67,7 +67,6 @@
     "profile.error.oldPasswordRequired": "Пожалуйста, введите ваш текущий пароль",
     "home.sidebarTitle": "Панель управления",
     "home.sidebarHint": "Элементы навигации здесь",
-    "home.title": "Главная страница",
     "home.greeting": "Привет, команда Mycelium!",
     "noteEditor.placeholder": "Начните писать...",
     "noteEditor.collaborators": "соавторы",

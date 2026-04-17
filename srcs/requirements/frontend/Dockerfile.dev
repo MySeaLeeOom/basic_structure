@@ -9,6 +9,7 @@ WORKDIR /app
 # Layer Caching: Only install dependencies if they change
 # This keeps the 'make re' cycle fast.
 COPY package.json pnpm-lock.yaml ./
+COPY scripts ./scripts
 
 # We install ALL dependencies (including devDependencies like Vite/Vue-server-renderer)
 # Note: We do NOT use --frozen-lockfile here so you can add packages as you develop.

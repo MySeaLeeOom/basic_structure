@@ -9,6 +9,7 @@ WORKDIR /app
 # copy these 2 files first so there is no new npm install if the file has not changed
 # if a change in a file occurs, docker discards every subsequent cached command from scratch
 COPY package.json pnpm-lock.yaml ./
+COPY scripts ./scripts
 
 # --frozen-lockfile means the build will be consistent with what we developed
 # no new patched versions of dependencies
