@@ -126,5 +126,8 @@
     "login.consent.label": "Gizlilik Politikası'nı ve Kullanım Koşulları'nı okudum ve kabul ediyorum",
     "login.consent.info": "Hesap oluştururken, hizmeti sağlamak için e-posta adresinizi, görünen adınızı ve şifrelenmiş parolanızı saklarız. Ayrıntılar için Gizlilik Politikamıza bakın.",
     "login.consent.required": "Hesap oluşturmak için koşulları kabul etmelisiniz",
-    "login.cookieNotice": "Bu site yalnızca kimlik doğrulama ve dil tercihleri için gerekli çerezleri kullanır. İzleme veya reklam çerezleri kullanılmamaktadır."
+    "login.cookieNotice": "Bu site yalnızca kimlik doğrulama ve dil tercihleri için gerekli çerezleri kullanır. İzleme veya reklam çerezleri kullanılmamaktadır.",
+    "legal.privacy.title": "Gizlilik Politikası",
+    "legal.terms.title": "Kullanım Koşulları",
+    "legal.lastUpdated": "Son güncelleme"
 }

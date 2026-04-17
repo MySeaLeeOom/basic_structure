@@ -126,5 +126,8 @@
 	"login.consent.label": "Léigh mé agus glacaim leis an bPolasaí Príobháideachta agus na Téarmaí Seirbhíse",
 	"login.consent.info": "Trí chuntas a chruthú, stóráilimid do sheoladh ríomhphoist, d'ainm taispeána agus pasfhocal haiseáilte chun an tseirbhís a sholáthar. Féach ár bPolasaí Príobháideachta le haghaidh sonraí.",
 	"login.consent.required": "Caithfidh tú glacadh leis na téarmaí chun cuntas a chruthú",
-	"login.cookieNotice": "Ní úsáideann an suíomh seo ach fianáin riachtanacha le haghaidh fíordheimhnithe agus roghanna teanga. Ní úsáidtear fianáin rianaithe ná fógraíochta."
+	"login.cookieNotice": "Ní úsáideann an suíomh seo ach fianáin riachtanacha le haghaidh fíordheimhnithe agus roghanna teanga. Ní úsáidtear fianáin rianaithe ná fógraíochta.",
+	"legal.privacy.title": "Polasaí Príobháideachta",
+	"legal.terms.title": "Téarmaí Seirbhíse",
+	"legal.lastUpdated": "Nuashonraithe go deireanach"
 }

@@ -126,5 +126,8 @@
 	"login.consent.label": "I have read and accept the Privacy Policy and Terms of Service",
 	"login.consent.info": "By creating an account, we store your email address, display name, and a hashed password to provide the service. See our Privacy Policy for details.",
 	"login.consent.required": "You must accept the terms to create an account",
-	"login.cookieNotice": "This site uses only essential cookies for authentication and language preferences. No tracking or advertising cookies are used."
+	"login.cookieNotice": "This site uses only essential cookies for authentication and language preferences. No tracking or advertising cookies are used.",
+	"legal.privacy.title": "Privacy Policy",
+	"legal.terms.title": "Terms of Service",
+	"legal.lastUpdated": "Last updated"
 }
