@@ -265,7 +265,10 @@ volumes:
   frontend_manual_node_modules:  # Persistent volume for frontend dependencies
   auth_node_modules:      # Persistent volume for auth dependencies
   postgres_data:
+    name: mycelium_db
   vector_data:
+    name: mycelium_vector
+
 
 
 secrets:
