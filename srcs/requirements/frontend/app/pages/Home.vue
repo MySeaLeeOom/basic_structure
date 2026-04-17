@@ -43,7 +43,6 @@ const homeGreeting = computed(() => {
 .home-page {
   width: 100%;
   height: 100%;
-  min-height: 100%;
   display: flex;
 }
 
@@ -51,8 +50,6 @@ const homeGreeting = computed(() => {
   position: relative;
   flex: 1;
   width: 100%;
-  height: 100%;
-  min-height: 100%;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -130,7 +127,7 @@ const homeGreeting = computed(() => {
 .reactive-card {
   position: relative;
   overflow: hidden;
-  text-align: left;
+  text-align: start;
   color: rgba(244, 249, 255, 0.95);
   border: 1px solid rgba(209, 231, 255, 0.36);
   background:
