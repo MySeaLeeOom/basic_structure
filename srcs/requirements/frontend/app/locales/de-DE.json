@@ -122,5 +122,9 @@
 	"auth.error.passwordChangeFailed": "Passwortänderung fehlgeschlagen",
 	"auth.error.accountDeletionFailed": "Kontolöschung fehlgeschlagen",
 	"auth.error.dataExportFailed": "Datenexport fehlgeschlagen",
-	"auth.success.accountDeleted": "Konto erfolgreich gelöscht."
+	"auth.success.accountDeleted": "Konto erfolgreich gelöscht.",
+	"login.consent.label": "Ich habe die Datenschutzerklärung und die Nutzungsbedingungen gelesen und akzeptiere sie",
+	"login.consent.info": "Mit der Erstellung eines Kontos speichern wir Ihre E-Mail-Adresse, Ihren Anzeigenamen und ein gehashtes Passwort, um den Dienst bereitzustellen. Details finden Sie in unserer Datenschutzerklärung.",
+	"login.consent.required": "Sie müssen die Bedingungen akzeptieren, um ein Konto zu erstellen",
+	"login.cookieNotice": "Diese Seite verwendet ausschließlich technisch notwendige Cookies für Authentifizierung und Spracheinstellungen. Es werden keine Tracking- oder Werbe-Cookies verwendet."
 }

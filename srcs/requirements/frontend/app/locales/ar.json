@@ -122,5 +122,9 @@
 	"auth.error.passwordChangeFailed": "فشل تغيير كلمة المرور",
 	"auth.error.accountDeletionFailed": "فشل حذف الحساب",
 	"auth.error.dataExportFailed": "فشل تصدير البيانات",
-	"auth.success.accountDeleted": "تم حذف الحساب بنجاح."
+	"auth.success.accountDeleted": "تم حذف الحساب بنجاح.",
+	"login.consent.label": "لقد قرأت وأوافق على سياسة الخصوصية وشروط الخدمة",
+	"login.consent.info": "بإنشاء حساب، نقوم بتخزين عنوان بريدك الإلكتروني واسم العرض وكلمة مرور مشفرة لتقديم الخدمة. راجع سياسة الخصوصية لمزيد من التفاصيل.",
+	"login.consent.required": "يجب قبول الشروط لإنشاء حساب",
+	"login.cookieNotice": "يستخدم هذا الموقع ملفات تعريف الارتباط الأساسية فقط للمصادقة وتفضيلات اللغة. لا يتم استخدام ملفات تعريف ارتباط للتتبع أو الإعلانات."
 }

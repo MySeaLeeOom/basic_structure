@@ -125,14 +125,7 @@ def get_context(user_id: str, query: str):
 		# Sort by final score (ascending)
 		ranked_results.sort(key=lambda x: x[2])
 
-		# --- AUDIT LOG ---
-		print("\n" + "#"*60)
-		print(f" RE-RANKED SEARCH AUDIT FOR: {query}")
-		print("#"*60)
-		for i, (content, v_dist, f_score) in enumerate(ranked_results[:10]):
-			preview = content.replace("\n", " ")[:150]
-			print(f"RANK {i+1:02d} | Score: {f_score:.4f} (Vec: {v_dist:.4f}) | {preview}...")
-		print("#"*60 + "\n")
+		logger.debug("Re-ranked %d candidates, returning top 15", len(ranked_results))
 
 		# Return Top 15 after re-ranking to the LLM
 		return "\n---\n".join([r[0] for r in ranked_results[:15]])

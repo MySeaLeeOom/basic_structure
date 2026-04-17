@@ -122,5 +122,9 @@
 	"auth.error.passwordChangeFailed": "Error al cambiar la contraseña",
 	"auth.error.accountDeletionFailed": "Error al eliminar la cuenta",
 	"auth.error.dataExportFailed": "La exportación de datos falló",
-	"auth.success.accountDeleted": "Cuenta eliminada correctamente."
+	"auth.success.accountDeleted": "Cuenta eliminada correctamente.",
+	"login.consent.label": "He leído y acepto la Política de Privacidad y los Términos del Servicio",
+	"login.consent.info": "Al crear una cuenta, almacenamos su dirección de correo electrónico, nombre de usuario y una contraseña cifrada para proporcionar el servicio. Consulte nuestra Política de Privacidad para más detalles.",
+	"login.consent.required": "Debe aceptar los términos para crear una cuenta",
+	"login.cookieNotice": "Este sitio utiliza únicamente cookies esenciales para la autenticación y las preferencias de idioma. No se utilizan cookies de seguimiento ni publicitarias."
 }

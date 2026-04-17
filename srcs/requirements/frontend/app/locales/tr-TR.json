@@ -122,5 +122,9 @@
     "auth.error.passwordChangeFailed": "Şifre değiştirme başarısız oldu",
     "auth.error.accountDeletionFailed": "Hesap silme başarısız oldu",
     "auth.error.dataExportFailed": "Veri dışa aktarma başarısız oldu",
-    "auth.success.accountDeleted": "Hesap başarıyla silindi."
+    "auth.success.accountDeleted": "Hesap başarıyla silindi.",
+    "login.consent.label": "Gizlilik Politikası'nı ve Kullanım Koşulları'nı okudum ve kabul ediyorum",
+    "login.consent.info": "Hesap oluştururken, hizmeti sağlamak için e-posta adresinizi, görünen adınızı ve şifrelenmiş parolanızı saklarız. Ayrıntılar için Gizlilik Politikamıza bakın.",
+    "login.consent.required": "Hesap oluşturmak için koşulları kabul etmelisiniz",
+    "login.cookieNotice": "Bu site yalnızca kimlik doğrulama ve dil tercihleri için gerekli çerezleri kullanır. İzleme veya reklam çerezleri kullanılmamaktadır."
 }

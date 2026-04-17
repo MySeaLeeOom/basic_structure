@@ -122,5 +122,9 @@
 	"auth.error.passwordChangeFailed": "Password change failed",
 	"auth.error.accountDeletionFailed": "Account deletion failed",
 	"auth.error.dataExportFailed": "Data export failed",
-	"auth.success.accountDeleted": "Account deleted successfully."
+	"auth.success.accountDeleted": "Account deleted successfully.",
+	"login.consent.label": "I have read and accept the Privacy Policy and Terms of Service",
+	"login.consent.info": "By creating an account, we store your email address, display name, and a hashed password to provide the service. See our Privacy Policy for details.",
+	"login.consent.required": "You must accept the terms to create an account",
+	"login.cookieNotice": "This site uses only essential cookies for authentication and language preferences. No tracking or advertising cookies are used."
 }

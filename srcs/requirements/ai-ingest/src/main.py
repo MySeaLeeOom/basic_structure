@@ -124,6 +124,24 @@ async def ingest_note(request: IngestRequest, background_tasks: BackgroundTasks)
     background_tasks.add_task(process_and_save, request.note_id, request.user_id, request.binary_data)
     return {"status": "accepted"}
 
+@app.delete("/embeddings/by-user/{user_id}")
+async def delete_embeddings_by_user(user_id: str):
+    conn = None
+    try:
+        conn = psycopg2.connect(DB_URL)
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM embeddings WHERE user_id = %s::uuid", (user_id,))
+            deleted = cur.rowcount
+        conn.commit()
+        logger.info(f"Deleted {deleted} embeddings for user {user_id}")
+        return {"deleted": deleted}
+    except Exception as e:
+        logger.error(f"Failed to delete embeddings for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete embeddings")
+    finally:
+        if conn:
+            conn.close()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8002)

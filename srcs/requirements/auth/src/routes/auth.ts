@@ -79,7 +79,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 			authGithubCallbackTotal.labels("error_oauth").inc();
 			throw err;
 		}
-		console.log("GitHub Token:", gitToken.token.access_token);
+		server.log.debug("GitHub OAuth token exchange completed");
 
 		// get the user info using token information
 		const response = await fetch("https://api.github.com/user", {
@@ -95,7 +95,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 		}
 
 		const githubUser = (await response.json()) as GithubUser;
-		console.log("GitHub User Data:", githubUser);
+		server.log.debug("GitHub user profile fetched for provider ID %s", githubUser.id);
 
 		// DATABASE Logic
 		// pull info of the user from githubUser
@@ -134,7 +134,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 		if (existingAccount) {
 			const [found] = await server.db.select().from(schema.users).where(eq(schema.users.id, existingAccount.userId));
 			user = found;
-			console.log("Found existing user via account:", user.id);
+			server.log.debug("Found existing user via account: %s", user.id);
 			githubOutcome = "success_returning";
 		} else {
 			try {
@@ -146,7 +146,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 				authGithubCallbackTotal.labels("error_create").inc();
 				throw err;
 			}
-			console.log("Created new user and linked account:", user.id);
+			server.log.debug("Created new user and linked account: %s", user.id);
 			githubOutcome = "success_new_user";
 		}
 
