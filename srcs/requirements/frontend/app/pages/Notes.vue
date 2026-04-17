@@ -192,14 +192,33 @@ async function handleEsc(e: KeyboardEvent) {
 	selectedSharedNote.value = null;
 }
 
+// Refresh share state when the tab regains focus so a user who was
+// granted / revoked access in another session sees it without reloading.
+// The editor WS already handles live doc edits; this covers sidebar state.
+let lastCollabRefresh = 0;
+function refreshCollabState() {
+	if (document.visibilityState === 'hidden') return;
+	const now = Date.now();
+	if (now - lastCollabRefresh < 1000) return;
+	lastCollabRefresh = now;
+	fetchSharedNotes();
+	if (showInviteDialog.value && inviteNoteId.value) {
+		fetchCollaborators(inviteNoteId.value);
+	}
+}
+
 onMounted(() => {
 	mounted.value = true;
 	document.addEventListener('keydown', handleEsc);
+	document.addEventListener('visibilitychange', refreshCollabState);
+	window.addEventListener('focus', refreshCollabState);
 	if (isMobile.value) sidebarOpen.value = false;
 	fetchSharedNotes();
 });
 onBeforeUnmount(() => {
 	document.removeEventListener('keydown', handleEsc);
+	document.removeEventListener('visibilitychange', refreshCollabState);
+	window.removeEventListener('focus', refreshCollabState);
 	checkAndClean();
 });
 
