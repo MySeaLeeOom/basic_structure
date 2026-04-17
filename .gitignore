@@ -12,7 +12,7 @@ dist/
 .nuxt/
 .output/
 target/
-# all-docker-logs*.*
+all-docker-logs*.*
 
 # OS/Editor artifacts
 .DS_Store
