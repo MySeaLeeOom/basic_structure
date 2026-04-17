@@ -3,7 +3,7 @@ import logging
 import httpx
 import psycopg2
 import re
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pgvector.psycopg2 import register_vector
@@ -25,7 +25,6 @@ OLLAMA_HOST = BASE_URL.replace("/v1", "")
 EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "mxbai-embed-large")
 
 class ChatRequest(BaseModel):
-	user_id: str
 	query: str
 
 def score_chunk(query: str, content: str, vector_dist: float) -> float:
@@ -142,9 +141,12 @@ def get_context(user_id: str, query: str):
 		return f"ERROR: {str(e)}"
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(body: ChatRequest, request: Request):
+	user_id = request.headers.get("x-user-id")
+	if not user_id:
+		raise HTTPException(status_code=401, detail="Missing user identity")
 	try:
-		context = get_context(request.user_id, request.query)
+		context = get_context(user_id, body.query)
 		
 		system_prompt = (
 			"You are MyCelium-AI, a technical project expert.\n"
@@ -154,7 +156,7 @@ async def chat(request: ChatRequest):
 			f"Context:\n{context}"
 		)
 		
-		payload = {"prompt": request.query, "system_prompt": system_prompt}
+		payload = {"prompt": body.query, "system_prompt": system_prompt}
 
 		async def stream_generator():
 			async with httpx.AsyncClient(timeout=60.0) as client:

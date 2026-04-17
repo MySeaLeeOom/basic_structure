@@ -28,10 +28,7 @@ const sendMessage = async () => {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        query: userQuery
-      })
+      body: JSON.stringify({ query: userQuery })
     });
 
     const reader = response.body?.getReader();
