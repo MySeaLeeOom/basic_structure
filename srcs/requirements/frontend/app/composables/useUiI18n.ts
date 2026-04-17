@@ -26,10 +26,7 @@ const BUNDLES: Record<LocaleId, Record<string, string>> = {
 };
 
 function normalizeLocale(value: string | null | undefined): LocaleId {
-	if (value === "de-DE" || value === "es-ES" || value === "en-UK" || value === "ie-IE" || value === "tr-TR" || value === "el-GR" || value === "ru-RU" || value === "ar") {
-		return value;
-	}
-	return "en-UK";
+	return value && value in BUNDLES ? (value as LocaleId) : "en-UK";
 }
 
 export function useUiI18n() {

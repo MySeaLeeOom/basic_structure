@@ -31,6 +31,11 @@ const sendMessage = async () => {
       body: JSON.stringify({ query: userQuery })
     });
 
+    if (!response.ok) {
+      assistantMessage.value.content = t('chat.error.connect');
+      return;
+    }
+
     const reader = response.body?.getReader();
     if (!reader) return;
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, onServerPrefetch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import Listbox from "@/volt/Listbox.vue";
 import Button from "@/volt/Button.vue";
 import Dialog from "@/volt/Dialog.vue";
@@ -12,6 +12,7 @@ import { useNoteStore } from "@/stores/noteStore";
 import { useUiI18n } from "~/composables/useUiI18n";
 import { useAuthStore } from "@/stores/authStore";
 import UserAvatar from "@/components/UserAvatar.vue";
+import type { Note, SharedNote, Collaborator } from "@/types";
 
 type ShareUser = { id: string; loginName: string; imageURL: string | null };
 
@@ -30,7 +31,7 @@ const showInviteDialog = ref(false);
 const inviteNoteId = ref<string | null>(null);
 const selectedUsers = ref<string[]>([]);
 const allUsers = ref<ShareUser[]>([]);
-const collaborators = ref<{ share_id: string; guest_id: string | null; access_role: string; created_at: string }[]>([]);
+const collaborators = ref<Collaborator[]>([]);
 const inviteError = ref('');
 const inviteSuccess = ref('');
 
@@ -143,9 +144,8 @@ async function sendInvite() {
 	if (inviteNoteId.value) fetchCollaborators(inviteNoteId.value);
 }
 
-// Shared notes
-const sharedNotes = ref<{ share_id: string; note_id: string; note_title: string; access_role: string; owner_id: string; created_at: string }[]>([]);
-const selectedSharedNote = ref<any>(null);
+const sharedNotes = ref<SharedNote[]>([]);
+const selectedSharedNote = ref<SharedNote | null>(null);
 
 async function fetchSharedNotes() {
 	try {
@@ -162,15 +162,15 @@ async function checkAndClean() {
 	}
 }
 
-// When selecting in one list, deselect the other
-async function selectOwnNote(note: any) {
+async function selectOwnNote(note: Note) {
 	await checkAndClean();
 	noteStore.selectedNote = note;
 	selectedSharedNote.value = null;
 	if (isMobile.value) sidebarOpen.value = false;
 }
 
-function selectSharedNote(note: any) {
+async function selectSharedNote(note: SharedNote) {
+	await checkAndClean();
 	selectedSharedNote.value = note;
 	noteStore.selectedNote = null;
 	if (isMobile.value) sidebarOpen.value = false;
@@ -196,10 +196,11 @@ onMounted(() => {
 	mounted.value = true;
 	document.addEventListener('keydown', handleEsc);
 	if (isMobile.value) sidebarOpen.value = false;
+	fetchSharedNotes();
 });
-onBeforeUnmount(async () => {
+onBeforeUnmount(() => {
 	document.removeEventListener('keydown', handleEsc);
-	await checkAndClean();
+	checkAndClean();
 });
 
 const isCreating = ref(false);
@@ -218,7 +219,7 @@ async function confirmDelete(id: string) {
 		await noteStore.deleteNote(id);
 		return;
 	}
-""
+
 	confirm.require({
 		message: t('notes.delete.confirmMessage'),
 		header: t('notes.delete.confirmHeader'),
@@ -231,8 +232,8 @@ async function confirmDelete(id: string) {
 			label: t('notes.delete.confirmReject'),
 			severity: 'secondary'
 		},
-		accept: () => {
-			noteStore.deleteNote(id);
+		accept: async () => {
+			await noteStore.deleteNote(id);
 		}
 	});
 }
@@ -241,10 +242,6 @@ await useAsyncData('notes', async () => {
 	if (noteStore.notesCount === 0) {
 		await noteStore.fetchNotes();
 	}
-});
-
-onMounted(() => {
-	fetchSharedNotes();
 });
 </script>
 

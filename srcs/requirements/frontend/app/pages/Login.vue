@@ -25,6 +25,15 @@ const regPassword = ref("");
 const consentAccepted = ref(false);
 
 async function handleLogin() {
+	authStore.error = null;
+	if (!identifier.value.trim()) {
+		authStore.error = t("login.validation.identifierRequired");
+		return;
+	}
+	if (password.value.length < 4) {
+		authStore.error = t("login.validation.passwordMin");
+		return;
+	}
 	const success = await authStore.loginLocal(identifier.value, password.value);
 	if (success) {
 		router.push("/");
@@ -32,8 +41,21 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
+	authStore.error = null;
 	if (!consentAccepted.value) {
 		authStore.error = t("login.consent.required");
+		return;
+	}
+	if (!regLogin.value.trim()) {
+		authStore.error = t("login.validation.usernameRequired");
+		return;
+	}
+	if (!regEmail.value.trim() || !regEmail.value.includes("@")) {
+		authStore.error = t("login.validation.emailInvalid");
+		return;
+	}
+	if (regPassword.value.length < 4) {
+		authStore.error = t("login.validation.passwordMin");
 		return;
 	}
 	const success = await authStore.registerLocal(regLogin.value, regEmail.value, regPassword.value);
