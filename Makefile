@@ -68,3 +68,6 @@ getlogs:
 	$(COMPOSE) logs > all-docker-logs-$(shell date +%Y-%m-%d_%H-%M-%S).txt 2>&1
 	
 .PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
+
+# Potential volume cleanup:
+# docker volume ls -q | grep -v 'mycelium_db' | grep -v 'mycelium_vector' | xargs -I {} docker volume rm {}

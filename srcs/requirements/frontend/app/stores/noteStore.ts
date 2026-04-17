@@ -3,9 +3,11 @@ import { ref, computed } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { Note } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 export const useNoteStore = defineStore("notes", () => {
 	const authStore = useAuthStore();
+	const { t } = useUiI18n();
 	const notes = ref<Note[]>([]);
 	const selectedNote = ref<Note | null>(null);
 	const error = ref<string | null>(null);
@@ -75,7 +77,9 @@ export const useNoteStore = defineStore("notes", () => {
 
 			lastFetchTimestamp.value = currentTime;
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? (catchError.name === "AbortError" ? "Request timed out" : catchError.message) : "Load failed";
+			const errorMsg = catchError instanceof Error
+				? (catchError.name === "AbortError" ? t("notes.error.requestTimedOut") : catchError.message)
+				: t("notes.error.loadFailed");
 
 			error.value = errorMsg;
 			console.error("Failed to fetch notes:", errorMsg);
@@ -88,7 +92,7 @@ export const useNoteStore = defineStore("notes", () => {
 			const response = await fetch("/api/notes", {
 				method: "POST",
 				headers: buildHeaders({ "Content-Type": "application/json" }),
-				body: JSON.stringify({ title: "Untitled" }),
+				body: JSON.stringify({ title: t("notes.untitled") }),
 			});
 
 			await throwForResponse(response);
@@ -97,7 +101,7 @@ export const useNoteStore = defineStore("notes", () => {
 			notes.value.push(note);
 			selectedNote.value = note;
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? catchError.message : "Create failed";
+			const errorMsg = catchError instanceof Error ? catchError.message : t("notes.error.createFailed");
 			error.value = errorMsg;
 			console.error("Failed to create note:", errorMsg);
 		}
@@ -117,7 +121,7 @@ export const useNoteStore = defineStore("notes", () => {
 				selectedNote.value = null;
 			}
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
+			const errorMsg = catchError instanceof Error ? catchError.message : t("notes.error.deleteFailed");
 			error.value = errorMsg;
 			console.error("Failed to delete note:", errorMsg);
 		}

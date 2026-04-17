@@ -16,7 +16,7 @@ pub struct Note {
 
 // Role Enum
 #[derive(Serialize, Deserialize, sqlx::Type, Debug)]
-#[sqlx(type_name = "text")]
+#[sqlx(type_name = "access_type", rename_all = "PascalCase")]
 pub enum Role {
     View,
     Edit,
@@ -29,7 +29,7 @@ pub struct Share {
 	pub id: Uuid,                    // This is the share_id used for access and revoke
 	pub note_id: Uuid,
 	pub guest_id: Option<Uuid>,      // null = public link
-	pub role: Role,                  // "View" or "Edit"
+	pub access_role: Role,
 	pub created_at: DateTime<Utc>,
 	pub updated_at: DateTime<Utc>,
 }
@@ -41,7 +41,7 @@ pub struct ManagedShareItem {
 	pub note_id: Uuid,
 	pub note_title: String,
 	pub guest_id: Option<Uuid>,
-	pub role: Role,
+	pub access_role: Role,
 	pub created_at: DateTime<Utc>,
 }
 
@@ -51,7 +51,7 @@ pub struct ReceivedShareItem {
 	pub share_id: Uuid,              // GUEST: use for /collab/access/{share_id}
 	pub note_id: Uuid,
 	pub note_title: String,
-	pub role: Role,
+	pub access_role: Role,
 	pub owner_id: Uuid,              // shows who shared the note with the person
 	pub created_at: DateTime<Utc>,
 }
