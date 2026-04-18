@@ -8,6 +8,13 @@
       "when": 1773597360956,
       "tag": "0000_lean_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776436301073,
+      "tag": "0001_rich_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

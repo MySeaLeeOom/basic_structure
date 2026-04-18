@@ -102,7 +102,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 		const buildUser: schema.NewUser = {
 			loginName: githubUser.login,
 			imageURL: githubUser.avatar_url,
-			role: "user",
+			userRole: "user",
 			email: githubUser.email,
 		};
 
@@ -197,7 +197,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 		const buildUser: schema.NewUser = {
 			loginName: loginName,
 			email: email,
-			role: "user",
+			userRole: "user",
 		};
 
 		const buildAccount: schema.NewAccount = {
