@@ -7,6 +7,9 @@ An ultra-efficient Authentication service built with Fastify, TypeScript, and Dr
 
 When you change the [schema.ts](src/db/schema.ts), you must synchronize the database. We use a two-step "Generate & Push" workflow.
 
+DB UPDATE Command Example
+`docker exec -i postgres psql -U auth_user -d auth_db -c "UPDATE accounts SET provider_account_id = user_id::text WHERE provider = 'local';"`
+
 ### 1. Generate Migration Files
 This looks at your TypeScript schema and creates the SQL equivalent in `./drizzle`.
 This must be done if this is the first time we run the program (if we dont have initial file yet)

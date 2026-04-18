@@ -242,7 +242,7 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 			await upsertAccount(server, {
 				userId: session.userId,
 				provider: "local",
-				providerAccountId: user.loginName,
+				providerAccountId: session.userId,
 				passwordHash: newHash,
 			});
 			return { message: "Local account created and password set." };
