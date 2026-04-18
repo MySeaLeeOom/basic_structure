@@ -68,15 +68,6 @@ async function findAccountByProviderAccountId(db: any, provider: any, providerAc
 	return account;
 }
 
-async function findLocalAccountByUserId(db: any, userId: string) {
-	const [account] = await db
-		.select()
-		.from(schema.accounts)
-		.where(and(eq(schema.accounts.userId, userId), eq(schema.accounts.provider, "local")))
-		.limit(1);
-	return account;
-}
-
 export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// this function will receive the token from github (it is called by github)
 	// - needs to check if there is a user already with this info
@@ -244,7 +235,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 			return reply.status(401).send({ error: "Invalid credentials." });
 		}
 
-		const account = await findLocalAccountByUserId(server.db, user.id);
+		const account = await findAccountByProviderAccountId(server.db, "local", user.id);
 		if (!account || !account.passwordHash) {
 			authLoginLocalTotal.labels("fail_no_local_account").inc();
 			return reply.status(401).send({ error: "Invalid credentials." });
