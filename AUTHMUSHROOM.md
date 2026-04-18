@@ -1,1 +1,0 @@
-Adjusts account lookup to use UserID which is more robust than looking up by userID. User id if NOT permanent... it can change... so if a user changes their id it is POSSIBLE that their acount will not be found unless does the login name changing function replace it also in the account?
