@@ -255,12 +255,13 @@ export const userManagementRoutes: FastifyPluginAsyncTypebox = async (server) =>
 		}
 
 		const newHash = await argon2.hash(newPassword);
-		await upsertAccount(server, {
-			userId: session.userId,
-			provider: "local",
-			providerAccountId: user.loginName,
-			passwordHash: newHash,
-		});
+		await server.db
+			.update(schema.accounts)
+			.set({ passwordHash: newHash })
+			.where(and(
+				eq(schema.accounts.userId, session.userId),
+				eq(schema.accounts.provider, "local")
+			));
 
 		return { message: "Password updated successfully." };
 	});
