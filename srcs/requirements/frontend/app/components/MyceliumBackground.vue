@@ -102,7 +102,7 @@ function makeWalk(
       if (y > h - 20) { y = h - 20; angle = -angle; }
     }
 
-    dots.push({ x: x + (Math.random() - 0.5) * 2, y: y + (Math.random() - 0.5) * 2 });
+    dots.push({ x: x + (Math.random() - 0.5) * 0.8, y: y + (Math.random() - 0.5) * 0.8 });
   }
   return dots;
 }

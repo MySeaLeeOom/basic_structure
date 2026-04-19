@@ -8,7 +8,6 @@ const popover = ref();
 const tips = [
   { icon: 'pi pi-search',     text: 'Ask the AI assistant anything — it uses RAG to search directly through your notes.' },
   { icon: 'pi pi-users',      text: 'Share any note with teammates and edit together in real time.' },
-  { icon: 'pi pi-moon',       text: 'Toggle dark mode from the header.' },
   { icon: 'pi pi-server',     text: 'Fully self-hosted — your data never leaves your infrastructure.' },
   { icon: 'pi pi-file-export',text: 'Export your notes from the account page.' },
 ];
