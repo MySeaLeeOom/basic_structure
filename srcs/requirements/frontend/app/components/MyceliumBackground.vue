@@ -1,5 +1,5 @@
 <template>
-  <canvas ref="canvas" class="absolute inset-0 w-full h-full cursor-pointer bg-surface-200 dark:bg-surface-950" />
+  <canvas ref="canvas" class="absolute inset-0 w-full h-full cursor-pointer bg-white dark:bg-surface-950" />
 </template>
 
 <script setup lang="ts">
@@ -71,7 +71,7 @@ function makeWalk(
   w: number, h: number,
   bounded: boolean,
 ): { x: number; y: number }[] {
-  const cx = w / 2, cy = h / 2;
+  const cx = w / 2, cy = (h * 2) / 3;
   const dots: { x: number; y: number }[] = [];
   let x = sx, y = sy;
 
@@ -96,9 +96,9 @@ function makeWalk(
     y += Math.sin(angle) * step;
 
     if (bounded) {
-      if (x < 20)     { x = 20;     angle = Math.PI - angle; }
+      if (x < 20) { x = 20; angle = Math.PI - angle; }
       if (x > w - 20) { x = w - 20; angle = Math.PI - angle; }
-      if (y < 20)     { y = 20;     angle = -angle; }
+      if (y < 20) { y = 20; angle = -angle; }
       if (y > h - 20) { y = h - 20; angle = -angle; }
     }
 
@@ -151,7 +151,7 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
         const dy = cell.y + Math.sin(angle) * r;
         const dotR = Math.max((2.0 - ring.radius / 70) * s * pulse, 0.5);
         const alphaMod = (Math.sin(angle * 2 + ts * cell.speed * 3) + 1) / 2;
-        const alpha = (dark ? 0.10 + 0.20 * alphaMod : 0.18 + 0.22 * alphaMod) * growIn;
+        const alpha = (dark ? 0.10 + 0.20 * alphaMod : 0.58 + 0.22 * alphaMod) * growIn;
         ctx.beginPath();
         ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
         ctx.fillStyle = `${color}${alpha})`;
@@ -160,13 +160,13 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
     }
   }
 
-  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalCompositeOperation = dark ? 'lighter' : 'multiply';
   for (const thread of threads) {
     const elapsed = ts - thread.startAt;
     if (elapsed < 0) continue;
     const visible = Math.min(Math.floor(elapsed / thread.interval), thread.dots.length);
     const color = colors[thread.colorIdx];
-    const baseAlpha = dark ? 0.14 : 0.11;
+    const baseAlpha = dark ? 0.14 : 0.22;
 
     for (let k = 0; k < visible; k++) {
       const dotAge = elapsed - k * thread.interval;

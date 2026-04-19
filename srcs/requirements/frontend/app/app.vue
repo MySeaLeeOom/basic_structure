@@ -25,5 +25,5 @@ useHead({
 		<Footer />
 	</div>
 	<VoltConfirmDialog />
-	<MushroomHelper />
+	<!-- <MushroomHelper /> -->
 </template>

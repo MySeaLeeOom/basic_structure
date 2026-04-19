@@ -4,6 +4,7 @@ import Card from '@/volt/Card.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiI18n } from '~/composables/useUiI18n';
 import MyceliumBackground from '@/components/MyceliumBackground.vue';
+import IconMushroom from '@/components/icons/IconMushroom.vue';
 
 const { t } = useUiI18n();
 const authStore = useAuthStore();
@@ -17,10 +18,11 @@ const homeGreeting = computed(() => {
 </script>
 
 <template>
-  <div class="relative flex items-center justify-center h-full bg-surface-200 dark:bg-surface-950 p-6">
+  <!-- bg-white was bg-surface-200 -->
+  <div class="relative flex items-center justify-center h-full bg-white dark:bg-surface-950 p-6">
     <MyceliumBackground />
     <div class="relative z-10 w-full max-w-3xl flex flex-col items-center gap-6">
-
+      <IconMushroom :size="72" class="-mb-3" />
       <h1 class="text-3xl font-bold text-center text-surface-800 dark:text-surface-0">{{ homeGreeting }}</h1>
 
       <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
