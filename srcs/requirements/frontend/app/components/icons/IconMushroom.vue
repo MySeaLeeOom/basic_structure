@@ -1,6 +1,18 @@
 <template>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" :width="size" :height="size" aria-hidden="true">
-    <path d="M12 19 Q11 27 10 29 Q16 31 22 29 Q21 27 20 19 Z" fill="#f5e6d3" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 38" :width="size" :height="size" aria-hidden="true">
+    <!-- Mycelium threads -->
+    <g stroke="#c8b49a" stroke-width="0.55" fill="none" stroke-linecap="round" opacity="0.85">
+      <path d="M11 33.5 Q7 34 4 33.5" />
+      <path d="M12 34.5 Q9 35.5 6 35" />
+      <path d="M14 35.5 Q12 36.5 9 36" />
+      <path d="M17 36 Q15 37 13 37" />
+      <path d="M19 36 Q21 37 23 37" />
+      <path d="M20 35.5 Q23 36.5 26 36" />
+      <path d="M21 34.5 Q25 35.5 28 35" />
+      <path d="M22 33.5 Q26 34 29 33.5" />
+    </g>
+    <!-- Stem with rounded base -->
+    <path d="M12 19 C10 25 9 31 10 33 C12 37 20 37 22 33 C23 31 22 25 20 19 Z" fill="#f5e6d3" />
     <path d="M3 17 Q3 6 16 5 Q29 6 29 17 Z" fill="#e03030" />
     <path d="M3 17 Q5 21 16 21 Q27 21 29 17 Z" fill="#f5e6d3" />
     <circle cx="11" cy="11" r="2.2" fill="white" opacity="0.9" class="dot dot-0" />

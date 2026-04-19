@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import Header from "./components/Header.vue"
 import Footer from "./components/Footer.vue"
 import VoltConfirmDialog from "./volt/ConfirmDialog.vue"
+import MushroomHelper from "./components/MushroomHelper.vue"
 import { useUiI18n } from './composables/useUiI18n';
 
 const { locale } = useUiI18n();
@@ -24,4 +25,5 @@ useHead({
 		<Footer />
 	</div>
 	<VoltConfirmDialog />
+	<MushroomHelper />
 </template>
