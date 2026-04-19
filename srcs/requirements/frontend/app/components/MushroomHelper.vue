@@ -23,7 +23,7 @@ const tips = [
     <IconMushroom :size="36" />
   </button>
 
-  <Popover ref="popover" :pt="{ root: 'before:hidden after:hidden' }">
+  <Popover ref="popover">
     <ul class="flex flex-col gap-3 min-w-64 max-w-xs">
       <li v-for="tip in tips" :key="tip.text" class="flex items-start gap-3 text-sm">
         <i :class="tip.icon" class="mt-0.5 text-primary-500 shrink-0" />
@@ -32,3 +32,10 @@ const tips = [
     </ul>
   </Popover>
 </template>
+
+<style>
+.p-popover::before,
+.p-popover::after {
+  display: none !important;
+}
+</style>
