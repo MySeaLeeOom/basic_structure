@@ -1,5 +1,5 @@
 <template>
-  <canvas ref="canvas" class="absolute inset-0 w-full h-full cursor-pointer" />
+  <canvas ref="canvas" class="absolute inset-0 w-full h-full cursor-pointer bg-surface-200 dark:bg-surface-950" />
 </template>
 
 <script setup lang="ts">
