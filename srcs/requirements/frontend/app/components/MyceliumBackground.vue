@@ -37,11 +37,11 @@ type Thread = {
   dots: { x: number; y: number }[];
   colorIdx: number;
   interval: number; // seconds between each dot appearing
-  startAt: number;  // seconds before this thread begins growing
+  startAt: number;
 };
 
 function makeCell(w: number, h: number): Cell {
-  const ringCount = 2 + Math.floor(Math.random() * 2);
+  const ringCount = 1 + Math.floor(Math.random() * 4);
   const rings = Array.from({ length: ringCount }, (_, i) => ({
     radius: 14 + i * 16 + Math.random() * 6,
     dotCount: 16 + i * 8,
@@ -58,39 +58,58 @@ function makeCell(w: number, h: number): Cell {
   };
 }
 
-function makeThreads(cells: Cell[]): Thread[] {
+// Random walk starting at (sx, sy), gently pulled toward canvas center
+function makeWalk(sx: number, sy: number, w: number, h: number): { x: number; y: number }[] {
+  const cx = w / 2, cy = h / 2;
+  const dots: { x: number; y: number }[] = [];
+  let x = sx, y = sy;
+  let angle = Math.random() * Math.PI * 2;
+
+  for (let i = 0; i < 700; i++) {
+    // Angle toward center
+    const toCenterAngle = Math.atan2(cy - y, cx - x);
+    let diff = toCenterAngle - angle;
+    // Normalize diff to [-π, π]
+    if (diff > Math.PI) diff -= 2 * Math.PI;
+    if (diff < -Math.PI) diff += 2 * Math.PI;
+
+    // Blend: center pull + organic random wander
+    angle += diff * 0.05 + (Math.random() - 0.5) * 0.75;
+
+    const step = 9 + Math.random() * 5;
+    x += Math.cos(angle) * step;
+    y += Math.sin(angle) * step;
+
+    // Soft boundary reflection
+    if (x < 20)      { x = 20;      angle = Math.PI - angle; }
+    if (x > w - 20)  { x = w - 20;  angle = Math.PI - angle; }
+    if (y < 20)      { y = 20;      angle = -angle; }
+    if (y > h - 20)  { y = h - 20;  angle = -angle; }
+
+    dots.push({ x: x + (Math.random() - 0.5) * 2, y: y + (Math.random() - 0.5) * 2 });
+  }
+  return dots;
+}
+
+function makeThreads(cells: Cell[], w: number, h: number): Thread[] {
   const threads: Thread[] = [];
-  for (let i = 0; i < cells.length; i++) {
-    for (let j = i + 1; j < cells.length; j++) {
-      if (Math.random() > 0.65) continue;
-      const ci = cells[i], cj = cells[j];
-      const mx = (ci.x + cj.x) / 2;
-      const my = (ci.y + cj.y) / 2;
-      const dx = cj.x - ci.x;
-      const dy = cj.y - ci.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      const nx = -dy / len;
-      const ny = dx / len;
-      const bend = (Math.random() - 0.5) * Math.min(len * 0.4, 100);
-      const cpx = mx + nx * bend;
-      const cpy = my + ny * bend;
-
-      // Pre-compute dot positions along the bezier, with slight organic jitter
-      const dotCount = Math.max(12, Math.floor(len / 12));
-      const dots = Array.from({ length: dotCount }, (_, k) => {
-        const t = k / (dotCount - 1);
-        return {
-          x: (1-t)*(1-t)*ci.x + 2*(1-t)*t*cpx + t*t*cj.x + (Math.random()-0.5)*2.5,
-          y: (1-t)*(1-t)*ci.y + 2*(1-t)*t*cpy + t*t*cj.y + (Math.random()-0.5)*2.5,
-        };
-      });
-
+  let cursor = 1; // seconds; first thread starts after 1s
+  for (const cell of cells) {
+    const perCell = 2 + Math.floor(Math.random() * 2);
+    for (let k = 0; k < perCell; k++) {
+      const exitAngle = Math.random() * Math.PI * 2;
+      const exitR = 20 + Math.random() * 15;
       threads.push({
-        dots,
+        dots: makeWalk(
+          cell.x + Math.cos(exitAngle) * exitR,
+          cell.y + Math.sin(exitAngle) * exitR,
+          w, h,
+        ),
         colorIdx: Math.floor(Math.random() * COLORS_DARK.length),
-        interval: 0.09 + Math.random() * 0.13,
-        startAt: Math.random() * 10,
+        interval: 0.08 + Math.random() * 0.12,
+        startAt: cursor,
       });
+      cursor += 2.5 + Math.random() * 2; // next thread starts 2.5–4.5s later
     }
   }
   return threads;
@@ -126,17 +145,17 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
     }
   }
 
-  // Growing threads — dots appear one at a time and stay
+  // Growing threads
   for (const thread of threads) {
     const elapsed = ts - thread.startAt;
     if (elapsed < 0) continue;
     const visible = Math.min(Math.floor(elapsed / thread.interval), thread.dots.length);
     const color = colors[thread.colorIdx];
-    const baseAlpha = dark ? 0.52 : 0.45;
+    const baseAlpha = dark ? 0.14 : 0.11;
 
     for (let k = 0; k < visible; k++) {
       const dotAge = elapsed - k * thread.interval;
-      const fadeIn = Math.min(dotAge / 0.35, 1); // fade in over 350ms
+      const fadeIn = Math.min(dotAge / 0.4, 1);
       ctx.beginPath();
       ctx.arc(thread.dots[k].x, thread.dots[k].y, 1.5, 0, Math.PI * 2);
       ctx.fillStyle = `${color}${baseAlpha * fadeIn})`;
@@ -157,7 +176,7 @@ onMounted(() => {
   window.addEventListener('resize', resize);
 
   const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height));
-  const threads: Thread[] = makeThreads(cells);
+  const threads: Thread[] = makeThreads(cells, el.width, el.height);
 
   const loop = (ts: number) => {
     animId = requestAnimationFrame(loop);

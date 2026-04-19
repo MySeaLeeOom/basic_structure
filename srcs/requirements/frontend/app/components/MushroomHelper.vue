@@ -32,10 +32,3 @@ const tips = [
     </ul>
   </Popover>
 </template>
-
-<style>
-.p-popover::before,
-.p-popover::after {
-  display: none !important;
-}
-</style>
