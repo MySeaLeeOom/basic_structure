@@ -7,6 +7,11 @@ An ultra-efficient Authentication service built with Fastify, TypeScript, and Dr
 
 When you change the [schema.ts](src/db/schema.ts), you must synchronize the database. We use a two-step "Generate & Push" workflow.
 
+IF the change is not to the schema, but to the content of a row, drizzle sql file will need to be updated manually! Please see drizzle docs
+
+Example of what would go into a migration file in this situation: 
+`"UPDATE accounts SET provider_account_id = user_id::text WHERE provider = 'local';"`
+
 ### 1. Generate Migration Files
 This looks at your TypeScript schema and creates the SQL equivalent in `./drizzle`.
 This must be done if this is the first time we run the program (if we dont have initial file yet)

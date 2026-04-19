@@ -36,7 +36,7 @@ async function handleLogin() {
 	}
 	const success = await authStore.loginLocal(identifier.value, password.value);
 	if (success) {
-		router.push("/");
+		router.push("/notes");
 	}
 }
 
