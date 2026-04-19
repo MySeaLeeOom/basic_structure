@@ -42,15 +42,22 @@ clean: getuser
 # Removes all artifacts and dev containers, does not remove the notes databases
 cleanv:
 	@echo "Removing only node_modules volumes..."
-	-docker volume rm $(MODULE_VOLUMES) 2>/dev/null
+	@-docker volume rm $(MODULE_VOLUMES) 2>/dev/null
 	@echo "Cleaning frontend build cache..."
-	-docker volume rm $(FRONTEND_CACHE_VOLUMES) 2>/dev/null
+	@-docker volume rm $(FRONTEND_CACHE_VOLUMES) 2>/dev/null
 	@docker image prune -f
+	docker volume ls --filter "label=com.docker.compose.project=mycelium" -q | xargs docker volume rm    
 
 # Destructive: will destroy databases, both notes and users
 fclean: getuser
 	@echo "Removing all volumes..."
-	$(COMPOSE) down -v --rmi all $(FLAGS)	
+	$(COMPOSE) down -v --rmi all $(FLAGS)
+
+# Nuclear: removes all volumes ever created by this project (any naming scheme)
+wipe: fclean
+	@echo "Removing orphaned project volumes..."
+	@docker volume ls -q | grep -E '^(srcs_|mycelium_|db$$)' | xargs docker volume rm 2>/dev/null; true
+	@echo "Done."
 
 re: clean up
 
@@ -67,7 +74,12 @@ logs: getuser
 getlogs: 
 	$(COMPOSE) logs > all-docker-logs-$(shell date +%Y-%m-%d_%H-%M-%S).txt 2>&1
 	
-.PHONY: all up down clean cleanv fclean clean_pnpm_volumes re logs
+.PHONY: all up down clean cleanv fclean wipe clean_pnpm_volumes re logs
 
-# Potential volume cleanup:
-# docker volume ls -q | grep -v 'mycelium_db' | grep -v 'mycelium_vector' | xargs -I {} docker volume rm {}
+# Potential volume cleanup to remove everything except data volumes:
+# docker volume ls -q | grep -v 'mycelium_db' | grep -v 'mycelium_vector' | grep -v 'mycelium_grafana' | grep -v 'mycelium_prometheus' | xargs -I {} docker volume rm {}
+
+#  # docker volume ls --filter "label=com.docker.compose.project=mycelium" -q | xargs docker volume rm      
+
+## @docker volume ls -q | grep -E '^(srcs_|mycelium_|db$$)' | xargs docker volume rm 2>/dev/null; true
+
