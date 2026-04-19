@@ -1,5 +1,5 @@
 <template>
-  <canvas ref="canvas" class="absolute inset-0 w-full h-full" />
+  <canvas ref="canvas" class="absolute inset-0 w-full h-full cursor-pointer" />
 </template>
 
 <script setup lang="ts">
@@ -24,95 +24,107 @@ const COLORS_LIGHT = [
   'rgba(100, 110, 90,',
 ];
 
+type Ring = { radius: number; dotCount: number; colorIdx: number; offset: number };
+
 type Cell = {
   x: number;
   y: number;
-  rings: { radius: number; dotCount: number; colorIdx: number; offset: number }[];
+  rings: Ring[];
   phase: number;
   speed: number;
   scale: number;
+  bornAt: number; // seconds — used to animate cell growing in
 };
 
 type Thread = {
   dots: { x: number; y: number }[];
   colorIdx: number;
-  interval: number; // seconds between each dot appearing
+  interval: number;
   startAt: number;
+  bounded: boolean;
 };
 
-function makeCell(w: number, h: number): Cell {
-  const ringCount = 1 + Math.floor(Math.random() * 4);
-  const rings = Array.from({ length: ringCount }, (_, i) => ({
+function makeRing(i: number): Ring {
+  return {
     radius: 14 + i * 16 + Math.random() * 6,
     dotCount: 16 + i * 8,
     colorIdx: Math.floor(Math.random() * COLORS_DARK.length),
     offset: Math.random() * Math.PI * 2,
-  }));
-  return {
-    x: Math.random() * w,
-    y: Math.random() * h,
-    rings,
-    phase: Math.random() * Math.PI * 2,
-    speed: 0.0003 + Math.random() * 0.0003,
-    scale: 0.5 + Math.random() * 0.8,
   };
 }
 
-// Random walk starting at (sx, sy), gently pulled toward canvas center
-function makeWalk(sx: number, sy: number, w: number, h: number): { x: number; y: number }[] {
+function makeCell(w: number, h: number, bornAt: number): Cell {
+  const ringCount = 1 + Math.floor(Math.random() * 4);
+  return {
+    x: Math.random() * w,
+    y: Math.random() * h,
+    rings: Array.from({ length: ringCount }, (_, i) => makeRing(i)),
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.0003 + Math.random() * 0.0003,
+    scale: 0.5 + Math.random() * 0.8,
+    bornAt,
+  };
+}
+
+function makeWalk(
+  sx: number, sy: number,
+  w: number, h: number,
+  bounded: boolean,
+): { x: number; y: number }[] {
   const cx = w / 2, cy = h / 2;
   const dots: { x: number; y: number }[] = [];
   let x = sx, y = sy;
-  let angle = Math.random() * Math.PI * 2;
+
+  // Unbounded threads start pointing away from center so they actually escape
+  const outwardAngle = Math.atan2(sy - cy, sx - cx);
+  let angle = bounded
+    ? Math.random() * Math.PI * 2
+    : outwardAngle + (Math.random() - 0.5) * 1.0;
 
   for (let i = 0; i < 700; i++) {
-    // Angle toward center
     const toCenterAngle = Math.atan2(cy - y, cx - x);
     let diff = toCenterAngle - angle;
-    // Normalize diff to [-π, π]
     if (diff > Math.PI) diff -= 2 * Math.PI;
     if (diff < -Math.PI) diff += 2 * Math.PI;
 
-    // Blend: center pull + organic random wander
-    angle += diff * 0.05 + (Math.random() - 0.5) * 0.75;
+    // Unbounded threads ignore center pull — they just wander outward
+    const pull = bounded ? 0.05 : 0;
+    angle += diff * pull + (Math.random() - 0.5) * 0.75;
 
     const step = 9 + Math.random() * 5;
     x += Math.cos(angle) * step;
     y += Math.sin(angle) * step;
 
-    // Soft boundary reflection
-    if (x < 20)      { x = 20;      angle = Math.PI - angle; }
-    if (x > w - 20)  { x = w - 20;  angle = Math.PI - angle; }
-    if (y < 20)      { y = 20;      angle = -angle; }
-    if (y > h - 20)  { y = h - 20;  angle = -angle; }
+    if (bounded) {
+      if (x < 20)     { x = 20;     angle = Math.PI - angle; }
+      if (x > w - 20) { x = w - 20; angle = Math.PI - angle; }
+      if (y < 20)     { y = 20;     angle = -angle; }
+      if (y > h - 20) { y = h - 20; angle = -angle; }
+    }
 
     dots.push({ x: x + (Math.random() - 0.5) * 2, y: y + (Math.random() - 0.5) * 2 });
   }
   return dots;
 }
 
-function makeThreads(cells: Cell[], w: number, h: number): Thread[] {
+function spawnThreads(cell: Cell, w: number, h: number, cursorStart: number): { threads: Thread[]; cursorEnd: number } {
   const threads: Thread[] = [];
-  let cursor = 1; // seconds; first thread starts after 1s
-  for (const cell of cells) {
-    const perCell = 2 + Math.floor(Math.random() * 2);
-    for (let k = 0; k < perCell; k++) {
-      const exitAngle = Math.random() * Math.PI * 2;
-      const exitR = 20 + Math.random() * 15;
-      threads.push({
-        dots: makeWalk(
-          cell.x + Math.cos(exitAngle) * exitR,
-          cell.y + Math.sin(exitAngle) * exitR,
-          w, h,
-        ),
-        colorIdx: Math.floor(Math.random() * COLORS_DARK.length),
-        interval: 0.08 + Math.random() * 0.12,
-        startAt: cursor,
-      });
-      cursor += 2.5 + Math.random() * 2; // next thread starts 2.5–4.5s later
-    }
+  const perCell = 2 + Math.floor(Math.random() * 2);
+  let cursor = cursorStart;
+  for (let k = 0; k < perCell; k++) {
+    const exitAngle = Math.random() * Math.PI * 2;
+    const exitR = 20 + Math.random() * 15;
+    const bounded = Math.random() > 0.2; // ~20% escape the screen
+    threads.push({
+      dots: makeWalk(cell.x + Math.cos(exitAngle) * exitR, cell.y + Math.sin(exitAngle) * exitR, w, h, bounded),
+      colorIdx: Math.floor(Math.random() * COLORS_DARK.length),
+      interval: 0.08 + Math.random() * 0.12,
+      startAt: cursor,
+      bounded,
+    });
+    cursor += 2.5 + Math.random() * 2;
   }
-  return threads;
+  return { threads, cursorEnd: cursor };
 }
 
 const FPS = 30;
@@ -124,19 +136,22 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
   const colors = dark ? COLORS_DARK : COLORS_LIGHT;
   ctx.clearRect(0, 0, w, h);
 
-  // Orbital rings
   for (const cell of cells) {
+    const age = ts - cell.bornAt;
+    const growIn = age < 3 ? age / 3 : 1;
     const pulse = 0.88 + 0.12 * Math.sin(ts * cell.speed * 1000 + cell.phase);
+    const s = cell.scale * growIn;
+
     for (const ring of cell.rings) {
-      const r = ring.radius * cell.scale * pulse;
+      const r = ring.radius * s * pulse;
       const color = colors[ring.colorIdx];
       for (let i = 0; i < ring.dotCount; i++) {
         const angle = ring.offset + (i / ring.dotCount) * Math.PI * 2 + ts * cell.speed;
         const dx = cell.x + Math.cos(angle) * r;
         const dy = cell.y + Math.sin(angle) * r;
-        const dotR = Math.max((2.0 - ring.radius / 70) * cell.scale * pulse, 0.5);
+        const dotR = Math.max((2.0 - ring.radius / 70) * s * pulse, 0.5);
         const alphaMod = (Math.sin(angle * 2 + ts * cell.speed * 3) + 1) / 2;
-        const alpha = dark ? 0.10 + 0.20 * alphaMod : 0.18 + 0.22 * alphaMod;
+        const alpha = (dark ? 0.10 + 0.20 * alphaMod : 0.18 + 0.22 * alphaMod) * growIn;
         ctx.beginPath();
         ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
         ctx.fillStyle = `${color}${alpha})`;
@@ -145,7 +160,7 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
     }
   }
 
-  // Growing threads
+  ctx.globalCompositeOperation = 'lighter';
   for (const thread of threads) {
     const elapsed = ts - thread.startAt;
     if (elapsed < 0) continue;
@@ -162,6 +177,7 @@ function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], t
       ctx.fill();
     }
   }
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 onMounted(() => {
@@ -175,21 +191,66 @@ onMounted(() => {
   resize();
   window.addEventListener('resize', resize);
 
-  const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height));
-  const threads: Thread[] = makeThreads(cells, el.width, el.height);
+  const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height, 0));
+  const threads: Thread[] = [];
+
+  // Initial threads, one at a time
+  let cursor = 1;
+  for (const cell of cells) {
+    const result = spawnThreads(cell, el.width, el.height, cursor);
+    threads.push(...result.threads);
+    cursor = result.cursorEnd;
+  }
+
+  let nextSpawnAt = 90 + Math.random() * 90; // first new cell after 1.5-3 min
+
+  // Click: add or remove a ring on the nearest cell within hit radius
+  const onClick = (e: MouseEvent) => {
+    const rect = el.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (el.width / rect.width);
+    const my = (e.clientY - rect.top) * (el.height / rect.height);
+    let closest: Cell | null = null;
+    let closestDist = Infinity;
+    for (const cell of cells) {
+      const d = Math.hypot(mx - cell.x, my - cell.y);
+      if (d < closestDist) { closestDist = d; closest = cell; }
+    }
+    if (!closest || closestDist > 60) return;
+    const gain = Math.random() < 0.5;
+    if (gain && closest.rings.length < 5) {
+      closest.rings.push(makeRing(closest.rings.length));
+    } else if (!gain && closest.rings.length > 1) {
+      closest.rings.pop();
+    } else if (closest.rings.length < 5) {
+      closest.rings.push(makeRing(closest.rings.length));
+    }
+  };
+  el.addEventListener('click', onClick);
 
   const loop = (ts: number) => {
     animId = requestAnimationFrame(loop);
     if (ts - lastFrame < INTERVAL) return;
     lastFrame = ts;
+    const tsSeconds = ts / 1000;
     const dark = document.documentElement.classList.contains('dark');
-    draw(ctx, cells, threads, ts / 1000, dark);
+
+    // Occasionally spawn a new cell
+    if (tsSeconds > nextSpawnAt) {
+      const newCell = makeCell(el.width, el.height, tsSeconds);
+      cells.push(newCell);
+      const result = spawnThreads(newCell, el.width, el.height, tsSeconds + 1);
+      threads.push(...result.threads);
+      nextSpawnAt = tsSeconds + 90 + Math.random() * 90;
+    }
+
+    draw(ctx, cells, threads, tsSeconds, dark);
   };
   animId = requestAnimationFrame(loop);
 
   onUnmounted(() => {
     cancelAnimationFrame(animId);
     window.removeEventListener('resize', resize);
+    el.removeEventListener('click', onClick);
   });
 });
 </script>
