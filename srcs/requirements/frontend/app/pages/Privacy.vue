@@ -5,7 +5,8 @@ const contactEmail = 'myakoven@student.42berlin.de';
 </script>
 
 <template>
-	<div class="max-w-3xl mx-auto px-6 py-10 overflow-y-auto h-full text-surface-800 dark:text-surface-200">
+	<div class="h-full overflow-y-auto bg-surface-0 dark:bg-surface-950">
+	<div class="max-w-3xl mx-auto px-6 py-10 text-surface-800 dark:text-surface-200">
 		<h1 class="text-2xl font-bold mb-1">{{ t('legal.privacy.title') }}</h1>
 		<p class="text-sm text-surface-500 mb-8">{{ t('legal.lastUpdated') }}: 17/04/2026</p>
 		<p class="mb-6">{{ t('privacy.intro') }}</p>
@@ -110,5 +111,6 @@ const contactEmail = 'myakoven@student.42berlin.de';
 			<h2 class="text-lg font-semibold mb-2">{{ t('privacy.s12.title') }}</h2>
 			<p>{{ t('privacy.s12.body') }} <a :href="'mailto:' + contactEmail" class="text-primary-500 hover:underline">{{ contactEmail }}</a>.</p>
 		</section>
+	</div>
 	</div>
 </template>
