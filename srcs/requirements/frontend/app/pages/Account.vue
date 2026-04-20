@@ -37,15 +37,19 @@ const errors = reactive({
 });
 
 const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 128;
 const LOGIN_MIN = 3;
 const LOGIN_MAX = 50;
+const EMAIL_MAX = 254;
 const IMAGE_URL_MAX = 2048;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Mirror of auth service LOGIN_RE: ASCII letters, digits, underscore, dot, dash.
+const LOGIN_RE = /^[A-Za-z0-9._-]+$/;
 
 function isValidHttpsUrl(value: string): boolean {
 	try {
 		const u = new URL(value);
-		return u.protocol === 'https:' || u.protocol === 'http:';
+		return u.protocol === 'https:';
 	} catch {
 		return false;
 	}
@@ -63,6 +67,10 @@ async function handleUpdateLogin() {
 	if (!next || next === auth.user?.loginName) return;
 	if (next.length < LOGIN_MIN || next.length > LOGIN_MAX) {
 		errors.login = t('login.validation.usernameLength');
+		return;
+	}
+	if (!LOGIN_RE.test(next)) {
+		errors.login = t('login.validation.usernamePattern');
 		return;
 	}
 
@@ -85,7 +93,7 @@ async function handleUpdateLogin() {
 async function handleUpdateEmail() {
 	const next = formEmail.value.trim();
 	if (next === (auth.user?.email || '')) return;
-	if (!EMAIL_RE.test(next)) {
+	if (!EMAIL_RE.test(next) || next.length > EMAIL_MAX) {
 		errors.email = t('profile.error.emailInvalid');
 		return;
 	}
@@ -153,7 +161,7 @@ async function handleChangePassword() {
 		return;
 	}
 
-	if (newPassword.value.length < PASSWORD_MIN) {
+	if (newPassword.value.length < PASSWORD_MIN || newPassword.value.length > PASSWORD_MAX) {
 		errors.password = t('login.validation.passwordMin');
 		return;
 	}
@@ -304,7 +312,7 @@ async function handleExportData() {
 						<h3 class="font-bold">{{ t('login.username') }}</h3>
 						<p v-if="auth.user?.loginName">{{ t('profile.currentPrefix') }} <strong>{{ auth.user.loginName }}</strong></p>
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
-							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
+							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" :maxlength="LOGIN_MAX" fluid />
 							<Button :label="t('profile.button.updateUsername')" type="submit"
 								:disabled="activeAction === 'login' || !formLogin || formLogin === (auth.user?.loginName || '')"
 								fluid />
@@ -316,7 +324,7 @@ async function handleExportData() {
 						<h3 class="font-bold">{{ t('login.email') }}</h3>
 						<p>{{ t('profile.currentPrefix') }} <strong>{{ auth.user?.email || t('profile.none') }}</strong></p>
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
-							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
+							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" :maxlength="EMAIL_MAX" fluid />
 							<Button :label="t('profile.button.updateEmail')" type="submit"
 								:disabled="activeAction === 'email' || formEmail === (auth.user?.email || '')" fluid />
 							<small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
@@ -330,7 +338,7 @@ async function handleExportData() {
 							<span class="text-sm text-muted-color truncate max-w-[160px]">{{ auth.user.imageURL }}</span>
 						</div>
 						<div class="flex flex-col gap-2">
-							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" fluid />
+							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" :maxlength="IMAGE_URL_MAX" fluid />
 							<Button :label="t('profile.button.updateImage')" :disabled="activeAction === 'image' || !formImageUrl"
 								fluid @click="handleUpdateImage" />
 							<Button v-if="auth.user?.imageURL" :label="t('profile.button.removeImage')"
@@ -343,10 +351,11 @@ async function handleExportData() {
 						<h3 class="font-bold">{{ t('profile.section.security') }}</h3>
 						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
 							<Password v-model="oldPassword" :placeholder="t('profile.placeholder.currentPassword')" :feedback="false" toggleMask
-								fluid :disabled="!auth.user?.hasLocalAuth" />
-							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid />
+								fluid :maxlength="PASSWORD_MAX" :disabled="!auth.user?.hasLocalAuth" />
+							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid
+								:maxlength="PASSWORD_MAX" />
 							<Password v-model="confirmPassword" :placeholder="t('profile.placeholder.confirmNewPassword')" :feedback="false"
-								toggleMask fluid />
+								toggleMask fluid :maxlength="PASSWORD_MAX" />
 							<Button
 								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
 								type="submit"

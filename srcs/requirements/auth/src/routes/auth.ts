@@ -14,15 +14,21 @@ import {
 } from "../metrics";
 
 /* sinclair typebox schema */
+// Pattern applied to any field that becomes a user-visible login name.
+// Restricts to ASCII letters, digits, underscore, dot and dash — keeps the
+// namespace free of whitespace, control chars, and Unicode homoglyphs
+// ("аdmin" with a Cyrillic "а" is the classic).
+export const LOGIN_RE = "^[A-Za-z0-9._-]+$";
+
 export const RegistrationSchema = Type.Object({
-	loginName: Type.String({ minLength: 3 }),
-	email: Type.String({ format: "email" }),
-	password: Type.String({ minLength: 8 }),
+	loginName: Type.String({ minLength: 3, maxLength: 50, pattern: LOGIN_RE }),
+	email: Type.String({ format: "email", maxLength: 254 }),
+	password: Type.String({ minLength: 8, maxLength: 128 }),
 });
 
 export const LoginSchema = Type.Object({
-	identifier: Type.String({ minLength: 3 }), // Can't be shorter than the shortest loginName
-	password: Type.String({ minLength: 8 }), // Must match your registration rules
+	identifier: Type.String({ minLength: 3, maxLength: 254 }), // email or loginName
+	password: Type.String({ minLength: 8, maxLength: 128 }),
 });
 
 // this makes a specific Type for request.body that will

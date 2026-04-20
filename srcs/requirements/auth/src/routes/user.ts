@@ -6,6 +6,7 @@ import { verifySession } from "../lib/session_helpers";
 import { upsertAccount } from "../lib/account_helpers";
 import * as argon2 from "argon2";
 import { authMeTotal } from "../metrics";
+import { LOGIN_RE } from "./auth";
 
 const notesServiceBaseUrl = process.env.NOTES_SERVICE_URL ?? "http://notes:3003";
 const aiIngestServiceBaseUrl = process.env.AI_INGEST_SERVICE_URL ?? "http://ai-ingest:8002";
@@ -50,30 +51,30 @@ async function callNotesService(
 
 /* Schemas for Inputs */
 const ChangeLoginSchema = Type.Object({
-	loginName: Type.String({ minLength: 3, maxLength: 50 }),
+	loginName: Type.String({ minLength: 3, maxLength: 50, pattern: LOGIN_RE }),
 });
 
 const ChangeEmailSchema = Type.Object({
-	email: Type.String({ format: "email" }),
+	email: Type.String({ format: "email", maxLength: 254 }),
 });
 
 const ChangePasswordSchema = Type.Object({
-	oldPassword: Type.String(),
-	newPassword: Type.String({ minLength: 8 }),
+	oldPassword: Type.String({ maxLength: 128 }),
+	newPassword: Type.String({ minLength: 8, maxLength: 128 }),
 });
 
-// Accept an http(s) URL up to 2048 chars, or null to clear. The pattern
-// rejects javascript:, data:, and other schemes that could be rendered into
-// an <img src=...> element.
+// Accept an https URL up to 2048 chars, or null to clear. The pattern
+// rejects http:, javascript:, data:, and other schemes that could be rendered
+// into an <img src=...> element or leak referers over cleartext.
 const ChangeImageSchema = Type.Object({
 	imageURL: Type.Union([
-		Type.String({ minLength: 1, maxLength: 2048, pattern: "^https?://[^\\s]+$" }),
+		Type.String({ minLength: 1, maxLength: 2048, pattern: "^https://[^\\s]+$" }),
 		Type.Null(),
 	]),
 });
 
 const ResolveUserSchema = Type.Object({
-	identifier: Type.String({ minLength: 3 }),
+	identifier: Type.String({ minLength: 3, maxLength: 254 }),
 });
 
 type ChangeLoginType = Static<typeof ChangeLoginSchema>;

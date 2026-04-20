@@ -131,6 +131,7 @@
 	"login.validation.emailInvalid": "Please enter a valid email address",
 	"login.validation.passwordMin": "Password must be at least 8 characters",
 	"login.validation.usernameLength": "Username must be 3-50 characters",
+	"login.validation.usernamePattern": "Username may only contain letters, digits, '.', '_' and '-'",
 	"profile.error.emailInvalid": "Please enter a valid email address",
 	"profile.error.imageUrlInvalid": "Image URL must be a valid https:// URL",
 	"login.consent.label": "I have read and accept the Privacy Policy and Terms of Service",

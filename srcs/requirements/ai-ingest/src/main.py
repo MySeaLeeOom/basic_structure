@@ -1,5 +1,6 @@
 import os
 import base64
+import binascii
 import logging
 import psycopg2
 import y_py as Y
@@ -51,6 +52,17 @@ class IngestRequest(BaseModel):
             UUID(value)
         except ValueError as err:
             raise ValueError("must be a valid UUID") from err
+        return value
+
+    @field_validator("binary_data")
+    @classmethod
+    def _must_be_base64(cls, value: str) -> str:
+        # Reject malformed base64 at the API boundary so we return 422 instead
+        # of a generic 500 from deep inside process_and_save.
+        try:
+            base64.b64decode(value, validate=True)
+        except binascii.Error as err:
+            raise ValueError("must be valid base64") from err
         return value
 
 def clean_html_to_text(xml_str: str) -> str:

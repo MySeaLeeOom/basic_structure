@@ -25,19 +25,24 @@ const regPassword = ref("");
 const consentAccepted = ref(false);
 
 const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 128;
 const LOGIN_MIN = 3;
 const LOGIN_MAX = 50;
+const IDENTIFIER_MAX = 254;
+const EMAIL_MAX = 254;
 // Pragmatic RFC 5322 subset: local@domain.tld, no spaces, a single @, at least one dot in the domain.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Mirror of auth service LOGIN_RE: ASCII letters, digits, underscore, dot, dash.
+const LOGIN_RE = /^[A-Za-z0-9._-]+$/;
 
 async function handleLogin() {
 	authStore.error = null;
 	const id = identifier.value.trim();
-	if (id.length < LOGIN_MIN) {
+	if (id.length < LOGIN_MIN || id.length > IDENTIFIER_MAX) {
 		authStore.error = t("login.validation.identifierRequired");
 		return;
 	}
-	if (password.value.length < PASSWORD_MIN) {
+	if (password.value.length < PASSWORD_MIN || password.value.length > PASSWORD_MAX) {
 		authStore.error = t("login.validation.passwordMin");
 		return;
 	}
@@ -59,11 +64,15 @@ async function handleRegister() {
 		authStore.error = t("login.validation.usernameRequired");
 		return;
 	}
-	if (!EMAIL_RE.test(email)) {
+	if (!LOGIN_RE.test(login)) {
+		authStore.error = t("login.validation.usernamePattern");
+		return;
+	}
+	if (!EMAIL_RE.test(email) || email.length > EMAIL_MAX) {
 		authStore.error = t("login.validation.emailInvalid");
 		return;
 	}
-	if (regPassword.value.length < PASSWORD_MIN) {
+	if (regPassword.value.length < PASSWORD_MIN || regPassword.value.length > PASSWORD_MAX) {
 		authStore.error = t("login.validation.passwordMin");
 		return;
 	}
@@ -90,8 +99,8 @@ async function handleRegister() {
 					<TabPanels>
 						<TabPanel value="0">
 							<form class="flex flex-col gap-4 mt-4" @submit.prevent="handleLogin">
-								<InputText v-model="identifier" :placeholder="t('login.identifier')" fluid />
-								<InputText v-model="password" type="password" :placeholder="t('login.password')" fluid />
+								<InputText v-model="identifier" :placeholder="t('login.identifier')" :maxlength="IDENTIFIER_MAX" fluid />
+								<InputText v-model="password" type="password" :placeholder="t('login.password')" :maxlength="PASSWORD_MAX" fluid />
 								<Button type="submit" :label="t('login.signin')" fluid />
 
 								<div class="text-center text-sm text-gray-500 my-2">{{ t('login.or') }}</div>
@@ -103,9 +112,9 @@ async function handleRegister() {
 						</TabPanel>
 						<TabPanel value="1">
 							<form class="flex flex-col gap-4 mt-4" @submit.prevent="handleRegister">
-								<InputText v-model="regLogin" :placeholder="t('login.username')" fluid />
-								<InputText v-model="regEmail" :placeholder="t('login.email')" fluid />
-								<InputText v-model="regPassword" type="password" :placeholder="t('login.password')" fluid />
+								<InputText v-model="regLogin" :placeholder="t('login.username')" :maxlength="LOGIN_MAX" fluid />
+								<InputText v-model="regEmail" :placeholder="t('login.email')" :maxlength="EMAIL_MAX" fluid />
+								<InputText v-model="regPassword" type="password" :placeholder="t('login.password')" :maxlength="PASSWORD_MAX" fluid />
 
 								<p class="text-xs text-gray-500 dark:text-gray-400">
 									{{ t('login.consent.info') }}

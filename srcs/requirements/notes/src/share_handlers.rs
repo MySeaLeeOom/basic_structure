@@ -1,6 +1,6 @@
 use axum::{extract::{State, Path}, http::HeaderMap, http::StatusCode, Json};
 use uuid::Uuid;
-use crate::models::{Note, Share, ShareNotePayload, ManagedShareItem, ReceivedShareItem};
+use crate::models::{Note, Role, Share, ShareNotePayload, ManagedShareItem, ReceivedShareItem};
 use crate::AppState;
 use crate::handlers::get_user_id;
 use chrono::Utc;
@@ -126,6 +126,13 @@ pub async fn create_share(State(state): State<AppState>, headers: HeaderMap, Jso
     }
 
     if payload.guest_id == Some(requesting_user_id) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Ownership is conferred by notes.owner_id, not by a share row. Refuse to
+    // write access_role = 'Owner' so the invariant stays explicit at the API
+    // boundary and the UI can't render a second "Owner" for a note.
+    if matches!(payload.role, Role::Owner) {
         return Err(StatusCode::BAD_REQUEST);
     }
 
