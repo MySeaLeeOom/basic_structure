@@ -167,6 +167,8 @@ Localization: Grace
 Pavlos: Used AI to research the pros and cons of different stacks, for detecting code smells, for changes that needed multi-file editing to make sure all contact points were adequately worked on and for the creation of tutorials and learning material for the project
 Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
 Masha: Used AI for research, writing repetetive code, assistance with learning frameworks like Fastify, tutorials, assistance with tricky styling issues, keeping track of refactors and changes that needed multifile editing, particularly for UI bugs.
+Ahmet: Used AI to research unfamiliar technologies (Yjs/CRDTs, TipTap, WebSockets), coordinate multi-file changes across the frontend and backend, and draft internal dev documentation. All output was reviewed and tested before use.
+
 
 ## **Future Features**
 What in-theory would be an obvious next step:
