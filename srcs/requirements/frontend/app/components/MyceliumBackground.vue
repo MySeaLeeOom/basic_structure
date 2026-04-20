@@ -227,7 +227,7 @@ onMounted(() => {
   resize();
   window.addEventListener('resize', resize);
 
-  const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height, 0));
+  const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height, -3));
   const threads: Thread[] = [];
 
   let cursor = 1;
@@ -263,7 +263,13 @@ onMounted(() => {
   clickHandler = onClick;
   el.addEventListener('click', onClick);
 
+  let startTime = -1;
+  const STOP_AFTER = 30; // seconds
+
   const loop = (ts: number) => {
+    if (startTime < 0) startTime = ts;
+    const elapsed = (ts - startTime) / 1000;
+    if (elapsed >= STOP_AFTER) return; // stop rescheduling — animation is done
     animId = requestAnimationFrame(loop);
     if (ts - lastFrame < INTERVAL) return;
     lastFrame = ts;
