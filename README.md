@@ -20,6 +20,8 @@ A modular open-source personal knowledge management system with built-in real-ti
 
 1. **Environment variables** — Create `srcs/.env` with the following variables (the Makefile will auto-populate `UID` and `GID`):
 
+See `srcs/.env.example` for the full template. The key values are:
+
 ```
 DB_USER=<postgres superuser>
 DB_PASSWORD=<postgres superuser password>
@@ -28,15 +30,20 @@ AUTH_DB_USER=<auth service db user>
 AUTH_DB_NAME=<auth service db name>
 POSTGRES_ADDR=postgres
 POSTGRES_PORT=5432
+HOST_IP=<host machine IP, used by the LLM gateway>
 GITHUB_CLIENT_ID=<your GitHub OAuth app client ID>
-GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/github/callback
+GITHUB_CALLBACK_URL=https://localhost:8443/api/auth/login/github/callback
+WEBSITE_URL=https://localhost:8443
+LLM_BASE_URL=http://${HOST_IP}:11434/v1
 AUTH_PORT=3000
-NOTES_ADDR=http://notes:3003
-NOTES_PORT=3003
-FRONTEND_ADDR=http://frontend:3000
+AUTH_ADDR=auth:${AUTH_PORT}
 FRONTEND_PORT=3000
-WEBSITE_URL=http://localhost:8080
+FRONTEND_ADDR=frontend:${FRONTEND_PORT}
+NOTES_PORT=3003
+NOTES_ADDR=notes:${NOTES_PORT}
 ```
+
+The `GITHUB_CALLBACK_URL` must match the callback URL configured in the GitHub OAuth app.
 
 2. **Secrets** — Copy the example secrets directory and fill in real values (one value per file):
 
@@ -59,7 +66,7 @@ make fclean    # Destructive: removes everything including database volumes
 make re        # clean + rebuild
 ```
 
-The application is accessible at `http://localhost:8080`. Grafana dashboards are at `http://localhost:3000`.
+The application is accessible at `https://localhost:8443` (self-signed certificate; accept the browser warning on first visit). Grafana dashboards are at `http://localhost:3000`.
 
 ## **III. Resources**
 
