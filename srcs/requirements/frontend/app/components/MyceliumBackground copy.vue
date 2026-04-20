@@ -7,9 +7,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 let animId: number;
-let resizeHandler: (() => void) | null = null;
-let clickHandler: ((e: MouseEvent) => void) | null = null;
-let mountedEl: HTMLCanvasElement | null = null;
 
 const COLORS_DARK = [
   'rgba(107, 148, 116,',
@@ -36,7 +33,7 @@ type Cell = {
   phase: number;
   speed: number;
   scale: number;
-  bornAt: number;
+  bornAt: number; // seconds — used to animate cell growing in
 };
 
 type Thread = {
@@ -78,6 +75,7 @@ function makeWalk(
   const dots: { x: number; y: number }[] = [];
   let x = sx, y = sy;
 
+  // Unbounded threads start pointing away from center so they actually escape
   const outwardAngle = Math.atan2(sy - cy, sx - cx);
   let angle = bounded
     ? Math.random() * Math.PI * 2
@@ -89,6 +87,7 @@ function makeWalk(
     if (diff > Math.PI) diff -= 2 * Math.PI;
     if (diff < -Math.PI) diff += 2 * Math.PI;
 
+    // Unbounded threads ignore center pull — they just wander outward
     const pull = bounded ? 0.05 : 0;
     angle += diff * pull + (Math.random() - 0.5) * 0.75;
 
@@ -115,7 +114,7 @@ function spawnThreads(cell: Cell, w: number, h: number, cursorStart: number): { 
   for (let k = 0; k < perCell; k++) {
     const exitAngle = Math.random() * Math.PI * 2;
     const exitR = 20 + Math.random() * 15;
-    const bounded = Math.random() > 0.2;
+    const bounded = Math.random() > 0.2; // ~20% escape the screen
     threads.push({
       dots: makeWalk(cell.x + Math.cos(exitAngle) * exitR, cell.y + Math.sin(exitAngle) * exitR, w, h, bounded),
       colorIdx: Math.floor(Math.random() * COLORS_DARK.length),
@@ -132,21 +131,11 @@ const FPS = 30;
 const INTERVAL = 1000 / FPS;
 let lastFrame = 0;
 
-function draw(
-  ctx: CanvasRenderingContext2D,
-  threadCtx: CanvasRenderingContext2D,
-  threadCanvas: HTMLCanvasElement,
-  cells: Cell[],
-  threads: Thread[],
-  threadDrawn: number[],
-  ts: number,
-  dark: boolean,
-) {
+function draw(ctx: CanvasRenderingContext2D, cells: Cell[], threads: Thread[], ts: number, dark: boolean) {
   const { width: w, height: h } = ctx.canvas;
   const colors = dark ? COLORS_DARK : COLORS_LIGHT;
   ctx.clearRect(0, 0, w, h);
 
-  // Cells — unchanged
   for (const cell of cells) {
     const age = ts - cell.bornAt;
     const growIn = age < 3 ? age / 3 : 1;
@@ -171,75 +160,51 @@ function draw(
     }
   }
 
-  // Threads — only paint dots that have never been painted before
-  threadCtx.globalCompositeOperation = dark ? 'lighter' : 'multiply';
-  for (let t = 0; t < threads.length; t++) {
-    const thread = threads[t];
+  ctx.globalCompositeOperation = dark ? 'lighter' : 'multiply';
+  for (const thread of threads) {
     const elapsed = ts - thread.startAt;
     if (elapsed < 0) continue;
     const visible = Math.min(Math.floor(elapsed / thread.interval), thread.dots.length);
-    if (visible <= threadDrawn[t]) continue; // nothing new to paint
-
     const color = colors[thread.colorIdx];
     const baseAlpha = dark ? 0.14 : 0.22;
 
-    for (let k = threadDrawn[t]; k < visible; k++) {
-      const dot = thread.dots[k];
-      // alphaMod baked in using position so the variation is stable
-      const alphaMod = (Math.sin(dot.x * 0.05 + dot.y * 0.03) + 1) / 2;
-      const alpha = baseAlpha * (0.7 + 0.3 * alphaMod);
-      threadCtx.fillStyle = `${color}${alpha})`;
-      threadCtx.beginPath();
-      threadCtx.arc(dot.x, dot.y, 1.5, 0, Math.PI * 2);
-      threadCtx.fill();
+    for (let k = 0; k < visible; k++) {
+      const dotAge = elapsed - k * thread.interval;
+      const fadeIn = Math.min(dotAge / 0.4, 1);
+      ctx.beginPath();
+      ctx.arc(thread.dots[k].x, thread.dots[k].y, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `${color}${baseAlpha * fadeIn})`;
+      ctx.fill();
     }
-    threadDrawn[t] = visible;
   }
-
-  // Stamp the offscreen thread canvas onto the main canvas in one go
-  ctx.globalCompositeOperation = dark ? 'lighter' : 'multiply';
-  ctx.drawImage(threadCanvas, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
 }
 
 onMounted(() => {
   const el = canvas.value!;
-  mountedEl = el;
   const ctx = el.getContext('2d')!;
-
-  // Hidden canvas — thread dots live here permanently
-  const threadCanvas = document.createElement('canvas');
-  const threadCtx = threadCanvas.getContext('2d')!;
-  // Tracks how many dots of each thread have been painted so far
-  const threadDrawn: number[] = [];
-
-  let wasDark = document.documentElement.classList.contains('dark');
 
   const resize = () => {
     el.width = el.offsetWidth;
     el.height = el.offsetHeight;
-    threadCanvas.width = el.width;
-    threadCanvas.height = el.height;
-    // Resizing a canvas wipes it, so reset counters to repaint everything
-    threadDrawn.fill(0);
   };
-  resizeHandler = resize;
   resize();
   window.addEventListener('resize', resize);
 
   const cells: Cell[] = Array.from({ length: 6 }, () => makeCell(el.width, el.height, 0));
   const threads: Thread[] = [];
 
+  // Initial threads, one at a time
   let cursor = 1;
   for (const cell of cells) {
     const result = spawnThreads(cell, el.width, el.height, cursor);
     threads.push(...result.threads);
-    result.threads.forEach(() => threadDrawn.push(0)); // one counter per thread
     cursor = result.cursorEnd;
   }
 
-  let nextSpawnAt = 90 + Math.random() * 90;
+  let nextSpawnAt = 90 + Math.random() * 90; // first new cell after 1.5-3 min
 
+  // Click: add or remove a ring on the nearest cell within hit radius
   const onClick = (e: MouseEvent) => {
     const rect = el.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (el.width / rect.width);
@@ -260,7 +225,6 @@ onMounted(() => {
       closest.rings.push(makeRing(closest.rings.length));
     }
   };
-  clickHandler = onClick;
   el.addEventListener('click', onClick);
 
   const loop = (ts: number) => {
@@ -270,38 +234,23 @@ onMounted(() => {
     const tsSeconds = ts / 1000;
     const dark = document.documentElement.classList.contains('dark');
 
-    // Light/dark switched — wipe offscreen canvas and repaint all dots next frame
-    if (dark !== wasDark) {
-      threadCtx.clearRect(0, 0, threadCanvas.width, threadCanvas.height);
-      threadCtx.globalCompositeOperation = dark ? 'lighter' : 'multiply';
-      threadDrawn.fill(0);
-      wasDark = dark;
-    }
-
+    // Occasionally spawn a new cell
     if (tsSeconds > nextSpawnAt) {
       const newCell = makeCell(el.width, el.height, tsSeconds);
       cells.push(newCell);
       const result = spawnThreads(newCell, el.width, el.height, tsSeconds + 1);
       threads.push(...result.threads);
-      result.threads.forEach(() => threadDrawn.push(0)); // one counter per new thread
       nextSpawnAt = tsSeconds + 90 + Math.random() * 90;
     }
 
-    draw(ctx, threadCtx, threadCanvas, cells, threads, threadDrawn, tsSeconds, dark);
+    draw(ctx, cells, threads, tsSeconds, dark);
   };
   animId = requestAnimationFrame(loop);
-});
 
-onUnmounted(() => {
-  cancelAnimationFrame(animId);
-  if (resizeHandler) {
-    window.removeEventListener('resize', resizeHandler);
-  }
-  if (mountedEl && clickHandler) {
-    mountedEl.removeEventListener('click', clickHandler);
-  }
-  resizeHandler = null;
-  clickHandler = null;
-  mountedEl = null;
+  onUnmounted(() => {
+    cancelAnimationFrame(animId);
+    window.removeEventListener('resize', resize);
+    el.removeEventListener('click', onClick);
+  });
 });
 </script>
