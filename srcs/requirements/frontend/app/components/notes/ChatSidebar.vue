@@ -16,7 +16,7 @@ const sendMessage = async () => {
 
   const userQuery = query.value;
   const userId = authStore.user.id;
-  
+
   messages.value.push({ role: 'user', content: userQuery });
   query.value = '';
   isTyping.value = true;
@@ -83,16 +83,18 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="w-80 shrink-0 flex flex-col h-[calc(100vh-120px)] bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
+  <div
+    class="w-full md:w-80 shrink-0 flex flex-col h-80 md:h-[calc(100vh-120px)] bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
     <h2 class="section-title">{{ t('chat.title') }}</h2>
-    
+
     <div class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 custom-scrollbar">
-      <div v-for="(msg, idx) in messages" :key="idx" 
-           :class="['p-3 rounded-lg text-sm border', 
-                    msg.role === 'user' 
-                      ? 'bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-surface-700 dark:!text-white ml-6' 
-                      : 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-700 dark:!text-white mr-6']">
-        <div class="text-[10px] font-bold uppercase tracking-tighter mb-1" :class="msg.role === 'user' ? 'text-primary-700 dark:text-primary-300' : 'text-surface-700 dark:text-surface-300'">
+      <div v-for="(msg, idx) in messages" :key="idx"
+        :class="['p-3 rounded-lg text-sm border',
+          msg.role === 'user'
+            ? 'bg-primary-50 dark:bg-primary-950 border-primary-200 dark:border-primary-800 text-surface-700 dark:!text-white ml-6'
+            : 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-700 dark:!text-white mr-6']">
+        <div class="text-[10px] font-bold uppercase tracking-tighter mb-1"
+          :class="msg.role === 'user' ? 'text-primary-700 dark:text-primary-300' : 'text-surface-700 dark:text-surface-300'">
           {{ msg.role === 'user' ? t('chat.role.user') : t('chat.role.assistant') }}
         </div>
         <div class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</div>
@@ -106,13 +108,9 @@ const sendMessage = async () => {
     </div>
 
     <div class="flex gap-2 pt-3 border-t border-surface-100 dark:border-surface-800">
-      <InputText 
-        v-model="query" 
-        @keyup.enter="sendMessage" 
-        :placeholder="t('chat.inputPlaceholder')" 
-        class="flex-1 min-w-0 dark:!text-white dark:placeholder:text-surface-500" 
-      />
-      <Button :label="t('chat.send')" @click="sendMessage" :disabled="isTyping" severity="primary" size="small" /> 
+      <InputText v-model="query" @keyup.enter="sendMessage" :placeholder="t('chat.inputPlaceholder')"
+        class="flex-1 min-w-0 dark:!text-white dark:placeholder:text-surface-500" />
+      <Button :label="t('chat.send')" @click="sendMessage" :disabled="isTyping" severity="primary" size="small" />
     </div>
   </div>
 </template>
@@ -121,10 +119,12 @@ const sendMessage = async () => {
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--p-surface-300);
   border-radius: 10px;
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--p-surface-700);
 }

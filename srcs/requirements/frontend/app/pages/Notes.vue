@@ -266,102 +266,94 @@ await useAsyncData('notes', async () => {
 
 <template>
 	<SidebarLayout v-model:sidebar-open="sidebarOpen">
-		<template #collapsed-actions>
-			<button
-				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-				:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
-				@click="chatOpen = !chatOpen"
-			>
-				<IconChatBubble class="w-5 h-5" />
-			</button>
-		</template>
-
 		<template #sidebar>
 			<!-- Toolbar row -->
 			<div class="flex items-center gap-1 mb-2">
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
 					:title="sidebarOpen ? t('notes.sidebar.hide') : t('notes.sidebar.show')"
-					@click="sidebarOpen = !sidebarOpen"
-				>
+					@click="sidebarOpen = !sidebarOpen">
 					<IconBars class="w-4 h-4" />
 				</button>
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-					:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')" 
-					@click="chatOpen = !chatOpen"
-				>
+					:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')" @click="chatOpen = !chatOpen">
 					<IconChatBubble class="w-5 h-5" />
 				</button>
 			</div>
 
 			<template v-if="sidebarOpen">
-			<div class="flex items-center justify-between mb-1 px-2">
-				<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
-				<Button label="+" text rounded @click="handleCreate" />
-			</div>
-			<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
-			<Listbox :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
-				:options="noteStore.notes" optionLabel="title" dataKey="id"
-				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
-				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
-				<template #empty>
-					<button
-						class="px-2 py-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors w-full text-left"
-						@click="handleCreate">
-						{{ t('notes.createFirst') }}
-					</button>
-				</template>
-				<template #option="slotProps">
-					<div class="flex items-center justify-between w-full group/item gap-1">
-						<span class="truncate text-sm">{{ displayTitle(slotProps.option.title) }}</span>
-						<div class="flex items-center shrink-0"
-							:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
-							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
-								:class="noteStore.selectedNote?.id === slotProps.option.id
-									? 'text-white hover:bg-white/20'
-									: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'" @click.stop="openInvite(slotProps.option.id)">
-								<IconUserPlus class="w-3.5 h-3.5" />
-							</button>
-							<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
-								:class="noteStore.selectedNote?.id === slotProps.option.id
-									? 'text-white hover:text-red-300 hover:bg-white/20'
-									: 'text-surface-400 hover:text-red-400 hover:bg-surface-600'"
-								@click.stop="confirmDelete(slotProps.option.id)">
-								<TimesIcon class="w-2.5 h-2.5" />
-							</button>
+				<div class="flex items-center justify-between mb-1 px-2">
+					<h2 class="section-title !mb-0">{{ t('notes.title') }}</h2>
+					<Button label="+" text rounded @click="handleCreate" />
+				</div>
+				<p v-if="noteStore.error" class="error-text">{{ noteStore.error }}</p>
+				<Listbox :model-value="noteStore.selectedNote" @update:model-value="selectOwnNote"
+					:options="noteStore.notes" optionLabel="title" dataKey="id"
+					pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
+					pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
+					<template #empty>
+						<button
+							class="px-2 py-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors w-full text-left"
+							@click="handleCreate">
+							{{ t('notes.createFirst') }}
+						</button>
+					</template>
+					<template #option="slotProps">
+						<div class="flex items-center justify-between w-full group/item gap-1">
+							<span class="truncate text-sm">{{ displayTitle(slotProps.option.title) }}</span>
+							<div class="flex items-center shrink-0"
+								:class="noteStore.selectedNote?.id === slotProps.option.id ? '' : 'opacity-0 group-hover/item:opacity-100 transition-opacity'">
+								<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+									:class="noteStore.selectedNote?.id === slotProps.option.id
+										? 'text-white hover:bg-white/20'
+										: 'text-surface-400 hover:text-surface-0 hover:bg-surface-600'"
+									@click.stop="openInvite(slotProps.option.id)">
+									<IconUserPlus class="w-3.5 h-3.5" />
+								</button>
+								<button class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+									:class="noteStore.selectedNote?.id === slotProps.option.id
+										? 'text-white hover:text-red-300 hover:bg-white/20'
+										: 'text-surface-400 hover:text-red-400 hover:bg-surface-600'"
+									@click.stop="confirmDelete(slotProps.option.id)">
+									<TimesIcon class="w-2.5 h-2.5" />
+								</button>
+							</div>
 						</div>
-					</div>
-				</template>
-			</Listbox>
+					</template>
+				</Listbox>
 
-			<div v-if="sharedNotes.length" class="flex items-center justify-between mt-4 mb-1 px-2">
-				<h2 class="section-title !mb-0">{{ t('notes.shared') }}</h2>
-			</div>
-			<Listbox v-if="sharedNotes.length" :model-value="selectedSharedNote" @update:model-value="selectSharedNote"
-				:options="sharedNotes" optionLabel="note_title" dataKey="note_id"
-				pt:root:class="!border-0 !shadow-none !bg-transparent" pt:list:class="!p-0 !gap-0.5"
-				pt:listContainer:class="!overflow-visible !max-h-none" pt:option:class="!px-2 !py-1.5 !rounded-md">
-				<template #option="slotProps">
-					<div class="flex items-center justify-between w-full">
-						<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled') }}</span>
-						<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.access_role }}</span>
-					</div>
-				</template>
-			</Listbox>
+				<div v-if="sharedNotes.length" class="flex items-center justify-between mt-4 mb-1 px-2">
+					<h2 class="section-title !mb-0">{{ t('notes.shared') }}</h2>
+				</div>
+				<Listbox v-if="sharedNotes.length" :model-value="selectedSharedNote"
+					@update:model-value="selectSharedNote" :options="sharedNotes" optionLabel="note_title"
+					dataKey="note_id" pt:root:class="!border-0 !shadow-none !bg-transparent"
+					pt:list:class="!p-0 !gap-0.5" pt:listContainer:class="!overflow-visible !max-h-none"
+					pt:option:class="!px-2 !py-1.5 !rounded-md">
+					<template #option="slotProps">
+						<div class="flex items-center justify-between w-full">
+							<span class="truncate text-sm">{{ slotProps.option.note_title || t('notes.untitled')
+							}}</span>
+							<span class="text-xs text-surface-500 shrink-0 ml-2">{{ slotProps.option.access_role
+							}}</span>
+						</div>
+					</template>
+				</Listbox>
+
+			</template>
 
 		</template>
 
-		</template>
-
-		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
+		<div v-if="mounted && activeNote"
+			class="flex flex-1 w-full h-full gap-4 flex-col md:flex-row overflow-y-auto md:overflow-y-visible">
 			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
 			<ChatSidebar v-show="chatOpen" />
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
-		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false" :dismissableMask="false"
-			pt:root:class="w-full max-w-sm">
+		<Dialog v-model:visible="showInviteDialog" :header="t('notes.invite.header')" modal :draggable="false"
+			:dismissableMask="false" pt:root:class="w-full max-w-sm">
 			<div class="flex flex-col gap-3">
 				<!-- Current collaborators -->
 				<div v-if="collaborators.length">
@@ -370,7 +362,9 @@ await useAsyncData('notes', async () => {
 						<div v-for="collab in collaborators" :key="collab.share_id"
 							class="flex items-center justify-between px-3 py-2 text-sm text-surface-300">
 							<div class="flex items-center gap-3 min-w-0">
-								<UserAvatar v-if="collab.guest_id" :uuid="collab.guest_id" :image-u-r-l="imageFor(collab.guest_id)" :size="28" class="shrink-0 rounded-full overflow-hidden" />
+								<UserAvatar v-if="collab.guest_id" :uuid="collab.guest_id"
+									:image-u-r-l="imageFor(collab.guest_id)" :size="28"
+									class="shrink-0 rounded-full overflow-hidden" />
 								<div class="min-w-0">
 									<div class="truncate">@{{ usernameFor(collab.guest_id) }}</div>
 									<div class="text-xs text-surface-500">{{ collab.access_role }}</div>
@@ -404,7 +398,8 @@ await useAsyncData('notes', async () => {
 						class="flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors" :class="selectedUsers.includes(user.id)
 							? 'bg-primary-500/15 text-primary-400'
 							: 'hover:bg-surface-800 text-surface-300'" @click="toggleUser(user.id)">
-						<UserAvatar :uuid="user.id" :image-u-r-l="user.imageURL" :size="28" class="shrink-0 rounded-full overflow-hidden" />
+						<UserAvatar :uuid="user.id" :image-u-r-l="user.imageURL" :size="28"
+							class="shrink-0 rounded-full overflow-hidden" />
 						<div class="min-w-0">
 							<div class="truncate">@{{ user.loginName }}</div>
 						</div>
