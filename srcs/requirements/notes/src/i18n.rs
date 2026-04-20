@@ -18,6 +18,16 @@ impl I18n {
         bundles.insert("de-de".to_string(), de);
         let es = Self::build_bundle("es-ES", include_str!("langs/es-ES/main.ftl"));
         bundles.insert("es-es".to_string(), es);
+        let ie = Self::build_bundle("ie-IE", include_str!("langs/ie-IE/main.ftl"));
+        bundles.insert("ie-ie".to_string(), ie);
+        let el = Self::build_bundle("el-GR", include_str!("langs/el-GR/main.ftl"));
+        bundles.insert("el-gr".to_string(), el);
+        let tr = Self::build_bundle("tr-TR", include_str!("langs/tr-TR/main.ftl"));
+        bundles.insert("tr-tr".to_string(), tr);
+        let ru = Self::build_bundle("ru-RU", include_str!("langs/ru-RU/main.ftl"));
+        bundles.insert("ru-ru".to_string(), ru);
+        let ar = Self::build_bundle("ar", include_str!("langs/ar/main.ftl"));
+        bundles.insert("ar".to_string(), ar);
         Self {
             bundles: Arc::new(bundles),
             default_locale: Arc::from("en-uk"),

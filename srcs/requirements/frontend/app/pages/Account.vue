@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
-import * as Y from 'yjs';
+import { useConfirm } from 'primevue/useconfirm';
 import { useAuthStore } from '../stores/authStore';
 import Card from '../volt/Card.vue';
 import Divider from '../volt/Divider.vue';
@@ -10,13 +10,15 @@ import Button from '../volt/Button.vue';
 import { useUiI18n } from '~/composables/useUiI18n';
 
 const auth = useAuthStore();
+const confirm = useConfirm();
 const { t } = useUiI18n();
-const isSubmitting = ref(false);
-const activeForm = ref<'login' | 'email' | 'password' | null>(null);
+const activeAction = ref<'login' | 'email' | 'image' | 'removeImage' | 'password' | 'delete' | 'export' | 'logout' | null>(null);
 const successMessage = ref('');
 
 async function handleLogout() {
+	activeAction.value = 'logout';
 	await auth.logout();
+	activeAction.value = null;
 }
 
 const formLogin = ref('');
@@ -25,10 +27,13 @@ const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 
+const formImageUrl = ref('');
+
 const errors = reactive({
 	login: '',
 	email: '',
-	password: ''
+	password: '',
+	image: ''
 });
 
 onMounted(() => {
@@ -41,54 +46,88 @@ onMounted(() => {
 async function handleUpdateLogin() {
 	if (!formLogin.value || formLogin.value === auth.user?.loginName) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'login';
+	activeAction.value = 'login';
 	errors.login = '';
 	successMessage.value = '';
 
 	const result = await auth.updateLoginName(formLogin.value);
 
 	if (!result.success) {
-		errors.login = result.message; // Display error strictly under the field
+		errors.login = result.message;
 	} else {
-		formLogin.value = ''; // Clear the field on success
+		formLogin.value = '';
 		successMessage.value = t('profile.success.username');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
 async function handleUpdateEmail() {
 	if (formEmail.value === auth.user?.email) return;
 
-	isSubmitting.value = true;
-	activeForm.value = 'email';
+	activeAction.value = 'email';
 	errors.email = '';
 	successMessage.value = '';
 
 	const result = await auth.updateEmail(formEmail.value);
 
 	if (!result.success) {
-		errors.email = result.message; // Display error strictly under the field
+		errors.email = result.message;
 	} else {
 		successMessage.value = t('profile.success.email');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
+}
+
+async function handleUpdateImage() {
+	activeAction.value = 'image';
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(formImageUrl.value || null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	activeAction.value = null;
+}
+
+async function handleRemoveImage() {
+	activeAction.value = 'removeImage';
+	errors.image = '';
+	successMessage.value = '';
+
+	const result = await auth.updateImageUrl(null);
+
+	if (!result.success) {
+		errors.image = result.message;
+	} else {
+		formImageUrl.value = '';
+		successMessage.value = t('profile.success.image');
+	}
+
+	activeAction.value = null;
 }
 
 async function handleChangePassword() {
-	if (!oldPassword.value || !newPassword.value) return;
+	if (!newPassword.value) return;
+
+	if (auth.user?.hasLocalAuth && !oldPassword.value) {
+		errors.password = t('profile.error.oldPasswordRequired');
+		return;
+	}
 
 	if (newPassword.value !== confirmPassword.value) {
 		errors.password = t('profile.error.passwordMismatch');
 		return;
 	}
 
-	isSubmitting.value = true;
-	activeForm.value = 'password';
+	activeAction.value = 'password';
 	errors.password = '';
 	successMessage.value = '';
 
@@ -103,43 +142,55 @@ async function handleChangePassword() {
 		successMessage.value = t('profile.success.password');
 	}
 
-	isSubmitting.value = false;
-	activeForm.value = null;
+	activeAction.value = null;
 }
 
-async function handleDeleteAccount() {
-	const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
-	if (!confirmed) return;
+function handleDeleteAccount() {
+	confirm.require({
+		message: t('profile.delete.confirm'),
+		header: t('profile.section.danger'),
+		icon: 'pi pi-exclamation-triangle',
+		acceptProps: {
+			label: t('profile.button.deleteAccount'),
+			severity: 'danger'
+		},
+		rejectProps: {
+			label: t('notes.delete.confirmReject'),
+			severity: 'secondary'
+		},
+		accept: async () => {
+			activeAction.value = 'delete';
+			successMessage.value = '';
+			errors.login = '';
+			errors.email = '';
+			errors.password = '';
 
-	isSubmitting.value = true;
-	successMessage.value = '';
-	errors.login = '';
-	errors.email = '';
-	errors.password = '';
+			const result = await auth.deleteAccount();
+			if (!result.success) {
+				errors.password = result.message;
+				activeAction.value = null;
+				return;
+			}
 
-	const result = await auth.deleteAccount();
-	if (!result.success) {
-		errors.password = result.message;
-		isSubmitting.value = false;
-		return;
-	}
-
-	window.location.href = '/';
+			window.location.href = '/';
+		}
+	});
 }
 
 function extractPlainTextFromXml(xml: string): string {
 	if (!xml) return '';
-	const parser = new DOMParser();
-	const parsed = parser.parseFromString(`<div>${xml}</div>`, 'text/html');
-	return (parsed.body.textContent || '').replace(/\s+/g, ' ').trim();
+	const withBreaks = xml.replace(/<\/?(p|div|h[1-6]|li|br|tr|td)[^>]*>/gi, '\n');
+	const stripped = withBreaks.replace(/<[^>]+>/g, '');
+	return stripped.replace(/\n{2,}/g, '\n\n').trim();
 }
 
-function decodeStateVector(stateVector: unknown): { title: string; content: string } | null {
+async function decodeStateVector(stateVector: unknown): Promise<{ title: string; content: string } | null> {
 	if (!Array.isArray(stateVector)) return null;
 	const bytes = Uint8Array.from(stateVector.filter((v) => Number.isInteger(v) && v >= 0 && v <= 255));
 	if (bytes.length === 0) return null;
 
 	try {
+		const Y = await import('yjs');
 		const doc = new Y.Doc();
 		Y.applyUpdate(doc, bytes);
 		const title = doc.getText('title').toString();
@@ -151,25 +202,25 @@ function decodeStateVector(stateVector: unknown): { title: string; content: stri
 	}
 }
 
-function buildReadableExportPayload(rawData: any) {
+async function buildReadableExportPayload(rawData: Record<string, unknown>) {
 	if (!rawData || typeof rawData !== 'object') return rawData;
 	if (!Array.isArray(rawData.notes)) return rawData;
 
-	const notes = rawData.notes.map((note: any) => {
-		const decoded = decodeStateVector(note?.state_vector);
+	const notes = await Promise.all(rawData.notes.map(async (note: Record<string, unknown>) => {
+		const decoded = await decodeStateVector(note?.state_vector);
 		const { state_vector, ...rest } = note || {};
 		return {
 			...rest,
-			title: decoded?.title || rest.title || 'Untitled',
+			title: decoded?.title || rest.title || t('notes.untitled'),
 			content: decoded?.content || '',
 		};
-	});
+	}));
 
 	return { ...rawData, notes };
 }
 
 async function handleExportData() {
-	isSubmitting.value = true;
+	activeAction.value = 'export';
 	successMessage.value = '';
 	errors.login = '';
 	errors.email = '';
@@ -177,12 +228,12 @@ async function handleExportData() {
 
 	const result = await auth.exportData();
 	if (!result.success) {
-		errors.password = result.message || "Data export failed";
-		isSubmitting.value = false;
+		errors.password = result.message || t('auth.error.dataExportFailed');
+		activeAction.value = null;
 		return;
 	}
 
-	const payloadData = buildReadableExportPayload(result.data);
+	const payloadData = await buildReadableExportPayload(result.data as Record<string, unknown>);
 	const payload = JSON.stringify(payloadData, null, 2);
 	const blob = new Blob([payload], { type: 'application/json' });
 	const url = URL.createObjectURL(blob);
@@ -195,8 +246,8 @@ async function handleExportData() {
 	document.body.removeChild(anchor);
 	URL.revokeObjectURL(url);
 
-	successMessage.value = "Data exported successfully";
-	isSubmitting.value = false;
+	successMessage.value = t('profile.export.success');
+	activeAction.value = null;
 }
 </script>
 
@@ -214,52 +265,70 @@ async function handleExportData() {
 				<div class="flex flex-col gap-6">
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.username') }}</h3>
+						<h3 class="font-bold">{{ t('login.username') }}</h3>
 						<p v-if="auth.user?.loginName">{{ t('profile.currentPrefix') }} <strong>{{ auth.user.loginName }}</strong></p>
 						<form @submit.prevent="handleUpdateLogin" class="flex flex-col gap-2">
 							<InputText v-model="formLogin" :placeholder="t('profile.placeholder.newUsername')" fluid />
 							<Button :label="t('profile.button.updateUsername')" type="submit"
-								:disabled="isSubmitting || !formLogin || formLogin === (auth.user?.loginName || '')"
+								:disabled="activeAction === 'login' || !formLogin || formLogin === (auth.user?.loginName || '')"
 								fluid />
 							<small v-if="errors.login" class="text-red-500">{{ errors.login }}</small>
 						</form>
 					</div>
 
 					<div class="flex flex-col gap-2">
-						<h3 class="font-bold">{{ t('profile.section.email') }}</h3>
+						<h3 class="font-bold">{{ t('login.email') }}</h3>
 						<p>{{ t('profile.currentPrefix') }} <strong>{{ auth.user?.email || t('profile.none') }}</strong></p>
 						<form @submit.prevent="handleUpdateEmail" class="flex flex-col gap-2">
 							<InputText v-model="formEmail" :placeholder="t('profile.placeholder.newEmail')" fluid />
 							<Button :label="t('profile.button.updateEmail')" type="submit"
-								:disabled="isSubmitting || formEmail === (auth.user?.email || '')" fluid />
+								:disabled="activeAction === 'email' || formEmail === (auth.user?.email || '')" fluid />
 							<small v-if="errors.email" class="text-red-500">{{ errors.email }}</small>
 						</form>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<h3 class="font-bold">{{ t('profile.section.avatar') }}</h3>
+						<div v-if="auth.user?.imageURL" class="flex items-center gap-3">
+							<img :src="auth.user.imageURL" :alt="t('profile.avatar.alt')" class="w-12 h-12 rounded-full object-cover" />
+							<span class="text-sm text-muted-color truncate max-w-[160px]">{{ auth.user.imageURL }}</span>
+						</div>
+						<div class="flex flex-col gap-2">
+							<InputText v-model="formImageUrl" :placeholder="t('profile.placeholder.imageUrl')" fluid />
+							<Button :label="t('profile.button.updateImage')" :disabled="activeAction === 'image' || !formImageUrl"
+								fluid @click="handleUpdateImage" />
+							<Button v-if="auth.user?.imageURL" :label="t('profile.button.removeImage')"
+								severity="secondary" :disabled="activeAction === 'removeImage'" fluid @click="handleRemoveImage" />
+							<small v-if="errors.image" class="text-red-500">{{ errors.image }}</small>
+						</div>
 					</div>
 
 					<div class="flex flex-col gap-2">
 						<h3 class="font-bold">{{ t('profile.section.security') }}</h3>
 						<form @submit.prevent="handleChangePassword" class="flex flex-col gap-2">
 							<Password v-model="oldPassword" :placeholder="t('profile.placeholder.currentPassword')" :feedback="false" toggleMask
-								fluid />
+								fluid :disabled="!auth.user?.hasLocalAuth" />
 							<Password v-model="newPassword" :placeholder="t('profile.placeholder.newPassword')" toggleMask fluid />
 							<Password v-model="confirmPassword" :placeholder="t('profile.placeholder.confirmNewPassword')" :feedback="false"
 								toggleMask fluid />
-							<Button :label="t('profile.button.changePassword')" type="submit"
-								:disabled="isSubmitting || !oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
+							<Button
+								:label="auth.user?.hasLocalAuth ? t('profile.button.changePassword') : t('profile.button.addPassword')"
+								type="submit"
+								:disabled="activeAction === 'password' || !newPassword || !confirmPassword || newPassword !== confirmPassword"
 								fluid />
 							<small v-if="errors.password" class="text-red-500">{{ errors.password }}</small>
 						</form>
 					</div>
 				<div class="flex flex-col gap-2 pt-2">
-					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.exportData')" severity="secondary" fluid :disabled="activeAction === 'export'"
 						@click="handleExportData" />
-					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="isSubmitting"
+					<Button :label="t('auth.logout')" severity="secondary" fluid :disabled="activeAction === 'logout'"
 						@click="handleLogout" />
 				</div>
 
 				<div class="flex flex-col gap-2 pt-4">
 					<h3 class="font-bold text-red-500">{{ t('profile.section.danger') }}</h3>
-					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="isSubmitting"
+					<Button :label="t('profile.button.deleteAccount')" severity="danger" fluid :disabled="activeAction === 'delete'"
 						@click="handleDeleteAccount" />
 				</div>
 				</div>

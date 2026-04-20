@@ -1,10 +1,10 @@
 import { or, eq, and } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
 import { Type, type Static } from "@sinclair/typebox";
 import * as schema from "../db/schema";
 import type { GithubUser } from "../types";
 import { createSession, verifySession } from "../lib/session_helpers";
-import { getHomeURL, getOrigin } from "../lib/auth_utils";
 import * as argon2 from "argon2";
 import {
 	authGithubCallbackTotal,
@@ -39,6 +39,7 @@ async function createUserAndAccount(db: any, user: schema.NewUser, account: Omit
 		await tx.insert(schema.accounts).values({
 			...account,
 			userId: insertedUser.id,
+			providerAccountId: account.provider === "local" ? insertedUser.id : account.providerAccountId,
 		});
 		return insertedUser;
 	});
@@ -59,7 +60,7 @@ async function findUserByIdentifier(db: any, identifier: string) {
 /**
  * Helper: Find an account by its external provider identity.
  */
-async function findAccount(db: any, provider: any, providerAccountId: string) {
+async function findAccountByProviderAccountId(db: any, provider: any, providerAccountId: string) {
 	const [account] = await db
 		.select()
 		.from(schema.accounts)
@@ -67,7 +68,7 @@ async function findAccount(db: any, provider: any, providerAccountId: string) {
 	return account;
 }
 
-export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) => {
+export const authRoutes: FastifyPluginAsyncTypebox = async (server) => {
 	// this function will receive the token from github (it is called by github)
 	// - needs to check if there is a user already with this info
 	// - needs to either create the user or give them a session
@@ -79,7 +80,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			authGithubCallbackTotal.labels("error_oauth").inc();
 			throw err;
 		}
-		console.log("GitHub Token:", gitToken.token.access_token);
+		server.log.debug("GitHub OAuth token exchange completed");
 
 		// get the user info using token information
 		const response = await fetch("https://api.github.com/user", {
@@ -95,7 +96,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 		}
 
 		const githubUser = (await response.json()) as GithubUser;
-		console.log("GitHub User Data:", githubUser);
+		server.log.debug("GitHub user profile fetched for provider ID %s", githubUser.id);
 
 		// DATABASE Logic
 		// pull info of the user from githubUser
@@ -117,7 +118,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			const emailConflict = await findUserByIdentifier(server.db, buildUser.email);
 
 			if (emailConflict) {
-				const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+				const existingAccount = await findAccountByProviderAccountId(server.db, "github", githubUser.id.toString());
 				
 				if (existingAccount && existingAccount.userId !== emailConflict.id) {
 					authGithubCallbackTotal.labels("conflict_email").inc();
@@ -128,13 +129,13 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 
 		// Find or Create User/Account
 		let user;
-		const existingAccount = await findAccount(server.db, "github", githubUser.id.toString());
+		const existingAccount = await findAccountByProviderAccountId(server.db, "github", githubUser.id.toString());
 
 		let githubOutcome: "success_returning" | "success_new_user";
 		if (existingAccount) {
 			const [found] = await server.db.select().from(schema.users).where(eq(schema.users.id, existingAccount.userId));
 			user = found;
-			console.log("Found existing user via account:", user.id);
+			server.log.debug("Found existing user via account: %s", user.id);
 			githubOutcome = "success_returning";
 		} else {
 			try {
@@ -146,33 +147,21 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 				authGithubCallbackTotal.labels("error_create").inc();
 				throw err;
 			}
-			console.log("Created new user and linked account:", user.id);
+			server.log.debug("Created new user and linked account: %s", user.id);
 			githubOutcome = "success_new_user";
 		}
 
 		authGithubCallbackTotal.labels(githubOutcome).inc();
 		// CREATE SESSION & COOKIE (using Helper)
 		await createSession(request, reply, server.db, user.id);
-		return reply.redirect(getOrigin(request));
+		return reply.redirect(server.frontendUrl);
 	});
 
-	// separate one for checking session/cookie
-	server.get("/", async (request, reply) => {
-		const session = await verifySession(request, server.db);
-		if (session) {
-			return reply.redirect(getHomeURL(request));
-		}
-
-		// If headers indicate this is a browser request, redirect to login
-		if (request.headers.accept?.includes("text/html")) {
-			return reply.redirect(getOrigin(request) + "/login");
-		}
-
-		// Otherwise, return a JSON status for API/Ping tools
+	// Health/status check
+	server.get("/", async (_request, _reply) => {
 		return {
 			service: "auth",
 			status: "running",
-			authenticated: false,
 		};
 	});
 
@@ -180,19 +169,23 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 	server.post("/register", { schema: { body: RegistrationSchema } }, async (request, reply) => {
 		const existingUser = await verifySession(request, server.db);
 		if (existingUser) {
-			return reply.redirect(getHomeURL(request)); // Already logged in! Avoid registering.
+			return reply.send({ success: true }); // Already logged in — frontend handles navigation.
 		}
 
-		const { loginName, email, password } = request.body as RegisterType;
+		const { loginName, email, password } = request.body;
 
-		// Check for existing users
-		const userExists = await findUserByIdentifier(server.db, loginName || email);
+		// Check for existing users — must be two separate lookups since loginName || email
+		// always evaluates to loginName (TypeBox ensures it's always truthy).
+		const loginConflict = await findUserByIdentifier(server.db, loginName);
+		if (loginConflict) {
+			authRegisterTotal.labels("conflict_login").inc();
+			return reply.status(409).send({ error: "Username already taken." });
+		}
 
-		if (userExists) {
-			const conflict = userExists.loginName === loginName ? "conflict_login" : "conflict_email";
-			authRegisterTotal.labels(conflict).inc();
-			const message = userExists.loginName === loginName ? "Login name already taken." : "Email already registered.";
-			return reply.status(409).send({ error: message });
+		const emailConflict = await findUserByIdentifier(server.db, email);
+		if (emailConflict) {
+			authRegisterTotal.labels("conflict_email").inc();
+			return reply.status(409).send({ error: "Email already registered." });
 		}
 
 		// Hash password (placeholder for now)
@@ -220,8 +213,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			authRegisterTotal.labels("success").inc();
 			// Create a session for the new user immediately
 			await createSession(request, reply, server.db, newUser.id);
-			// Redirect to the Home URL (likely /notes)
-			return reply.redirect(getOrigin(request));
+			return reply.send({ success: true });
 		} catch (err) {
 			server.log.error(err); // Manual logging becasue WE catch it not fastify. custom err message
 			authRegisterTotal.labels("error").inc();
@@ -232,10 +224,10 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 	server.post("/login", { schema: { body: LoginSchema } }, async (request, reply) => {
 		const session = await verifySession(request, server.db);
 		if (session) {
-			return reply.redirect(getHomeURL(request)); // Already logged in! Avoid registering.
+			return reply.send({ success: true }); // Already logged in — frontend handles navigation.
 		}
 
-		const { identifier, password } = request.body as LoginType;
+		const { identifier, password } = request.body;
 
 		const user = await findUserByIdentifier(server.db, identifier);
 		if (!user) {
@@ -243,7 +235,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 			return reply.status(401).send({ error: "Invalid credentials." });
 		}
 
-		const account = await findAccount(server.db, "local", user.loginName);
+		const account = await findAccountByProviderAccountId(server.db, "local", user.id);
 		if (!account || !account.passwordHash) {
 			authLoginLocalTotal.labels("fail_no_local_account").inc();
 			return reply.status(401).send({ error: "Invalid credentials." });
@@ -259,8 +251,7 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
 		}
 
 		authLoginLocalTotal.labels("success").inc();
-		// Create session & redirect
 		await createSession(request, reply, server.db, user.id);
-		return reply.redirect(getHomeURL(request));
+		return reply.send({ success: true });
 	});
 };

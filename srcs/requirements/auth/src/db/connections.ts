@@ -1,4 +1,3 @@
-import * as dotenv from "dotenv";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "path";
 
@@ -11,6 +10,8 @@ postgres://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@${POSTGRES}/${AUTH_DB_NAME}
 // Inside Docker, compose already injects these variables, so we skip this if they exist.
 const hostEnv = resolve(__dirname, "../../.env");
 if (!process.env.AUTH_DB_USER && existsSync(hostEnv)) {
+	// dotenv is a devDependency — dynamic import so prod builds don't require it
+	const dotenv = require("dotenv");
 	dotenv.config({ path: hostEnv });
 }
 

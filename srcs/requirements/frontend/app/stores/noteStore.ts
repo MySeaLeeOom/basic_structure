@@ -3,13 +3,14 @@ import { ref, computed } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { Note } from "@/types";
 import { useAuthStore } from "@/stores/authStore";
+import { useUiI18n } from "~/composables/useUiI18n";
 
 export const useNoteStore = defineStore("notes", () => {
 	const authStore = useAuthStore();
+	const { t } = useUiI18n();
 	const notes = ref<Note[]>([]);
 	const selectedNote = ref<Note | null>(null);
 	const error = ref<string | null>(null);
-	const isLoading = ref(false);
 
 	// Cache to prevent unnecessary refetches
 	const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
@@ -43,7 +44,6 @@ export const useNoteStore = defineStore("notes", () => {
 		}
 
 		error.value = null;
-		isLoading.value = true;
 		let response: Response | null = null;
 
 		try {
@@ -51,10 +51,7 @@ export const useNoteStore = defineStore("notes", () => {
 			// The Auth store handles internal magic to capture the cookie
 			if (!authStore.user) {
 				await authStore.checkAuth();
-				if (!authStore.user) {
-					isLoading.value = false;
-					return;
-				}
+				if (!authStore.user) return;
 			}
 
 			// On the server, we MUST use the full internal Docker URL.
@@ -78,32 +75,24 @@ export const useNoteStore = defineStore("notes", () => {
 			const fetchedNotes = await response.json();
 			notes.value = fetchedNotes;
 
-			// Auto-select first note if none selected (we cancel this, we will have a new empty note on load?)
-			// if (!selectedNote.value && notes.value.length) {
-			// 	selectedNote.value = notes.value[0]!;
-			// }
-
-			// Update fetch timestamp
 			lastFetchTimestamp.value = currentTime;
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? (catchError.name === "AbortError" ? "Request timed out" : catchError.message) : "Load failed";
+			const errorMsg = catchError instanceof Error
+				? (catchError.name === "AbortError" ? t("notes.error.requestTimedOut") : catchError.message)
+				: t("notes.error.loadFailed");
 
-			// Notes.vue redirects on this exact string when the list request is unauthorized
-			error.value = response?.status === 401 ? "HTTP 401" : errorMsg;
+			error.value = errorMsg;
 			console.error("Failed to fetch notes:", errorMsg);
-		} finally {
-			isLoading.value = false;
 		}
 	}
 
 	async function createNote() {
 		error.value = null;
-		// isLoading.value = true;
 		try {
 			const response = await fetch("/api/notes", {
 				method: "POST",
 				headers: buildHeaders({ "Content-Type": "application/json" }),
-				body: JSON.stringify({ title: "Untitled" }),
+				body: JSON.stringify({ title: t("notes.untitled") }),
 			});
 
 			await throwForResponse(response);
@@ -112,17 +101,14 @@ export const useNoteStore = defineStore("notes", () => {
 			notes.value.push(note);
 			selectedNote.value = note;
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? catchError.message : "Create failed";
+			const errorMsg = catchError instanceof Error ? catchError.message : t("notes.error.createFailed");
 			error.value = errorMsg;
 			console.error("Failed to create note:", errorMsg);
-		} finally {
-			isLoading.value = false;
 		}
 	}
 
 	async function deleteNote(id: string) {
 		error.value = null;
-		isLoading.value = true;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "DELETE",
@@ -135,11 +121,9 @@ export const useNoteStore = defineStore("notes", () => {
 				selectedNote.value = null;
 			}
 		} catch (catchError) {
-			const errorMsg = catchError instanceof Error ? catchError.message : "Delete failed";
+			const errorMsg = catchError instanceof Error ? catchError.message : t("notes.error.deleteFailed");
 			error.value = errorMsg;
 			console.error("Failed to delete note:", errorMsg);
-		} finally {
-			isLoading.value = false;
 		}
 	}
 
@@ -178,7 +162,6 @@ export const useNoteStore = defineStore("notes", () => {
 		notes.value = [];
 		selectedNote.value = null;
 		error.value = null;
-		isLoading.value = false;
 		lastFetchTimestamp.value = 0;
 	}
 
@@ -186,7 +169,6 @@ export const useNoteStore = defineStore("notes", () => {
 		notes,
 		selectedNote,
 		error,
-		isLoading,
 		notesCount,
 		fetchNotes,
 		createNote,

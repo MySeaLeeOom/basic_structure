@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, watch, watchEffect } from "vue";
+import { shallowRef, ref, computed, watch, watchEffect } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -42,7 +42,7 @@ watchEffect((onCleanup) => {
       CollaborationCaret.configure({
         provider: prov,
         user: {
-          name: authStore.user?.loginName ?? "Anonymous",
+          name: authStore.user?.loginName ?? t('noteEditor.anonymous'),
           color: userColor(authStore.user?.id),
         },
         render: renderCaret,
@@ -53,6 +53,19 @@ watchEffect((onCleanup) => {
   editor.value = ed;
   onCleanup(() => ed.destroy());
 });
+
+// make sure the editor is connected
+const isEmpty = computed(() =>
+  !!ydoc.value && !titleText.value.trim() && (!editor.value || editor.value.isEmpty)
+);
+
+const titleInput = ref<HTMLInputElement | null>(null);
+
+function focusTitle() {
+  titleInput.value?.focus();
+}
+
+defineExpose({ isEmpty, focusTitle });
 
 function focusEditorEnd(event: MouseEvent) {
   const target = event.target as HTMLElement;
@@ -71,7 +84,8 @@ function focusEditorEnd(event: MouseEvent) {
         ref="titleInput"
         :value="titleText"
         @input="updateTitle(($event.target as HTMLInputElement).value)"
-        :placeholder="t('noteEditor.untitled')"
+        @keydown.enter.prevent="editor?.commands.focus('start')"
+        :placeholder="t('notes.untitled')"
         class="editor-title"
       />
       <EditorContent :editor="editor" class="tiptap-editor" />

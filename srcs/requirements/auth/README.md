@@ -7,8 +7,13 @@ An ultra-efficient Authentication service built with Fastify, TypeScript, and Dr
 
 When you change the [schema.ts](src/db/schema.ts), you must synchronize the database. We use a two-step "Generate & Push" workflow.
 
+IF the change is not to the schema, but to the content of a row, drizzle sql file will need to be updated manually! Please see drizzle docs
+
+Example of what would go into a migration file in this situation: 
+`"UPDATE accounts SET provider_account_id = user_id::text WHERE provider = 'local';"`
+
 ### 1. Generate Migration Files
-This looks at your TypeScript schema and creates the SQL equivalent in `src/db/migrations/`.
+This looks at your TypeScript schema and creates the SQL equivalent in `./drizzle`.
 This must be done if this is the first time we run the program (if we dont have initial file yet)
 
 ```bash
@@ -53,7 +58,7 @@ In [src/tests/auth.test.ts](src/tests/auth.test.ts), we use the "recipe" `buildS
 
 ---
 
-## Endpoints & Wiring Guide 🔌
+## Endpoints & Wiring Guide
 
 When configuring Nginx or other services, it helps to visualize how the Auth service fits into the mesh.
 
@@ -106,7 +111,7 @@ graph TD
 
 ---
 
-## The "Thin Gate" Protocol 🛡️
+## The "Thin Gate" Protocol
 
 We distinguish between **Access** (is the door open?) and **Identity** (who is walking through?).
 
@@ -129,8 +134,15 @@ These are the routes exposed by the AUTH container on port `3000`.
 | **POST** | `/logout` | **Clears session cookie.** | Called by frontend button. |
 | **POST** | `/login` | Accepts `{ identifier, password }`. Sets cookie. | Public form submission. |
 | **POST** | `/register` | Accepts `{ loginName, email, password }`. Sets cookie. | Public form submission. |
-| **GET** | `/login/github` | Redirects browser to GitHub. | link from "Login with GitHub" button. |
-| **GET** | `/` | Health check / Redirect logic. | default route. |
+| **GET** | `/login/github` | Redirects browser to GitHub. | Link from "Login with GitHub" button. |
+| **GET** | `/` | Health check / Redirect logic. | Default route. |
+| **GET** | `/users` | Returns all registered users (`id`, `loginName`, `imageURL`). | Used by frontend share dialog. |
+| **PATCH** | `/change-login` | Updates `loginName`. Accepts `{ loginName }`. | Profile settings. |
+| **PATCH** | `/change-email` | Updates `email`. Accepts `{ email }`. | Profile settings. |
+| **PATCH** | `/change-image` | Sets or clears profile picture URL. Accepts `{ imageURL }`. | Profile settings. |
+| **POST** | `/change-password` | Updates or creates local password. Accepts `{ oldPassword, newPassword }`. | Profile settings. |
+| **GET** | `/export-data` | GDPR-style export of user profile, accounts, sessions, and notes. | Profile settings. |
+| **DELETE** | `/delete-account` | Deletes user, their notes, and linked data. Clears session cookie. | Profile settings. |
 
 ---
 
@@ -179,6 +191,6 @@ In a production environment, use the production Dockerfile (rather than Dockerfi
 - [src/app.ts](src/app.ts): Core application assembly.
 - [src/index.ts](src/index.ts): Entry point (Config loading + Process handling).
 - [src/db/](src/db/): Database schema definitions and connection pooling.
-- [src/routes/](src/routes/): Route handlers split by domain (Auth, Sessions).
+- [src/routes/](src/routes/): Route handlers split by domain (Auth, Sessions, User).
 - [src/lib/](src/lib/): Pure helpers and utility logic (URL construction, session helpers).
 - [src/tests/](src/tests/): Integration and unit tests.

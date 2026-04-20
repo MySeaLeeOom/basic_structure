@@ -1,21 +1,48 @@
 <script setup lang="ts">
-import SidebarLayout from '@/components/layouts/SidebarLayout.vue';
+import { computed } from 'vue';
+import Card from '@/volt/Card.vue';
+import { useAuthStore } from '@/stores/authStore';
 import { useUiI18n } from '~/composables/useUiI18n';
+import MyceliumBackground from '@/components/MyceliumBackground.vue';
+import IconMushroom from '@/components/icons/IconMushroom.vue';
 
 const { t } = useUiI18n();
+const authStore = useAuthStore();
+
+const homeGreeting = computed(() => {
+  if (authStore.isAuthenticated && authStore.user?.loginName) {
+    return t('nav.helloUser', { name: authStore.user.loginName });
+  }
+  return t('home.greeting');
+});
 </script>
 
 <template>
-  <SidebarLayout>
-    <template #sidebar>
-      <h2 class="section-title">{{ t('home.sidebarTitle') }}</h2>
-      <p class="text-muted-color text-sm">{{ t('home.sidebarHint') }}</p>
-    </template>
+  <!-- bg-white was bg-surface-200 -->
+  <div class="relative flex items-center justify-center h-full bg-white dark:bg-surface-950 p-6">
+    <MyceliumBackground />
+    <div class="relative z-10 w-full max-w-3xl flex flex-col items-center gap-6">
+      <IconMushroom :size="72" class="-mb-3" />
+      <h1 class="text-3xl font-bold text-center text-surface-800 dark:text-surface-0">{{ homeGreeting }}</h1>
 
-    <div class="p-8">
-      <h1 class="text-2xl font-bold mb-4">{{ t('home.title') }}</h1>
-      <h2 class="text-lg">{{ t('home.greeting') }}</h2>
+      <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card class="w-full">
+          <template #title>
+            <div class="text-xl font-bold">{{ t('home.definition.word') }}</div>
+            <div class="text-sm text-muted-color font-normal mt-1">{{ t('home.definition.ipa') }}</div>
+          </template>
+          <template #content>
+            <p class="mb-2">{{ t('home.definition.meaning') }}</p>
+            <p class="text-muted-color italic">{{ t('home.definition.metaphor') }}</p>
+          </template>
+        </Card>
+
+        <Card class="w-full">
+          <template #title>{{ t('home.welcome.title') }}</template>
+          <template #content>{{ t('home.welcome.body') }}</template>
+        </Card>
+      </div>
+
     </div>
-  </SidebarLayout>
+  </div>
 </template>
-

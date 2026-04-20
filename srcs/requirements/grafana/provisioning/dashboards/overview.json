@@ -22,7 +22,6 @@
         "definition": "label_values(pg_stat_database_numbackends, datname)",
         "hide": 0,
         "includeAll": true,
-        "includeAll": true,
         "label": "Database",
         "multi": false,
         "name": "datname",
@@ -368,10 +367,145 @@
     {
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26},
+      "id": 103,
+      "title": "Notes Service Health",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 268435456},
+              {"color": "red", "value": 536870912}
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 27},
+      "id": 30,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(process_resident_memory_bytes{job=\"notes\"}) or on() vector(0)",
+          "instant": true,
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
+      ],
+      "title": "Notes RSS Memory",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 27},
+      "id": 31,
+      "options": {
+        "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(rate(process_cpu_seconds_total{job=\"notes\"}[5m])) or on() vector(0)",
+          "legendFormat": "CPU usage",
+          "refId": "A"
+        }
+      ],
+      "title": "Notes CPU Usage Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 27},
+      "id": 32,
+      "options": {
+        "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(process_open_fds{job=\"notes\"}) or on() vector(0)",
+          "legendFormat": "open FDs",
+          "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(process_max_fds{job=\"notes\"}) or on() vector(0)",
+          "legendFormat": "max FDs",
+          "refId": "B"
+        }
+      ],
+      "title": "Notes Open File Descriptors",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 35},
       "id": 102,
-      "repeat": "datname",
-      "repeatDirection": "v",
-      "title": "PostgreSQL — database: $datname",
       "repeat": "datname",
       "repeatDirection": "v",
       "title": "PostgreSQL — database: $datname",
@@ -394,7 +528,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 27},
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 36},
       "id": 4,
       "options": {
         "colorMode": "value",
@@ -435,7 +569,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 27},
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 36},
       "id": 5,
       "options": {
         "colorMode": "background",
@@ -470,7 +604,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 27},
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 36},
       "id": 6,
       "options": {
         "colorMode": "value",
@@ -518,7 +652,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 31},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40},
       "id": 20,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -567,7 +701,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 31},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 40},
       "id": 21,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -622,7 +756,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 39},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 48},
       "id": 22,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -665,7 +799,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 39},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 48},
       "id": 23,
       "options": {
         "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -714,7 +848,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 39},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 48},
       "id": 24,
       "options": {
         "legend": {"calcs": ["lastNotNull", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -757,7 +891,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 47},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 56},
       "id": 25,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -791,7 +925,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 47},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 56},
       "id": 26,
       "options": {
         "colorMode": "background",

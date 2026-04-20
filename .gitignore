@@ -12,6 +12,7 @@ dist/
 .nuxt/
 .output/
 target/
+all-docker-logs*.*
 
 # OS/Editor artifacts
 .DS_Store
@@ -37,9 +38,11 @@ copilot-instructions.md
 masha*.*
 crdt-migration-plan.md
 dist
+.claudeignore
 
 target
 grafana-prometheus-review.md
 .pnpm-store
 .DS_Store
 .pnpm-store
+*.png

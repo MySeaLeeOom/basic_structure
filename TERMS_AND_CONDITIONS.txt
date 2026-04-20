@@ -1,6 +1,6 @@
 Terms and Conditions — Mycelium Notes
 
-Last updated: 10/04/2026
+Last updated: 17/04/2026
 
 
 By creating an account or using Mycelium Notes ("the Service"), you agree
@@ -27,11 +27,15 @@ the security of your credentials.
 2.2 You agree to provide accurate information during registration. Each
 account must have a unique email address and login name.
 
-2.3 If you sign in via GitHub, you authorize us to receive your profile
+2.3 During registration, you must confirm that you have read and accept
+these Terms of Service and the Privacy Policy. This confirmation is
+required before your account can be created.
+
+2.4 If you sign in via GitHub, you authorize us to receive your profile
 information (display name, email, avatar URL) from GitHub. Your use of
 GitHub is subject to GitHub's own terms of service.
 
-2.4 You are responsible for all activity that occurs under your account.
+2.5 You are responsible for all activity that occurs under your account.
 Notify us immediately if you believe your account has been compromised.
 
 
@@ -43,7 +47,8 @@ Service. We do not claim intellectual property rights over your Content.
 3.2 License to operate. By storing Content on the Service, you grant us a
 limited, non-exclusive license to store, process, transmit, and display
 your Content solely for the purpose of providing and maintaining the
-Service. This includes synchronizing Content across collaborative sessions.
+Service. This includes synchronizing Content across collaborative sessions
+and generating vector embeddings for the AI assistant feature.
 
 3.3 Collaborative editing. The Service supports real-time collaborative
 editing. When you share a note or collaborate with other users, those users
@@ -51,7 +56,13 @@ may view, edit, and modify the shared Content. You acknowledge that
 collaborative edits are merged automatically and may not be individually
 reversible.
 
-3.4 Content format. Document bodies are stored as binary CRDT state vectors.
+3.4 AI assistant. The Service includes an AI-powered assistant that uses
+your note content to answer queries. Note text is processed into vector
+embeddings stored in a separate database. The AI assistant operates on
+notes you own and notes shared with you. No content is sent to external
+AI providers; all processing uses locally hosted models.
+
+3.5 Content format. Document bodies are stored as binary CRDT state vectors.
 We do not guarantee that Content can be exported in any particular format
 beyond what the Service's interface provides.
 
@@ -79,12 +90,15 @@ You agree not to:
 or permanently, if we reasonably believe you have violated these terms or
 pose a risk to other users or the Service.
 
-5.2 You may request deletion of your account at any time. Account deletion
-will remove your sessions, linked provider accounts, and notes associated
-with your account. See our Privacy Policy for details on data retention and
-deletion behavior.
+5.2 You may delete your account at any time from your Account settings.
+Account deletion will remove your sessions, linked provider accounts, notes,
+AI-generated embeddings, and all other data associated with your account.
+See our Privacy Policy for full details on what is deleted.
 
-5.3 We reserve the right to discontinue the Service at any time, with
+5.3 You may export your personal data at any time from your Account
+settings before deleting your account.
+
+5.4 We reserve the right to discontinue the Service at any time, with
 reasonable notice where practicable.
 
 

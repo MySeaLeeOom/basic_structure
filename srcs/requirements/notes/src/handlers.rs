@@ -40,7 +40,7 @@ pub async fn get_all_notes(State(state): State<AppState>, headers: HeaderMap) ->
 	let user_id = get_user_id(&headers)
 		.map_err(|_| error_response(&state, &locale, StatusCode::UNAUTHORIZED, "unauthorized"))?;
 	tracing::debug!("Fetching all notes for user {}", user_id);
-	let notes = sqlx::query_as::<_, Note>("SELECT id, title, owner_id, owner_url, created_at, updated_at FROM notes WHERE owner_id = $1")
+	let notes = sqlx::query_as::<_, Note>("SELECT id, title, owner_id, owner_url, created_at, updated_at FROM notes WHERE owner_id = $1 ORDER BY created_at ASC")
 		.bind(user_id)
 		.fetch_all(&state.db_pool)
 		.await

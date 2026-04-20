@@ -40,36 +40,51 @@ pub async fn ws_route(
 }
 
 async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, user_id: Uuid) {
-	// find or create room if not exists
+	// Find existing room, or load from DB and atomically insert via the entry API
+	// to prevent a race where two connections both create a room for the same note.
 	let room = if let Some(existing_room) = state.rooms.get(&note_id) {
 		existing_room.clone()
 	} else {
-		// load data from db
-		match db::load_note(&state.pool, note_id).await {
-			Ok(doc) => {
-				tracing::info!("Loaded note {} from database", note_id);
-				let new_room = Arc::new(DocumentRoom::new(doc));
-				state.rooms.insert(note_id, new_room.clone());
+		let doc = match db::load_note(&state.pool, note_id).await {
+			Ok(doc) => doc,
+			Err(_) => {
+				tracing::error!("Failed to load document {}", note_id);
+				return;
+			}
+		};
 
-				// spawn background task for periodic saving
+		let owner_id = match db::get_owner_id(&state.pool, note_id).await {
+			Ok(id) => id,
+			Err(_) => {
+				tracing::error!("Failed to resolve owner for note {}", note_id);
+				return;
+			}
+		};
+
+		match state.rooms.entry(note_id) {
+			dashmap::mapref::entry::Entry::Occupied(e) => {
+				e.get().clone()
+			}
+			dashmap::mapref::entry::Entry::Vacant(e) => {
+				tracing::info!("Loaded note {} from database", note_id);
+				let new_room = Arc::new(DocumentRoom::new(doc, owner_id));
+				e.insert(new_room.clone());
+
 				let state_bg = state.clone();
 				let room_bg = new_room.clone();
-				let user_id_bg = user_id;
 				tokio::spawn(async move {
 					loop {
 						tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
-						// Check if the room still exists in the global state
 						if !state_bg.rooms.contains_key(&note_id) {
 							tracing::debug!("Background task for note {} exiting (room no longer exists)", note_id);
 							break;
 						}
 
-						// If dirty, acquire a read lock and save to DB
 						if room_bg.dirty.load(Ordering::Acquire) {
 							tracing::debug!("Background save for note {}", note_id);
 							let doc_lock = room_bg.doc.read().await;
-							if db::save_note(&state_bg.pool, note_id, user_id_bg, &doc_lock).await.is_ok() {
+							if db::save_note(&state_bg.pool, note_id, room_bg.owner_id, &doc_lock).await.is_ok() {
 								room_bg.dirty.store(false, Ordering::Release);
 							}
 						}
@@ -77,10 +92,6 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 				});
 
 				new_room
-			}
-			Err(_) => {
-				tracing::error!("Failed to load document {}", note_id);
-				return;
 			}
 		}
 	};
@@ -112,26 +123,44 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 		}
 	});
 
-	// main loop for receiving messages from the client
+	// main loop for receiving messages from the client.
+	// Also re-checks access every 15s so that a revoked guest is evicted
+	// without needing any cross-service signal from the notes service.
 	let room_clone = room.clone();
+	let state_recv = state.clone();
 	let mut recv_task = tokio::spawn(async move {
-		while let Some(Ok(msg)) = receiver.next().await {
-			if let Message::Binary(bytes) = msg {
-				// give raw bytes to the sync logic. If we get a response (OK + non empty), we broadcast it.
-				match sync::process_binary_message(&bytes, &room_clone.doc, &room_clone.awareness, &room_clone.dirty).await {
-					Ok(response_bytes) => {
-						if !response_bytes.is_empty() {
-							let broadcast_msg = Message::Binary(response_bytes.into());
-							
-							for client in room_clone.clients.iter() {
-								if *client.key() != client_id {
-									let _ = client.value().send(broadcast_msg.clone());
+		let mut access_check = tokio::time::interval(std::time::Duration::from_secs(15));
+		// the first tick fires immediately; skip it (we already checked on upgrade)
+		access_check.tick().await;
+
+		loop {
+			tokio::select! {
+				maybe_msg = receiver.next() => {
+					let Some(Ok(msg)) = maybe_msg else { break };
+					if let Message::Binary(bytes) = msg {
+						// give raw bytes to the sync logic. If we get a response (OK + non empty), we broadcast it.
+						match sync::process_binary_message(&bytes, &room_clone.doc, &room_clone.awareness, &room_clone.dirty).await {
+							Ok(response_bytes) => {
+								if !response_bytes.is_empty() {
+									let broadcast_msg = Message::Binary(response_bytes.into());
+
+									for client in room_clone.clients.iter() {
+										if *client.key() != client_id {
+											let _ = client.value().send(broadcast_msg.clone());
+										}
+									}
 								}
+							}
+							Err(e) => {
+								tracing::error!("Error processing binary message from client {}: {}", client_id, e);
 							}
 						}
 					}
-					Err(e) => {
-						tracing::error!("Error processing binary message from client {}: {}", client_id, e);
+				}
+				_ = access_check.tick() => {
+					if !db::check_access(&state_recv.pool, note_id, user_id).await {
+						tracing::info!("Access revoked for user {} on note {}, closing client {}", user_id, note_id, client_id);
+						break;
 					}
 				}
 			}
@@ -151,7 +180,7 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 		tracing::info!("Last user left room {}. Saving to DB...", note_id);
 		
 		let doc_lock = room.doc.read().await;
-		if let Err(_) = db::save_note(&state.pool, note_id, user_id, &doc_lock).await {
+		if let Err(_) = db::save_note(&state.pool, note_id, room.owner_id, &doc_lock).await {
 			tracing::error!("Failed to save note {} to DB upon closing.", note_id);
 		}
 		
