@@ -15,6 +15,11 @@ use crate::sync;
 // global counter to assign unique IDs to clients (for awareness tracking)
 static NEXT_CLIENT_ID: AtomicUsize = AtomicUsize::new(1);
 
+// Upper bound on any single WebSocket frame or assembled message. Y.js updates
+// for a typical note are < 100 KiB; this cap keeps a malicious client from
+// pushing multi-GiB payloads into memory.
+const WS_MESSAGE_MAX_BYTES: usize = 1 * 1024 * 1024;
+
 // ws route handler
 pub async fn ws_route(
 	ws: WebSocketUpgrade,
@@ -35,8 +40,11 @@ pub async fn ws_route(
 		return StatusCode::FORBIDDEN.into_response();
 	}
 
-	// Upgrade to WebSocket
-	ws.on_upgrade(move |socket| handle_socket(socket, note_id, state, user_id))
+	// Upgrade to WebSocket with a hard cap on frame / message size.
+	ws
+		.max_frame_size(WS_MESSAGE_MAX_BYTES)
+		.max_message_size(WS_MESSAGE_MAX_BYTES)
+		.on_upgrade(move |socket| handle_socket(socket, note_id, state, user_id))
 }
 
 async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, user_id: Uuid) {
@@ -138,6 +146,10 @@ async fn handle_socket(socket: WebSocket, note_id: Uuid, state: Arc<AppState>, u
 				maybe_msg = receiver.next() => {
 					let Some(Ok(msg)) = maybe_msg else { break };
 					if let Message::Binary(bytes) = msg {
+						if bytes.len() > WS_MESSAGE_MAX_BYTES {
+							tracing::warn!("Client {} sent oversize frame ({} B), closing", client_id, bytes.len());
+							break;
+						}
 						// give raw bytes to the sync logic. If we get a response (OK + non empty), we broadcast it.
 						match sync::process_binary_message(&bytes, &room_clone.doc, &room_clone.awareness, &room_clone.dirty).await {
 							Ok(response_bytes) => {

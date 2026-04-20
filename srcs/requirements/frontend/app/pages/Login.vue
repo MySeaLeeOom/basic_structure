@@ -24,17 +24,24 @@ const regEmail = ref("");
 const regPassword = ref("");
 const consentAccepted = ref(false);
 
+const PASSWORD_MIN = 8;
+const LOGIN_MIN = 3;
+const LOGIN_MAX = 50;
+// Pragmatic RFC 5322 subset: local@domain.tld, no spaces, a single @, at least one dot in the domain.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 async function handleLogin() {
 	authStore.error = null;
-	if (!identifier.value.trim()) {
+	const id = identifier.value.trim();
+	if (id.length < LOGIN_MIN) {
 		authStore.error = t("login.validation.identifierRequired");
 		return;
 	}
-	if (password.value.length < 4) {
+	if (password.value.length < PASSWORD_MIN) {
 		authStore.error = t("login.validation.passwordMin");
 		return;
 	}
-	const success = await authStore.loginLocal(identifier.value, password.value);
+	const success = await authStore.loginLocal(id, password.value);
 	if (success) {
 		router.push("/notes");
 	}
@@ -46,19 +53,21 @@ async function handleRegister() {
 		authStore.error = t("login.consent.required");
 		return;
 	}
-	if (!regLogin.value.trim()) {
+	const login = regLogin.value.trim();
+	const email = regEmail.value.trim();
+	if (login.length < LOGIN_MIN || login.length > LOGIN_MAX) {
 		authStore.error = t("login.validation.usernameRequired");
 		return;
 	}
-	if (!regEmail.value.trim() || !regEmail.value.includes("@")) {
+	if (!EMAIL_RE.test(email)) {
 		authStore.error = t("login.validation.emailInvalid");
 		return;
 	}
-	if (regPassword.value.length < 4) {
+	if (regPassword.value.length < PASSWORD_MIN) {
 		authStore.error = t("login.validation.passwordMin");
 		return;
 	}
-	const success = await authStore.registerLocal(regLogin.value, regEmail.value, regPassword.value);
+	const success = await authStore.registerLocal(login, email, regPassword.value);
 	if (success) {
 		router.push("/");
 	}

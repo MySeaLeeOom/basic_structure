@@ -86,6 +86,7 @@ function focusEditorEnd(event: MouseEvent) {
         @input="updateTitle(($event.target as HTMLInputElement).value)"
         @keydown.enter.prevent="editor?.commands.focus('start')"
         :placeholder="t('notes.untitled')"
+        maxlength="200"
         class="editor-title"
       />
       <EditorContent :editor="editor" class="tiptap-editor" />

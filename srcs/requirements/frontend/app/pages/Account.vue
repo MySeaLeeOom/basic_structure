@@ -36,6 +36,21 @@ const errors = reactive({
 	image: ''
 });
 
+const PASSWORD_MIN = 8;
+const LOGIN_MIN = 3;
+const LOGIN_MAX = 50;
+const IMAGE_URL_MAX = 2048;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidHttpsUrl(value: string): boolean {
+	try {
+		const u = new URL(value);
+		return u.protocol === 'https:' || u.protocol === 'http:';
+	} catch {
+		return false;
+	}
+}
+
 onMounted(() => {
 	if (auth.user) {
 		formLogin.value = '';
@@ -44,13 +59,18 @@ onMounted(() => {
 });
 
 async function handleUpdateLogin() {
-	if (!formLogin.value || formLogin.value === auth.user?.loginName) return;
+	const next = formLogin.value.trim();
+	if (!next || next === auth.user?.loginName) return;
+	if (next.length < LOGIN_MIN || next.length > LOGIN_MAX) {
+		errors.login = t('login.validation.usernameLength');
+		return;
+	}
 
 	activeAction.value = 'login';
 	errors.login = '';
 	successMessage.value = '';
 
-	const result = await auth.updateLoginName(formLogin.value);
+	const result = await auth.updateLoginName(next);
 
 	if (!result.success) {
 		errors.login = result.message;
@@ -63,13 +83,18 @@ async function handleUpdateLogin() {
 }
 
 async function handleUpdateEmail() {
-	if (formEmail.value === auth.user?.email) return;
+	const next = formEmail.value.trim();
+	if (next === (auth.user?.email || '')) return;
+	if (!EMAIL_RE.test(next)) {
+		errors.email = t('profile.error.emailInvalid');
+		return;
+	}
 
 	activeAction.value = 'email';
 	errors.email = '';
 	successMessage.value = '';
 
-	const result = await auth.updateEmail(formEmail.value);
+	const result = await auth.updateEmail(next);
 
 	if (!result.success) {
 		errors.email = result.message;
@@ -81,11 +106,17 @@ async function handleUpdateEmail() {
 }
 
 async function handleUpdateImage() {
+	const next = formImageUrl.value.trim();
+	if (next && (next.length > IMAGE_URL_MAX || !isValidHttpsUrl(next))) {
+		errors.image = t('profile.error.imageUrlInvalid');
+		return;
+	}
+
 	activeAction.value = 'image';
 	errors.image = '';
 	successMessage.value = '';
 
-	const result = await auth.updateImageUrl(formImageUrl.value || null);
+	const result = await auth.updateImageUrl(next || null);
 
 	if (!result.success) {
 		errors.image = result.message;
@@ -119,6 +150,11 @@ async function handleChangePassword() {
 
 	if (auth.user?.hasLocalAuth && !oldPassword.value) {
 		errors.password = t('profile.error.oldPasswordRequired');
+		return;
+	}
+
+	if (newPassword.value.length < PASSWORD_MIN) {
+		errors.password = t('login.validation.passwordMin');
 		return;
 	}
 

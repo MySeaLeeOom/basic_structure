@@ -5,8 +5,9 @@ import psycopg2
 import y_py as Y
 import re
 import hashlib
+from uuid import UUID
 from fastapi import FastAPI, BackgroundTasks, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from pgvector.psycopg2 import register_vector
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -35,10 +36,22 @@ TEXT_SPLITTER = RecursiveCharacterTextSplitter(
     separators=["\n\n", "\n", ".", " ", ""]
 )
 
+INGEST_PAYLOAD_MAX = 10 * 1024 * 1024  # 10 MiB of base64 (~7.5 MiB of Y.js update)
+
+
 class IngestRequest(BaseModel):
     note_id: str
     user_id: str
-    binary_data: str
+    binary_data: str = Field(min_length=1, max_length=INGEST_PAYLOAD_MAX)
+
+    @field_validator("note_id", "user_id")
+    @classmethod
+    def _must_be_uuid(cls, value: str) -> str:
+        try:
+            UUID(value)
+        except ValueError as err:
+            raise ValueError("must be a valid UUID") from err
+        return value
 
 def clean_html_to_text(xml_str: str) -> str:
     s = re.sub(r'</?(p|div|h[1-6]|li|br|tr|td)[^>]*>', '\n', xml_str)
@@ -126,6 +139,10 @@ async def ingest_note(request: IngestRequest, background_tasks: BackgroundTasks)
 
 @app.delete("/embeddings/by-user/{user_id}")
 async def delete_embeddings_by_user(user_id: str):
+    try:
+        UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user id")
     conn = None
     try:
         conn = psycopg2.connect(DB_URL)

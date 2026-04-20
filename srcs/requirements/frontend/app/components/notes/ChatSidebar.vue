@@ -7,14 +7,18 @@ import { useUiI18n } from '~/composables/useUiI18n';
 
 const authStore = useAuthStore();
 const { t } = useUiI18n();
+const QUERY_MAX = 4000;
 const query = ref('');
 const messages = ref<{ role: 'user' | 'assistant', content: string }[]>([]);
 const isTyping = ref(false);
 
 const sendMessage = async () => {
-  if (!query.value.trim() || !authStore.user?.id) return;
-
-  const userQuery = query.value;
+  const userQuery = query.value.trim();
+  if (!userQuery || !authStore.user?.id) return;
+  if (userQuery.length > QUERY_MAX) {
+    messages.value.push({ role: 'assistant', content: t('chat.error.connect') });
+    return;
+  }
   const userId = authStore.user.id;
   
   messages.value.push({ role: 'user', content: userQuery });
@@ -83,7 +87,7 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="w-80 shrink-0 flex flex-col h-[calc(100vh-120px)] bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
+  <div class="w-full md:w-80 md:shrink-0 flex flex-col h-full min-h-0 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
     <h2 class="section-title">{{ t('chat.title') }}</h2>
     
     <div class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 custom-scrollbar">
@@ -110,6 +114,7 @@ const sendMessage = async () => {
         v-model="query" 
         @keyup.enter="sendMessage" 
         :placeholder="t('chat.inputPlaceholder')" 
+        :maxlength="QUERY_MAX"
         class="flex-1 min-w-0 dark:!text-white dark:placeholder:text-surface-500" 
       />
       <Button :label="t('chat.send')" @click="sendMessage" :disabled="isTyping" severity="primary" size="small" /> 

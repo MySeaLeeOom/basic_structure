@@ -35,6 +35,19 @@ pub fn get_user_id(headers: &HeaderMap) -> Result<Uuid, ()> {
 		.ok_or(())
 }
 
+pub const TITLE_MAX_CHARS: usize = 200;
+
+// Trim the title and enforce a length bound. Empty strings are allowed (the
+// frontend renders them as "Untitled"); oversized titles return a 400 rather
+// than cascading into a VARCHAR(255) database error.
+pub fn normalize_title(raw: &str) -> Result<String, ()> {
+	let trimmed = raw.trim();
+	if trimmed.chars().count() > TITLE_MAX_CHARS {
+		return Err(());
+	}
+	Ok(trimmed.to_string())
+}
+
 pub async fn get_all_notes(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Vec<Note>>, ApiError> {
 	let locale = requested_locale(&headers, state.i18n.default_locale());
 	let user_id = get_user_id(&headers)
@@ -80,15 +93,17 @@ pub async fn post_note(State(state): State<AppState>, headers: HeaderMap, Json(p
 	let locale = requested_locale(&headers, state.i18n.default_locale());
 	let user_id = get_user_id(&headers)
 		.map_err(|_| error_response(&state, &locale, StatusCode::UNAUTHORIZED, "unauthorized"))?;
-	tracing::info!("Creating new note: {} for user {}", payload.title, user_id);
-	
+	let title = normalize_title(&payload.title)
+		.map_err(|_| error_response(&state, &locale, StatusCode::BAD_REQUEST, "invalid-title"))?;
+	tracing::info!("Creating new note: {} for user {}", title, user_id);
+
 	let mut tx = state.db_pool.begin().await.map_err(|e| {
 		tracing::error!("Failed to begin transaction: {}", e);
 		error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
 	})?;
 
     // Generate a unique slug for the owner_url
-    let slug = generate_unique_slug(&mut *tx, user_id, &payload.title, None).await.map_err(|e| {
+    let slug = generate_unique_slug(&mut *tx, user_id, &title, None).await.map_err(|e| {
         tracing::error!("Failed to generate unique slug: {}", e);
         error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
     })?;
@@ -97,7 +112,7 @@ pub async fn post_note(State(state): State<AppState>, headers: HeaderMap, Json(p
 	let note = sqlx::query_as::<_, Note>(
 		"INSERT INTO notes (title, owner_id, owner_url) VALUES ($1, $2, $3) RETURNING id, title, owner_id, owner_url, created_at, updated_at",
 	)
-	.bind(&payload.title)
+	.bind(&title)
 	.bind(user_id)
     .bind(&slug)
 	.fetch_one(&mut *tx)
@@ -158,14 +173,16 @@ pub async fn edit_title(State(state): State<AppState>, Path(id): Path<Uuid>, hea
 	let locale = requested_locale(&headers, state.i18n.default_locale());
 	let user_id = get_user_id(&headers)
 		.map_err(|_| error_response(&state, &locale, StatusCode::UNAUTHORIZED, "unauthorized"))?;
-	tracing::info!("Updating title for note {}: {}", id, payload.title);
-	
+	let title = normalize_title(&payload.title)
+		.map_err(|_| error_response(&state, &locale, StatusCode::BAD_REQUEST, "invalid-title"))?;
+	tracing::info!("Updating title for note {}: {}", id, title);
+
 	let mut tx = state.db_pool.begin().await.map_err(|e| {
 		tracing::error!("Failed to begin transaction: {}", e);
 		error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
 	})?;
 
-    let slug = generate_unique_slug(&mut *tx, user_id, &payload.title, Some(id)).await.map_err(|e| {
+    let slug = generate_unique_slug(&mut *tx, user_id, &title, Some(id)).await.map_err(|e| {
         tracing::error!("Failed to generate unique slug for update: {}", e);
         error_response(&state, &locale, StatusCode::INTERNAL_SERVER_ERROR, "internal-error")
     })?;
@@ -173,7 +190,7 @@ pub async fn edit_title(State(state): State<AppState>, Path(id): Path<Uuid>, hea
 	let note = sqlx::query_as::<_, Note>(
 		"UPDATE notes SET title = $1, owner_url = $2, updated_at = NOW() WHERE id = $3 AND owner_id = $4 RETURNING id, title, owner_id, owner_url, created_at, updated_at"
 		)
-		.bind(&payload.title)
+		.bind(&title)
         .bind(&slug)
 		.bind(id)
 		.bind(user_id)

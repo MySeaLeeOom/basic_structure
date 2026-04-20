@@ -3,9 +3,10 @@ import logging
 import httpx
 import psycopg2
 import re
+from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pgvector.psycopg2 import register_vector
 from langchain_community.embeddings import OllamaEmbeddings
 
@@ -25,7 +26,7 @@ OLLAMA_HOST = BASE_URL.replace("/v1", "")
 EMBEDDING_MODEL = os.getenv("LLM_EMBEDDING_MODEL", "mxbai-embed-large")
 
 class ChatRequest(BaseModel):
-	query: str
+	query: str = Field(min_length=1, max_length=4000)
 
 def score_chunk(query: str, content: str, vector_dist: float) -> float:
 	"""
@@ -138,6 +139,10 @@ async def chat(body: ChatRequest, request: Request):
 	user_id = request.headers.get("x-user-id")
 	if not user_id:
 		raise HTTPException(status_code=401, detail="Missing user identity")
+	try:
+		UUID(user_id)
+	except ValueError:
+		raise HTTPException(status_code=400, detail="Invalid user identity")
 	try:
 		context = get_context(user_id, body.query)
 		

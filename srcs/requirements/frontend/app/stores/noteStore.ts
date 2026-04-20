@@ -129,14 +129,20 @@ export const useNoteStore = defineStore("notes", () => {
 
 	const notesCount = computed(() => notes.value.length);
 
-	// Debounced save to Postgres — temporary until WS notification channel
+	// Debounced save to Postgres — temporary until WS notification channel.
+	// The 500ms debounce can outlive the note itself (e.g. checkAndClean deletes
+	// an empty note while a title change was queued), so guard against writing
+	// to a note that no longer exists locally and swallow the 404 that the
+	// server legitimately returns if a DELETE beat the PUT over the wire.
 	const _persistTitle = useDebounceFn(async (id: string, title: string) => {
+		if (!notes.value.some((n: Note) => n.id === id)) return;
 		try {
 			const response = await fetch(`/api/notes/${id}`, {
 				method: "PUT",
 				headers: buildHeaders({ "Content-Type": "application/json" }),
 				body: JSON.stringify({ title }),
 			});
+			if (response.status === 404) return;
 			await throwForResponse(response);
 		} catch (e) {
 			console.error("Failed to persist title:", e);
@@ -145,9 +151,8 @@ export const useNoteStore = defineStore("notes", () => {
 
 	function updateNoteTitle(id: string, title: string) {
 		const note = notes.value.find((n: Note) => n.id === id);
-		if (note) {
-			note.title = title;
-		}
+		if (!note) return;
+		note.title = title;
 		if (selectedNote.value?.id === id) {
 			selectedNote.value = { ...selectedNote.value, title };
 		}

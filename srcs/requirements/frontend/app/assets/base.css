@@ -70,6 +70,12 @@ html.theme-transition *::after {
 	flex-direction: column;
 }
 
+@media (max-width: 767px) {
+	.editor-scroll {
+		padding: 1.25rem 1rem;
+	}
+}
+
 .editor-title {
 	font-size: 2rem;
 	font-weight: 700;
@@ -85,6 +91,14 @@ html.theme-transition *::after {
 	margin-bottom: 1rem;
 }
 
+@media (max-width: 767px) {
+	.editor-title {
+		font-size: 1.5rem;
+		padding-bottom: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+}
+
 .editor-title::placeholder {
 	color: var(--p-surface-600);
 }
@@ -97,6 +111,12 @@ html.theme-transition *::after {
 	font-size: 0.75rem;
 	color: var(--p-surface-500);
 	border-top: 1px solid var(--p-surface-800);
+}
+
+@media (max-width: 767px) {
+	.editor-status {
+		padding: 0.5rem 1rem;
+	}
 }
 
 .editor-status-dot {

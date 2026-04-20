@@ -62,8 +62,14 @@ const ChangePasswordSchema = Type.Object({
 	newPassword: Type.String({ minLength: 8 }),
 });
 
+// Accept an http(s) URL up to 2048 chars, or null to clear. The pattern
+// rejects javascript:, data:, and other schemes that could be rendered into
+// an <img src=...> element.
 const ChangeImageSchema = Type.Object({
-	imageURL: Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+	imageURL: Type.Union([
+		Type.String({ minLength: 1, maxLength: 2048, pattern: "^https?://[^\\s]+$" }),
+		Type.Null(),
+	]),
 });
 
 const ResolveUserSchema = Type.Object({

@@ -25,6 +25,16 @@ const isMobile = useMediaQuery('(max-width: 767px)');
 const sidebarOpen = ref(true);
 const chatOpen = ref(true);
 
+// On mobile, sidebar, editor and chat are mutually exclusive full-width views,
+// so the chat panel cannot be open at the same time as the editor.
+const showEditorPane = computed(() => !isMobile.value || !chatOpen.value);
+const showChatPane = computed(() => chatOpen.value);
+
+function toggleChat() {
+	chatOpen.value = !chatOpen.value;
+	if (isMobile.value && chatOpen.value) sidebarOpen.value = false;
+}
+
 const noteEditorRef = ref<InstanceType<typeof NoteEditor> | null>(null);
 
 const showInviteDialog = ref(false);
@@ -65,6 +75,7 @@ function openInvite(noteId: string) {
 	showInviteDialog.value = true;
 	if (allUsers.value.length === 0) fetchUsers();
 	fetchCollaborators(noteId);
+	resetCollabPoll();
 }
 
 function toggleUser(userId: string) {
@@ -101,6 +112,7 @@ async function revokeShare(shareId: string) {
 		await $fetch(`/api/notes/collab/revoke/${shareId}`, { method: 'DELETE' });
 		collaborators.value = collaborators.value.filter(c => c.share_id !== shareId);
 		inviteSuccess.value = t('notes.invite.revoked');
+		resetCollabPoll();
 	} catch {
 		inviteError.value = t('notes.invite.error.revokeFailed');
 	}
@@ -142,17 +154,26 @@ async function sendInvite() {
 
 	selectedUsers.value = [];
 	if (inviteNoteId.value) fetchCollaborators(inviteNoteId.value);
+	resetCollabPoll();
 }
 
 const sharedNotes = ref<SharedNote[]>([]);
 const selectedSharedNote = ref<SharedNote | null>(null);
 
-async function fetchSharedNotes() {
+function sharedNotesSignature(list: SharedNote[]): string {
+	return list
+		.map(n => `${n.share_id}:${n.access_role}:${n.note_title ?? ''}`)
+		.join('|');
+}
+
+async function fetchSharedNotes(): Promise<boolean> {
+	const before = sharedNotesSignature(sharedNotes.value);
 	try {
 		sharedNotes.value = await $fetch('/api/notes/collab/received');
 	} catch {
 		sharedNotes.value = [];
 	}
+	return sharedNotesSignature(sharedNotes.value) !== before;
 }
 
 async function checkAndClean() {
@@ -192,10 +213,47 @@ async function handleEsc(e: KeyboardEvent) {
 	selectedSharedNote.value = null;
 }
 
-// Refresh share state when the tab regains focus so a user who was
-// granted / revoked access in another session sees it without reloading.
-// The editor WS already handles live doc edits; this covers sidebar state.
+// Adaptive polling for share state. The editor WS already handles live doc
+// edits; this covers sidebar state (new / revoked shares) without requiring
+// a tab switch. The delay shrinks to COLLAB_POLL_MIN on user activity or
+// when data actually changed, and grows toward COLLAB_POLL_MAX when idle,
+// so the "someone just shared with me" case feels instant while an idle
+// tab costs ~4 req/min instead of 30.
+const COLLAB_POLL_MIN = 2_000;
+const COLLAB_POLL_MAX = 15_000;
+const COLLAB_POLL_GROWTH = 1.5;
+
 let lastCollabRefresh = 0;
+let collabPollTimer: ReturnType<typeof setTimeout> | null = null;
+let collabPollDelay = COLLAB_POLL_MIN;
+
+function scheduleCollabPoll(delay: number) {
+	if (collabPollTimer !== null) clearTimeout(collabPollTimer);
+	collabPollDelay = Math.max(COLLAB_POLL_MIN, Math.min(COLLAB_POLL_MAX, delay));
+	collabPollTimer = setTimeout(pollSharedNotes, collabPollDelay);
+}
+
+async function pollSharedNotes() {
+	collabPollTimer = null;
+	if (document.visibilityState !== 'visible') {
+		// Check back later; visibilitychange will pull us forward if needed.
+		scheduleCollabPoll(COLLAB_POLL_MAX);
+		return;
+	}
+	const changed = await fetchSharedNotes();
+	scheduleCollabPoll(changed ? COLLAB_POLL_MIN : collabPollDelay * COLLAB_POLL_GROWTH);
+}
+
+function resetCollabPoll() {
+	scheduleCollabPoll(COLLAB_POLL_MIN);
+}
+
+function stopCollabPolling() {
+	if (collabPollTimer === null) return;
+	clearTimeout(collabPollTimer);
+	collabPollTimer = null;
+}
+
 function refreshCollabState() {
 	if (document.visibilityState === 'hidden') return;
 	const now = Date.now();
@@ -205,6 +263,8 @@ function refreshCollabState() {
 	if (showInviteDialog.value && inviteNoteId.value) {
 		fetchCollaborators(inviteNoteId.value);
 	}
+	// User activity: drop back to fast polling.
+	resetCollabPoll();
 }
 
 onMounted(() => {
@@ -212,13 +272,18 @@ onMounted(() => {
 	document.addEventListener('keydown', handleEsc);
 	document.addEventListener('visibilitychange', refreshCollabState);
 	window.addEventListener('focus', refreshCollabState);
-	if (isMobile.value) sidebarOpen.value = false;
+	if (isMobile.value) {
+		sidebarOpen.value = false;
+		chatOpen.value = false;
+	}
 	fetchSharedNotes();
+	resetCollabPoll();
 });
 onBeforeUnmount(() => {
 	document.removeEventListener('keydown', handleEsc);
 	document.removeEventListener('visibilitychange', refreshCollabState);
 	window.removeEventListener('focus', refreshCollabState);
+	stopCollabPolling();
 	checkAndClean();
 });
 
@@ -270,7 +335,9 @@ await useAsyncData('notes', async () => {
 			<button
 				class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
 				:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
-				@click="chatOpen = !chatOpen"
+				:aria-label="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
+				:aria-pressed="chatOpen"
+				@click="toggleChat"
 			>
 				<IconChatBubble class="w-5 h-5" />
 			</button>
@@ -282,14 +349,18 @@ await useAsyncData('notes', async () => {
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
 					:title="sidebarOpen ? t('notes.sidebar.hide') : t('notes.sidebar.show')"
+					:aria-label="sidebarOpen ? t('notes.sidebar.hide') : t('notes.sidebar.show')"
+					:aria-pressed="sidebarOpen"
 					@click="sidebarOpen = !sidebarOpen"
 				>
 					<IconBars class="w-4 h-4" />
 				</button>
 				<button
 					class="w-7 h-7 shrink-0 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-200 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
-					:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')" 
-					@click="chatOpen = !chatOpen"
+					:title="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
+					:aria-label="chatOpen ? t('notes.chat.hide') : t('notes.chat.show')"
+					:aria-pressed="chatOpen"
+					@click="toggleChat"
 				>
 					<IconChatBubble class="w-5 h-5" />
 				</button>
@@ -354,9 +425,9 @@ await useAsyncData('notes', async () => {
 
 		</template>
 
-		<div v-if="mounted && activeNote" class="flex flex-1 w-full h-full gap-4">
-			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1" />
-			<ChatSidebar v-show="chatOpen" />
+		<div v-if="mounted && activeNote" class="flex flex-col md:flex-row flex-1 w-full h-full min-h-0 gap-4">
+			<NoteEditor v-show="showEditorPane" ref="noteEditorRef" :note-id="activeNote.id" class="flex-1 min-h-0" />
+			<ChatSidebar v-show="showChatPane" />
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 

@@ -3,7 +3,7 @@ import logging
 import json
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
 
 # Setup Logging
@@ -24,8 +24,8 @@ if BASE_URL:
 client = AsyncOpenAI(**client_args)
 
 class CompletionRequest(BaseModel):
-    prompt: str
-    system_prompt: str = "You are a helpful assistant."
+    prompt: str = Field(min_length=1, max_length=4000)
+    system_prompt: str = Field(default="You are a helpful assistant.", max_length=32000)
 
 @app.post("/stream")
 async def stream_completion(request: CompletionRequest):

@@ -20,6 +20,7 @@ const { t } = useUiI18n();
       <button
         class="w-7 h-7 flex items-center justify-center rounded-md text-surface-400 hover:text-surface-700 hover:bg-surface-300 dark:hover:text-surface-200 dark:hover:bg-surface-700 transition-colors"
         :title="t('notes.sidebar.show')"
+        :aria-label="t('notes.sidebar.show')"
         @click="sidebarOpen = true"
       >
         <IconBars class="w-4 h-4" />
