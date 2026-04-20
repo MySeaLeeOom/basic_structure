@@ -264,7 +264,7 @@ onMounted(() => {
   el.addEventListener('click', onClick);
 
   let startTime = -1;
-  const STOP_AFTER = 30; // seconds
+  const STOP_AFTER = 90; // seconds
 
   const loop = (ts: number) => {
     if (startTime < 0) startTime = ts;
