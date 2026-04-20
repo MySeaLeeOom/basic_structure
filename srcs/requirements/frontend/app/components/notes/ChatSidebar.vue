@@ -87,7 +87,7 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="w-full md:w-80 md:shrink-0 flex flex-col h-full min-h-0 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
+  <div class="w-full md:w-80 shrink-0 flex flex-col h-72 md:h-full min-h-0 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl p-4 shadow-sm overflow-hidden">
     <h2 class="section-title">{{ t('chat.title') }}</h2>
     
     <div class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 custom-scrollbar">

@@ -168,7 +168,7 @@ Pavlos: Used AI to research the pros and cons of different stacks, for detecting
 Maarten: Used AI for research, brainstorming, structure/idea validation, writing repetitive code, and double-checking documentation.
 Masha: Used AI for research, writing repetetive code, assistance with learning frameworks like Fastify, tutorials, assistance with tricky styling issues, keeping track of refactors and changes that needed multifile editing, particularly for UI bugs.
 Ahmet: Used AI to research unfamiliar technologies (Yjs/CRDTs, TipTap, WebSockets), coordinate multi-file changes across the frontend and backend, and draft internal dev documentation. All output was reviewed and tested before use.
-
+Grace: Used AI to figure out how to integrate my contributions to the project and to summarise the other different services, their roles and how they interact. It was also used to debug configuration issues, in particular with Docker and Cargo.
 
 ## **Future Features**
 What in-theory would be an obvious next step:

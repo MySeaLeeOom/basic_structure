@@ -25,11 +25,9 @@ const isMobile = useMediaQuery('(max-width: 767px)');
 const sidebarOpen = ref(true);
 const chatOpen = ref(true);
 
-// On mobile, sidebar, editor and chat are mutually exclusive full-width views,
-// so the chat panel cannot be open at the same time as the editor.
-const showEditorPane = computed(() => !isMobile.value || !chatOpen.value);
-const showChatPane = computed(() => chatOpen.value);
-
+// Below the md breakpoint the main area flips to a column: editor on top,
+// chat docked underneath (ChatSidebar caps its own height on mobile so the
+// editor keeps the majority of the space).
 function toggleChat() {
 	chatOpen.value = !chatOpen.value;
 	if (isMobile.value && chatOpen.value) sidebarOpen.value = false;
@@ -426,8 +424,8 @@ await useAsyncData('notes', async () => {
 		</template>
 
 		<div v-if="mounted && activeNote" class="flex flex-col md:flex-row flex-1 w-full h-full min-h-0 gap-4">
-			<NoteEditor v-show="showEditorPane" ref="noteEditorRef" :note-id="activeNote.id" class="flex-1 min-h-0" />
-			<ChatSidebar v-show="showChatPane" />
+			<NoteEditor ref="noteEditorRef" :note-id="activeNote.id" class="flex-1 min-h-0" />
+			<ChatSidebar v-show="chatOpen" />
 		</div>
 		<div v-else-if="!activeNote" class="empty-state">{{ t('notes.empty') }}</div>
 
