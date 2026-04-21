@@ -128,6 +128,14 @@ function spawnThreads(cell: Cell, w: number, h: number, cursorStart: number): { 
   return { threads, cursorEnd: cursor };
 }
 
+const dateBucket = Math.floor(Date.now() / (10 * 60 * 1000));
+const MAX_THREADS = 2 + (dateBucket % 8); // 3–15, changes every 10 min
+
+// const today = new Date();
+// const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+// // const dateSeed =  Math.floor(Date.now() / (10 * 60 * 1000));
+// const MAX_THREADS = 3 + (dateSeed % 5); // 3–15, changes daily
+
 const FPS = 30;
 const INTERVAL = 1000 / FPS;
 let lastFrame = 0;
@@ -162,7 +170,7 @@ function draw(
         const dy = cell.y + Math.sin(angle) * r;
         const dotR = Math.max((2.0 - ring.radius / 70) * s * pulse, 0.5);
         const alphaMod = (Math.sin(angle * 2 + ts * cell.speed * 3) + 1) / 2;
-        const alpha = (dark ? 0.14 + 0.20 * alphaMod : 0.58 + 0.22 * alphaMod) * growIn;
+        const alpha = (dark ? 0.18 + 0.20 * alphaMod : 0.58 + 0.22 * alphaMod) * growIn;
         ctx.beginPath();
         ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
         ctx.fillStyle = `${color}${alpha})`;
@@ -181,7 +189,7 @@ function draw(
     if (visible <= threadDrawn[t]) continue; // nothing new to paint
 
     const color = colors[thread.colorIdx];
-    const baseAlpha = dark ? 0.14 : 0.22;
+    const baseAlpha = dark ? 0.18 : 0.26;
 
     for (let k = threadDrawn[t]; k < visible; k++) {
       const dot = thread.dots[k];
@@ -233,12 +241,15 @@ onMounted(() => {
   let cursor = 1;
   for (const cell of cells) {
     const result = spawnThreads(cell, el.width, el.height, cursor);
-    threads.push(...result.threads);
-    result.threads.forEach(() => threadDrawn.push(0)); // one counter per thread
+    for (const t of result.threads) {
+      if (threads.length >= MAX_THREADS) break;
+      threads.push(t);
+      threadDrawn.push(0);
+    }
     cursor = result.cursorEnd;
   }
 
-  let nextSpawnAt = 90 + Math.random() * 90;
+  let nextSpawnAt = -1;
 
   const onClick = (e: MouseEvent) => {
     const rect = el.getBoundingClientRect();
@@ -263,13 +274,7 @@ onMounted(() => {
   clickHandler = onClick;
   el.addEventListener('click', onClick);
 
-  let startTime = -1;
-  const STOP_AFTER = 30; // seconds
-
   const loop = (ts: number) => {
-    if (startTime < 0) startTime = ts;
-    const elapsed = (ts - startTime) / 1000;
-    if (elapsed >= STOP_AFTER) return; // stop rescheduling — animation is done
     animId = requestAnimationFrame(loop);
     if (ts - lastFrame < INTERVAL) return;
     lastFrame = ts;
@@ -284,12 +289,16 @@ onMounted(() => {
       wasDark = dark;
     }
 
+    if (nextSpawnAt < 0) nextSpawnAt = tsSeconds + 90 + Math.random() * 90;
     if (tsSeconds > nextSpawnAt) {
       const newCell = makeCell(el.width, el.height, tsSeconds);
       cells.push(newCell);
       const result = spawnThreads(newCell, el.width, el.height, tsSeconds + 1);
-      threads.push(...result.threads);
-      result.threads.forEach(() => threadDrawn.push(0)); // one counter per new thread
+      for (const t of result.threads) {
+        if (threads.length >= MAX_THREADS) break;
+        threads.push(t);
+        threadDrawn.push(0);
+      }
       nextSpawnAt = tsSeconds + 90 + Math.random() * 90;
     }
 
