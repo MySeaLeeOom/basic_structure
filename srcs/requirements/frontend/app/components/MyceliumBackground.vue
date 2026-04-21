@@ -170,7 +170,7 @@ function draw(
         const dy = cell.y + Math.sin(angle) * r;
         const dotR = Math.max((2.0 - ring.radius / 70) * s * pulse, 0.5);
         const alphaMod = (Math.sin(angle * 2 + ts * cell.speed * 3) + 1) / 2;
-        const alpha = (dark ? 0.18 + 0.20 * alphaMod : 0.58 + 0.22 * alphaMod) * growIn;
+        const alpha = (dark ? 0.22 + 0.20 * alphaMod : 0.58 + 0.22 * alphaMod) * growIn;
         ctx.beginPath();
         ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
         ctx.fillStyle = `${color}${alpha})`;
